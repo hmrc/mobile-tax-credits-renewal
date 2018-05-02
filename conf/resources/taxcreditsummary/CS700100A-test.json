@@ -1,0 +1,89 @@
+{
+  "paymentSummary": {
+    "workingTaxCredit": {
+      "paymentSeq": [
+        {
+          "amount": 55.00,
+          "paymentDate": 1509008158781,
+          "oneOffPayment": false
+        }
+      ],
+      "paymentFrequency": "weekly",
+      "previousPaymentSeq": [
+        {
+          "amount": 33.00,
+          "paymentDate": 1503737758781,
+          "oneOffPayment": true,
+          "explanatoryText" : "This was because of a recent change and was to help you get the right amount of tax credits."
+        }
+      ]
+    },
+    "childTaxCredit": {
+      "paymentSeq": [
+        {
+          "amount": 59.22,
+          "paymentDate": 1509008158781,
+          "oneOffPayment": false,
+          "holidayType": "bankHoliday",
+          "earlyPayment": true,
+          "explanatoryText" : "Your payment was early because of UK bank holidays."
+        }
+      ],
+      "paymentFrequency": "weekly"
+    },
+    "paymentEnabled": true
+  },
+  "personalDetails": {
+    "forename": "firstname",
+    "surname": "surname",
+    "nino": "CS700100A",
+    "address": {
+      "addressLine1": "addressLine1",
+      "addressLine2": "addressLine2",
+      "addressLine3": "addressLine3",
+      "addressLine4": "addressLine4",
+      "postCode": "postcode"
+    }
+  },
+  "partnerDetails": {
+    "forename": "forename",
+    "otherForenames": "othernames",
+    "surname": "surname",
+    "nino": "CS700100A",
+    "address": {
+      "addressLine1": "addressLine1",
+      "addressLine2": "addressLine2",
+      "addressLine3": "addressLine3",
+      "addressLine4": "addressLine4",
+      "postCode": "postcode"
+    }
+  },
+  "children": {
+    "child": [
+      {
+        "firstNames": "Sarah",
+        "surname": "Smith",
+        "dateOfBirth": 936057600000,
+        "hasFTNAE": false,
+        "hasConnexions": false,
+        "isActive": true
+      },
+      {
+        "firstNames": "Joseph",
+        "surname": "Smith",
+        "dateOfBirth": 884304000000,
+        "hasFTNAE": false,
+        "hasConnexions": false,
+        "isActive": true
+      },
+      {
+        "firstNames": "Mary",
+        "surname": "Smith",
+        "dateOfBirth": 852768000000,
+        "hasFTNAE": false,
+        "hasConnexions": false,
+        "isActive": true
+      }
+    ]
+  }
+}

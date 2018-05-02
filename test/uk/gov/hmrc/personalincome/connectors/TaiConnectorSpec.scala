@@ -1,0 +1,110 @@
+/*
+ * Copyright 2018 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.personalincome.connectors
+
+import com.typesafe.config.Config
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
+import play.api.libs.json.{Json, Writes}
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.circuitbreaker.CircuitBreakerConfig
+import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.hooks.HttpHook
+import uk.gov.hmrc.personalincome.config.ServicesCircuitBreaker
+import uk.gov.hmrc.personalincome.domain.TaxSummaryDetails
+import uk.gov.hmrc.play.config.ServicesConfig
+import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+
+class TaiConnectorSpec
+  extends UnitSpec with WithFakeApplication with ScalaFutures with CircuitBreakerTest with MockitoSugar {
+
+  private trait Setup {
+
+    implicit lazy val hc: HeaderCarrier = HeaderCarrier()
+
+    val nino = Nino("KM569110B")
+    val taxSummary = TaxSummaryDetails(nino.value, 1)
+
+    lazy val http500Response = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http400Response = Future.failed(new BadRequestException("bad request"))
+    lazy val http404Response = Future.failed(new NotFoundException("not found"))
+    lazy val http200Response = Future.successful(HttpResponse(200, Some(Json.toJson(taxSummary))))
+    lazy val response: Future[HttpResponse] = http400Response
+
+    val serviceUrl = "someUrl"
+    val http: CoreGet with CorePost = new CoreGet with HttpGet with CorePost with HttpPost {
+      override val hooks: Seq[HttpHook] = NoneRequired
+
+      override def configuration: Option[Config] = None
+
+      override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = response
+
+      override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = ???
+
+      override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+
+      override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+
+      override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+    }
+
+    class TestTaiConnector(http: CoreGet with CorePost,
+                           runModeConfiguration: Configuration,
+                           environment: Environment) extends TaiConnector(http, serviceUrl, runModeConfiguration, environment)
+      with ServicesConfig with ServicesCircuitBreaker {
+      override protected def circuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
+    }
+
+    val connector = new TestTaiConnector(http, mock[Configuration], mock[Environment])
+  }
+
+  "taiConnector" should {
+
+    "return None when a BadRequestException is thrown" in new Setup {
+      override lazy val response = http400Response
+      await(connector.taxSummary(nino, 1)) shouldBe None
+    }
+
+    "return None when a NotFoundException is thrown" in new Setup {
+      override lazy val response = http404Response
+      await(connector.taxSummary(nino, 1)) shouldBe None
+    }
+
+    "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
+      override lazy val response = http500Response
+      intercept[Upstream5xxResponse] {
+        await(connector.taxSummary(nino, 1))
+      }
+    }
+
+    "return a valid response when a 200 response is received with a valid json payload" in new Setup {
+      override lazy val response = http200Response
+      await(connector.taxSummary(nino, 1)) shouldBe Some(taxSummary)
+    }
+
+    "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
+      override lazy val response = http500Response
+      executeCB(connector.taxSummary(nino, 1))
+    }
+
+  }
+
+}

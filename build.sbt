@@ -3,14 +3,14 @@ import play.sbt.routes.RoutesKeys._
 import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, _}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
-name := "personal-income"
+name := "mobile-tax-credits-renewa"
 
 lazy val root = (project in file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
 
-routesImport ++= Seq("uk.gov.hmrc.domain._", "uk.gov.hmrc.personalincome.binders.Binders._")
+routesImport ++= Seq("uk.gov.hmrc.domain._", "uk.gov.hmrc.mobiletaxcreditsrenewal.binders.Binders._")
 publishingSettings
 unmanagedResourceDirectories in Compile += baseDirectory.value / "resources"
 defaultSettings()

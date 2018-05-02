@@ -22,7 +22,7 @@ uses:
   annotations: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/annotations.raml
   types: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/types.raml
 
-/personal-income:
+mobile-tax-credits-renewa:
   /income:
     /tax-credits:
       /submission:
@@ -31,8 +31,8 @@ uses:
             displayName: Get tax credits submission state
             description: This endpoint retrieves the current state of tax credit submissions
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string
@@ -49,8 +49,8 @@ uses:
               displayName: Get tax credits submission state enabled
               description: This endpoint retrieves the current state of tax credit submissions
               is: [headers.acceptHeader]
-              (annotations.scope): "read:personal-income"
-              securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+              (annotations.scope): "read:mobile-tax-credits-renewa"
+              securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
               queryParameters:
                 journeyId:
                   type: string
@@ -79,8 +79,8 @@ uses:
             displayName: Get summary
             description: This endpoint retrieves the tax summary.
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string
@@ -102,8 +102,8 @@ uses:
               displayName: Get auth token
               description: This endpoint retrieves the auth token and validates the nino and tax reference number.
               is: [headers.acceptHeader]
-              (annotations.scope): "read:personal-income"
-              securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+              (annotations.scope): "read:mobile-tax-credits-renewa"
+              securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
               queryParameters:
                 journeyId:
                   type: string
@@ -120,8 +120,8 @@ uses:
             displayName: Get claiment details
             description: This endpoint retrieves the claiment details.
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string
@@ -141,8 +141,8 @@ uses:
             displayName: Submit renewal
             description: This endpoint submits a renewal.
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string
@@ -159,8 +159,8 @@ uses:
             displayName: Get tax credits summary
             description: This endpoint retrieves the tax credits summary.
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string
@@ -177,8 +177,8 @@ uses:
             displayName: Get tax credits decision
             description: This endpoint retrieves the tax credits decision.
             is: [headers.acceptHeader]
-            (annotations.scope): "read:personal-income"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:personal-income" ] } ]
+            (annotations.scope): "read:mobile-tax-credits-renewa"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewa" ] } ]
             queryParameters:
               journeyId:
                 type: string

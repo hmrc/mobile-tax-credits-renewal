@@ -26,7 +26,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.AppContext
-import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, PersonalTaxSummaryConnector, TaiConnector, TaxCreditsBrokerConnector}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LivePersonalIncomeService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, NtcConnectorStub, PersonalIncomeServiceStub, TaxCreditBrokerConnectorStub}
@@ -69,9 +69,6 @@ trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with
     implicit val hc: HeaderCarrier = HeaderCarrier()
     implicit val mockAuthConnector: AuthConnector = mock[AuthConnector]
     implicit val mockNtcConnector: NtcConnector = mock[NtcConnector]
-    implicit val mockTaiConnector: TaiConnector = mock[TaiConnector]
-    implicit val mockPersonalTaxSummaryConnector: PersonalTaxSummaryConnector = mock[PersonalTaxSummaryConnector]
-    implicit val mockTaxCreditsBrokerConnector: TaxCreditsBrokerConnector = mock[TaxCreditsBrokerConnector]
     implicit val mockAuditConnector: AuditConnector = mock[AuditConnector]
     implicit val mockLivePersonalIncomeService: LivePersonalIncomeService = mock[LivePersonalIncomeService]
     implicit val mockTaxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig = mock[TaxCreditsSubmissionControlConfig]

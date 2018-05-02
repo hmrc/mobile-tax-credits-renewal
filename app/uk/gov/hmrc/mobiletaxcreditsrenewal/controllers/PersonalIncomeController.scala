@@ -77,15 +77,6 @@ trait PersonalIncomeController extends BaseController with AccessControl with Er
     result.withHeaders(HeaderNames.CACHE_CONTROL -> s"max-age=$maxAge")
   }
 
-  final def getSummary(nino: Nino, year: Int, journeyId: Option[String] = None) = validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-    implicit request =>
-    implicit val hc = fromHeadersAndSession(request.headers, None)
-    errorWrapper(service.getTaxSummary(nino, year, journeyId).map {
-      case Some(summary) => Ok(toJson(summary))
-      case _ => NotFound
-    })
-  }
-
   final def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None) =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
@@ -95,13 +86,6 @@ trait PersonalIncomeController extends BaseController with AccessControl with Er
             case Some(authToken) => Ok(toJson(authToken))
             case _ => notFound
           })
-  }
-
-  final def getTaxCreditExclusion(nino: Nino, journeyId: Option[String] = None) = validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-    implicit request =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
-      errorWrapper(
-        service.getTaxCreditExclusion(nino).map { res => Ok(Json.parse(s"""{"showData":${!res.excluded}}""")) })
   }
 
   def addMainApplicantFlag(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Result] = {
@@ -214,12 +198,6 @@ trait PersonalIncomeController extends BaseController with AccessControl with Er
             })
           }
         )
-  }
-
-  final def taxCreditsSummary(nino: Nino, journeyId: Option[String] = None) =  validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-    implicit request =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
-      errorWrapper(service.getTaxCreditSummary(nino).map(summary => Ok(toJson(summary))))
   }
 
   private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier) = {

@@ -23,23 +23,15 @@ import play.api.Configuration
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.{AppContext, RenewalStatusTransform}
-import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, PersonalTaxSummaryConnector, TaiConnector, TaxCreditsBrokerConnector}
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.userdata.TaxCreditSummary
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, RenewalReference, TcrAuthenticationToken}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LivePersonalIncomeService, PersonalIncomeService}
-import uk.gov.hmrc.personaltaxsummary.domain.TaxSummaryContainer
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait PersonalIncomeServiceStub extends UnitSpec {
-
-  def stubGetSummaryResponse(response: Option[TaxSummaryContainer])(implicit personalIncomeService: PersonalIncomeService): OngoingStubbing[Future[Option[TaxSummaryContainer]]] = {
-    when(personalIncomeService.getTaxSummary(any[Nino](), any[Int](), any[Option[String]]())(any[HeaderCarrier](), any[ExecutionContext]()))
-      .thenReturn(response)
-  }
-
   def stubAuthRenewalResponse(response: Option[TcrAuthenticationToken])(implicit personalIncomeService: PersonalIncomeService): OngoingStubbing[Future[Option[TcrAuthenticationToken]]] = {
     when(personalIncomeService.authenticateRenewal(any[Nino](), any[RenewalReference]())(any[HeaderCarrier](), any[ExecutionContext]()))
       .thenReturn(response)
@@ -61,19 +53,11 @@ trait PersonalIncomeServiceStub extends UnitSpec {
     when(personalIncomeService.claimantClaims(any[Nino]())(any[HeaderCarrier](), any[ExecutionContext]())).thenReturn(response)
   }
 
-  def stubTaxCreditSummary(response: TaxCreditSummary)(implicit personalIncomeService: PersonalIncomeService): OngoingStubbing[Future[TaxCreditSummary]] = {
-    when(personalIncomeService.getTaxCreditSummary(any[Nino]())(any[HeaderCarrier](), any[ExecutionContext]())).thenReturn(response)
-  }
-
   class TestPersonalIncomeService(val ntcConnector: NtcConnector,
-                                  val taiConnector: TaiConnector,
-                                  val personalTaxSummaryConnector: PersonalTaxSummaryConnector,
-                                  val taxCreditBrokerConnector: TaxCreditsBrokerConnector,
                                   override val auditConnector: AuditConnector,
                                   configuration: Configuration,
                                   appContext: AppContext)
-    extends LivePersonalIncomeService(personalTaxSummaryConnector, taiConnector, ntcConnector,
-      taxCreditBrokerConnector, auditConnector, configuration, appContext) {
+    extends LivePersonalIncomeService(ntcConnector, auditConnector, configuration, appContext) {
     override lazy val config: List[RenewalStatusTransform] = List.empty
   }
 

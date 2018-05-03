@@ -17,6 +17,7 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import javax.inject.{Inject, Named, Singleton}
+import play.api.Play.current
 import play.api._
 import play.api.http.HeaderNames
 import play.api.libs.json.Json.toJson
@@ -37,13 +38,6 @@ import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
-
-object SummaryFormat extends Enumeration {
-  type SummaryFormat = Value
-  val Classic, Refresh = Value
-
-  def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
-}
 
 trait ErrorHandling {
   self: BaseController =>
@@ -238,7 +232,7 @@ class SandboxPersonalIncomeController @Inject()(override val authConnector: Auth
     override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
       TaxCreditsRenewalsState(submissionsState = "open")
   }
-  override def getConfigForClaimsMaxAge = Play.current.configuration.getLong(maxAgeClaimsConfig)
+  override def getConfigForClaimsMaxAge = current.configuration.getLong(maxAgeClaimsConfig)
 }
 
 @Singleton
@@ -247,5 +241,5 @@ class LivePersonalIncomeController @Inject()(override val authConnector: AuthCon
                                              override val logger: LoggerLike,
                                              override val service: LivePersonalIncomeService,
                                              override val taxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig) extends PersonalIncomeController {
-  override def getConfigForClaimsMaxAge = Play.current.configuration.getLong(maxAgeClaimsConfig)
+  override def getConfigForClaimsMaxAge = current.configuration.getLong(maxAgeClaimsConfig)
 }

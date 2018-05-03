@@ -84,8 +84,7 @@ class LivePersonalIncomeService @Inject()(ntcConnector: NtcConnector,
 
       ntcConnector.claimantClaims(TaxCreditsNino(nino.value)).map { claims =>
         claims.references.fold(Claims(None)) { items => {
-          val references = items.filter(a => claimMatch(a))
-            .map { claim =>
+          val references = items.filter(a => claimMatch(a)).map { claim =>
               Claim(claim.household.copy(householdCeasedDate = reformatDateAndLogErrors(claim.household.householdCeasedDate)),
                 Renewal(
                   reformatDateAndLogErrors(claim.renewal.awardStartDate),
@@ -93,9 +92,9 @@ class LivePersonalIncomeService @Inject()(ntcConnector: NtcConnector,
                   Some(resolveStatus(claim)),
                   reformatDateAndLogErrors(claim.renewal.renewalNoticeIssuedDate),
                   reformatDateAndLogErrors(claim.renewal.renewalNoticeFirstSpecifiedDate)))
-            }
-          Claims(Some(references))
-        }
+              }
+            Claims(Some(references))
+          }
         }
       }
     }

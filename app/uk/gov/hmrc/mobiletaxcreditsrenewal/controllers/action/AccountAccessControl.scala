@@ -17,7 +17,7 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action
 
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.Json.toJson
 import play.api.mvc.{ActionBuilder, Request, Result, Results}
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.domain.Nino
@@ -47,23 +47,23 @@ trait AccountAccessControl extends Results with Authorisation {
     }.recover {
       case ex: uk.gov.hmrc.http.Upstream4xxResponse =>
         Logger.info("Unauthorized! Failed to grant access since 4xx response!")
-        Unauthorized(Json.toJson(ErrorUnauthorizedMicroService))
+        Unauthorized(toJson(ErrorUnauthorizedMicroService))
 
       case ex: NinoNotFoundOnAccount =>
         Logger.info("Unauthorized! NINO not found on account!")
-        Unauthorized(Json.toJson(ErrorUnauthorizedNoNino))
+        Unauthorized(toJson(ErrorUnauthorizedNoNino))
 
       case ex: FailToMatchTaxIdOnAuth =>
         Logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
-        Status(ErrorUnauthorized.httpStatusCode)(Json.toJson(ErrorUnauthorized))
+        Status(ErrorUnauthorized.httpStatusCode)(toJson(ErrorUnauthorized))
 
       case ex: AccountWithLowCL =>
         Logger.info("Unauthorized! Account with low CL!")
-        Unauthorized(Json.toJson(ErrorUnauthorizedLowCL))
+        Unauthorized(toJson(ErrorUnauthorizedLowCL))
 
       case ex: AccountWithWeakCredStrength =>
         Logger.info("Unauthorized! Account with weak cred strength!")
-        Unauthorized(Json.toJson(ErrorUnauthorizedWeakCredStrength))
+        Unauthorized(toJson(ErrorUnauthorizedWeakCredStrength))
     }
   }
 }
@@ -77,7 +77,7 @@ trait AccessControl extends HeaderValidator with AccountAccessControl {
         if (requiresAuth) invokeAuthBlock(request, block, taxId)
         else block(request)
       }
-      else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(Json.toJson(ErrorAcceptHeaderInvalid)))
+      else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson(ErrorAcceptHeaderInvalid)))
     }
   }
 }

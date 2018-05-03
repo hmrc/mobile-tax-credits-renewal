@@ -54,10 +54,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bindConfigString("submission.endViewRenewalsDate", "microservice.services.ntc.submission.endViewRenewalsDate")
     bind(classOf[LoggerLike]).toInstance(Logger)
 
-    bind(classOf[String]).annotatedWith(named("tai")).toInstance(baseUrl("tai"))
     bind(classOf[String]).annotatedWith(named("ntc")).toInstance(baseUrl("ntc"))
-    bind(classOf[String]).annotatedWith(named("tax-credits-broker")).toInstance(baseUrl("tax-credits-broker"))
-    bind(classOf[String]).annotatedWith(named("personal-tax-summary")).toInstance(baseUrl("personal-tax-summary"))
   }
 
   @Provides

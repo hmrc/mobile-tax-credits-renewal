@@ -18,9 +18,11 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 
 import com.google.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent}
 import uk.gov.hmrc.api.controllers.HeaderValidator
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.play.HeaderCarrierConverter
+import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 import uk.gov.hmrc.time.DateTimeUtils
 
@@ -34,9 +36,9 @@ trait ServiceStateController extends BaseController with HeaderValidator with Er
 
   val taxCreditsSubmissionControlConfig: TaxCreditsControl
 
-  final def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None) = validateAccept(acceptHeaderValidationRules).async {
+  final def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent] = validateAccept(acceptHeaderValidationRules).async {
     implicit request =>
-      implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       errorWrapper(
         Future {
           taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
@@ -49,7 +51,7 @@ trait ServiceStateController extends BaseController with HeaderValidator with Er
 @Singleton
 class SandboxServiceStateController() extends ServiceStateController with DateTimeUtils {
 
-  override val taxCreditsSubmissionControlConfig = new TaxCreditsControl {
+  override val taxCreditsSubmissionControlConfig: TaxCreditsControl  = new TaxCreditsControl {
     override def toTaxCreditsSubmissions = new TaxCreditsSubmissions(false, true, true)
 
     override def toTaxCreditsRenewalsState = new TaxCreditsRenewalsState("open")

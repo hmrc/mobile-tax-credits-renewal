@@ -19,7 +19,6 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.tasks
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.google.inject.AbstractModule
-import it.utils.WiremockServiceLocatorSugar
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.time.{Millis, Span}
@@ -34,6 +33,7 @@ import uk.gov.hmrc.http.{CorePost, HeaderCarrier}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 import uk.gov.hmrc.play.bootstrap.config.AppName
 import uk.gov.hmrc.play.http.ws.WSHttp
+import utils.WiremockServiceLocatorSugar
 
 import scala.concurrent.Future
 
@@ -60,7 +60,7 @@ class PlatformIntegrationSpec extends BaseISpec with Eventually with WiremockSer
   }
 
   trait Setup {
-    val documentationController = DocumentationController
+    val documentationController: DocumentationController = DocumentationController
     val request = FakeRequest()
 
     implicit val system: ActorSystem = ActorSystem()

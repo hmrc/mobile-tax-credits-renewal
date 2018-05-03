@@ -23,10 +23,10 @@ trait Auditable {
 
   def dataForAudit(tagOverrides : Map[String,String] = auditableTagNameOverrides): Map[String, String] =  {
 
-    this.getClass.getDeclaredFields.filterNot(f => excludedAuditFields.exists(exclude =>  exclude == f.getName)).map {
+    this.getClass.getDeclaredFields.filterNot(f => excludedAuditFields.contains(f.getName)).map {
       field =>
         field.setAccessible(true)
-        (getAuditableFieldName(field.getName, tagOverrides) ->  fieldValueMapper(field.get(this)))
+        getAuditableFieldName(field.getName, tagOverrides) ->  fieldValueMapper(field.get(this))
     }.toMap
   }
 
@@ -49,6 +49,6 @@ trait Auditable {
 
 case class ExplicitTypeOfChange(txmAuditType: String) extends Auditable {
   override def readableFormat: String = {
-    s"Type of Change=${txmAuditType}"
+    s"Type of Change=$txmAuditType"
   }
 }

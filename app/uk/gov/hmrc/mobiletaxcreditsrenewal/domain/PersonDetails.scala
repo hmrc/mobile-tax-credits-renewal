@@ -21,7 +21,7 @@ import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
 
 object Person {
-  implicit val formats = Json.format[Person]
+  implicit val formats: OFormat[Person] = Json.format[Person]
 }
 
 case class Person(
@@ -36,13 +36,13 @@ case class Person(
                    nino: Option[Nino]
                  ) {
 
-  lazy val shortName = for (f <- firstName; l <- lastName) yield List(f, l).mkString(" ")
-  lazy val fullName = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
+  lazy val shortName: Option[String] = for (f <- firstName; l <- lastName) yield List(f, l).mkString(" ")
+  lazy val fullName: String = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
 }
 
 
 object Address {
-  implicit val formats = Json.format[Address]
+  implicit val formats: OFormat[Address] = Json.format[Address]
 }
 
 case class Address(
@@ -54,7 +54,7 @@ case class Address(
                     startDate: Option[DateTime],
                     `type`: Option[String]
                   ) {
-  lazy val lines = List(line1, line2, line3, line4).flatten
+  lazy val lines: List[String] = List(line1, line2, line3, line4).flatten
 }
 
 
@@ -66,5 +66,5 @@ case class PersonDetails(
                         )
 
 object PersonDetails {
-  implicit val formats = Json.format[PersonDetails]
+  implicit val formats: OFormat[PersonDetails] = Json.format[PersonDetails]
 }

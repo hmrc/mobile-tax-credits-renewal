@@ -23,7 +23,7 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class RenewalStatusSpec extends UnitSpec with WithFakeApplication with MockitoSugar {
 
-  val renewalStatus = new RenewalStatus {
+  val renewalStatus: RenewalStatus  = new RenewalStatus {
     val appContext: AppContext = mock[AppContext]
     override lazy val config: List[RenewalStatusTransform] = List(
       RenewalStatusTransform("NOT_SUBMITTED", Seq("DISREGARD", "UNKNOWN")),

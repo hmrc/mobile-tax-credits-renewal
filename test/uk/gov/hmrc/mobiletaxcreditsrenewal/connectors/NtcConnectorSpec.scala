@@ -19,6 +19,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 import com.typesafe.config.Config
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
+import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.{Configuration, Environment}
 import uk.gov.hmrc.circuitbreaker.CircuitBreakerConfig
@@ -120,13 +121,13 @@ class NtcConnectorSpec
         |}""".stripMargin
 
     val claims200Success: JsValue = Json.parse(claimsJson)
-    lazy val http200ClaimsResponse = Future.successful(HttpResponse(200, Some(claims200Success)))
-    lazy val http500Response = Future.failed(Upstream5xxResponse("Error", 500, 500))
-    lazy val http400Response = Future.failed(new BadRequestException("bad request"))
-    lazy val http404Response = Future.successful(HttpResponse(404))
-    lazy val http204Response = Future.successful(HttpResponse(204))
-    lazy val http200AuthenticateResponse = Future.successful(HttpResponse(200, Some(Json.toJson(tcrAuthToken))))
-    lazy val http200ClaimantDetailsResponse = Future.successful(HttpResponse(200, Some(Json.toJson(claimentDetails))))
+    lazy val http200ClaimsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(claims200Success)))
+    lazy val http500Response: Future[Nothing] = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http400Response: Future[Nothing] = Future.failed(new BadRequestException("bad request"))
+    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
+    lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
+    lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
+    lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(claimentDetails))))
     lazy val response: Future[HttpResponse] = http400Response
 
 
@@ -160,33 +161,33 @@ class NtcConnectorSpec
   "authenticate tcsConnector" should {
 
     "return None when 404 returned" in new Setup {
-      override lazy val response = http404Response
+      override lazy val response: Future[AnyRef with HttpResponse] = http404Response
       val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       result shouldBe None
     }
 
     "return None when 400 returned" in new Setup {
-      override lazy val response = http400Response
+      override lazy val response: Future[Nothing] = http400Response
       val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       result shouldBe None
     }
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       intercept[Upstream5xxResponse] {
         await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       }
     }
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response = http200AuthenticateResponse
+      override lazy val response: Future[AnyRef with HttpResponse] = http200AuthenticateResponse
       val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
 
       result.get shouldBe tcrAuthToken
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.authenticateRenewal(taxCreditNino, renewalReference))
     }
   }
@@ -194,28 +195,28 @@ class NtcConnectorSpec
   "claims tcsConnector" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
-      override lazy val response = http400Response
+      override lazy val response: Future[Nothing] = http400Response
       intercept[BadRequestException] {
         await(connector.claimantClaims(taxCreditNino))
       }
     }
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       intercept[Upstream5xxResponse] {
         await(connector.claimantClaims(taxCreditNino))
       }
     }
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response = http200ClaimsResponse
-      val result = await(connector.claimantClaims(taxCreditNino))
+      override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
+      val result: Claims = await(connector.claimantClaims(taxCreditNino))
 
-      result shouldBe Json.toJson(claims200Success).as[Claims]
+      result shouldBe toJson(claims200Success).as[Claims]
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.claimantClaims(taxCreditNino))
     }
   }
@@ -223,28 +224,28 @@ class NtcConnectorSpec
   "claimantDetails tcsConnector" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
-      override lazy val response = http400Response
+      override lazy val response: Future[Nothing] = http400Response
       intercept[BadRequestException] {
         await(connector.claimantDetails(taxCreditNino))
       }
     }
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       intercept[Upstream5xxResponse] {
         await(connector.claimantDetails(taxCreditNino))
       }
     }
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response = http200ClaimantDetailsResponse
-      val result = await(connector.claimantDetails(taxCreditNino))
+      override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimantDetailsResponse
+      val result: ClaimantDetails = await(connector.claimantDetails(taxCreditNino))
 
       result shouldBe claimentDetails
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.claimantDetails(taxCreditNino))
     }
   }
@@ -252,27 +253,27 @@ class NtcConnectorSpec
   "submitRenewal tcsConnector" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
-      override lazy val response = http400Response
+      override lazy val response: Future[Nothing] = http400Response
       intercept[BadRequestException] {
         await(connector.submitRenewal(taxCreditNino, renewal))
       }
     }
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       intercept[Upstream5xxResponse] {
         await(connector.submitRenewal(taxCreditNino, renewal))
       }
     }
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response = http204Response
-      val result = await(connector.submitRenewal(taxCreditNino, renewal))
+      override lazy val response: Future[AnyRef with HttpResponse] = http204Response
+      val result: Response = await(connector.submitRenewal(taxCreditNino, renewal))
       result.status shouldBe 204
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response = http500Response
+      override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.submitRenewal(taxCreditNino, renewal))
     }
 

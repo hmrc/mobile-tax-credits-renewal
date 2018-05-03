@@ -34,7 +34,7 @@ class ServiceLocatorConnectorSpec extends UnitSpec with MockitoSugar with ScalaF
     implicit val hc: HeaderCarrier = HeaderCarrier()
     val serviceLocatorException = new RuntimeException
 
-    lazy val connector = new ServiceLocatorConnector {
+    lazy val connector: ServiceLocatorConnector = new ServiceLocatorConnector {
       override lazy val http: CorePost = mock[CorePost]
       override lazy val appUrl: String = "http://api-microservice-template.service"
       override lazy val appName: String = "api-microservice-template"

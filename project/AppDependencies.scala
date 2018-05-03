@@ -33,7 +33,7 @@ private object AppDependencies {
   }
 
   object Test {
-    def apply() = new TestDependencies {
+    def apply(): Seq[ModuleID] = new TestDependencies {
       override lazy val test = Seq(
         "uk.gov.hmrc" %% "hmrctest" % hmrctestVersion % scope,
         "org.mockito" % "mockito-core" % mockitoVersion % scope
@@ -42,7 +42,7 @@ private object AppDependencies {
   }
 
   object IntegrationTest {
-    def apply() = new TestDependencies {
+    def apply(): Seq[ModuleID] = new TestDependencies {
 
       override lazy val scope: String = "it"
 
@@ -58,5 +58,5 @@ private object AppDependencies {
     }.test
   }
 
-  def apply() = compile ++ Test() ++ IntegrationTest()
+  def apply(): Seq[ModuleID] = compile ++ Test() ++ IntegrationTest()
 }

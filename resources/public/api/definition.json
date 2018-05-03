@@ -7,8 +7,8 @@
     }
   ],
   "api":{
-    "name":"Personal Income",
-    "description":"The API is used to retrieve tax-summary information.",
+    "name":"Mobile Tax Credits Renewal",
+    "description":"The API is used fort tax credits renewal services.",
     "context":"mobile-tax-credits-renewal",
     "requiresTrust": true,
     "versions":[

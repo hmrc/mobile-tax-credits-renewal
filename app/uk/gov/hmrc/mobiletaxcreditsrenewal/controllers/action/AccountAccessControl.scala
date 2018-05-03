@@ -21,8 +21,9 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.{ActionBuilder, Request, Result, Results}
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers._
-import uk.gov.hmrc.play.HeaderCarrierConverter
+import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 import scala.concurrent.Future
 
@@ -38,30 +39,29 @@ trait AccountAccessControl extends Results with Authorisation {
 
   lazy val requiresAuth: Boolean = true
 
-  def invokeAuthBlock[A](request: Request[A], block: (Request[A]) => Future[Result], taxId: Option[Nino]) = {
-    implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
+  def invokeAuthBlock[A](request: Request[A], block: (Request[A]) => Future[Result], taxId: Option[Nino]): Future[Result] = {
+    implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-
-    grantAccess(taxId.getOrElse(Nino(""))).flatMap { access ⇒
+    grantAccess(taxId.getOrElse(Nino(""))).flatMap { _ ⇒
       block(request)
     }.recover {
-      case ex: uk.gov.hmrc.http.Upstream4xxResponse =>
+      case _: uk.gov.hmrc.http.Upstream4xxResponse =>
         Logger.info("Unauthorized! Failed to grant access since 4xx response!")
         Unauthorized(toJson(ErrorUnauthorizedMicroService))
 
-      case ex: NinoNotFoundOnAccount =>
+      case _: NinoNotFoundOnAccount =>
         Logger.info("Unauthorized! NINO not found on account!")
         Unauthorized(toJson(ErrorUnauthorizedNoNino))
 
-      case ex: FailToMatchTaxIdOnAuth =>
+      case _: FailToMatchTaxIdOnAuth =>
         Logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
         Status(ErrorUnauthorized.httpStatusCode)(toJson(ErrorUnauthorized))
 
-      case ex: AccountWithLowCL =>
+      case _: AccountWithLowCL =>
         Logger.info("Unauthorized! Account with low CL!")
         Unauthorized(toJson(ErrorUnauthorizedLowCL))
 
-      case ex: AccountWithWeakCredStrength =>
+      case _: AccountWithWeakCredStrength =>
         Logger.info("Unauthorized! Account with weak cred strength!")
         Unauthorized(toJson(ErrorUnauthorizedWeakCredStrength))
     }
@@ -70,9 +70,9 @@ trait AccountAccessControl extends Results with Authorisation {
 
 trait AccessControl extends HeaderValidator with AccountAccessControl {
 
-  def validateAcceptWithAuth(rules: Option[String] ⇒ Boolean, taxId: Option[Nino]) = new ActionBuilder[Request] {
+  def validateAcceptWithAuth(rules: Option[String] ⇒ Boolean, taxId: Option[Nino]): ActionBuilder[Request] = new ActionBuilder[Request] {
 
-    def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
+    def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]): Future[Result] = {
       if (rules(request.headers.get("Accept"))) {
         if (requiresAuth) invokeAuthBlock(request, block, taxId)
         else block(request)

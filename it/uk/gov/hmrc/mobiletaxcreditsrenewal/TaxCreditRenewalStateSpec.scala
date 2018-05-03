@@ -3,7 +3,9 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal
 import com.github.tomakehurst.wiremock.client.WireMock.{postRequestedFor, urlEqualTo, verify}
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
+import org.scalatest.Assertion
 import play.api.libs.json.Json.toJson
+import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{IncomeDetails, RenewalData, TcrRenewal}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthStub.grantAccess
@@ -13,18 +15,18 @@ import uk.gov.hmrc.time.DateTimeUtils
 
 class TaxCreditRenewalStateSpec extends BaseISpec{
   protected val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-  protected val renewal = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, false)
+  protected val renewal = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
 
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
 
-  protected val submissionStateEnabledRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").withHeaders(acceptJsonHeader)
+  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").withHeaders(acceptJsonHeader)
 
   protected def submissionShuttered = false
-  protected def submissionStartDate = now.minusDays(1).toString
-  protected def submissionEndDate = now.plusDays(1).toString
-  protected def endViewRenewalsDate = now.plusDays(2).toString
+  protected def submissionStartDate: String = now.minusDays(1).toString
+  protected def submissionEndDate: String = now.plusDays(1).toString
+  protected def endViewRenewalsDate: String = now.plusDays(2).toString
 
-  override def config = {
+  override def config: Map[String, Any] = {
      super.config ++
      Map(
        "microservice.services.ntc.submission.submissionShuttered" -> submissionShuttered,
@@ -33,7 +35,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec{
        "microservice.services.ntc.submission.endViewRenewalsDate" -> endViewRenewalsDate)
    }
 
-  protected def submitTaxCreditRenewal = {
+  protected def submitTaxCreditRenewal: Assertion = {
     def request(nino: Nino) = wsUrl(s"/income/${nino.value}/tax-credits/renewal").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     grantAccess(nino1.value)
@@ -43,7 +45,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec{
     response.status shouldBe 200
   }
 
-  protected def verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint = {
+  protected def verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint(): Unit = {
     submitTaxCreditRenewal
     verify(0, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
   }
@@ -70,13 +72,13 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
 
 
 class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
-  override def submissionStartDate = now.plusDays(1).toString
-  override def submissionEndDate = now.plusDays(2).toString
-  override def endViewRenewalsDate = now.plusDays(3).toString
+  override def submissionStartDate: String = now.plusDays(1).toString
+  override def submissionEndDate: String = now.plusDays(2).toString
+  override def endViewRenewalsDate: String = now.plusDays(3).toString
 
   "POST /income/:nino/tax-credits/renewal" should {
     "return OK but not renew when submissions are closed" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint
+      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 
@@ -95,7 +97,7 @@ class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
 
   "POST /income/:nino/tax-credits/renewal" should {
     "return OK but not renew when submissions are shuttered" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint
+      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 
@@ -110,13 +112,13 @@ class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
 
 
 class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalStateSpec{
-  override def submissionStartDate = now.minusDays(2).toString
-  override def submissionEndDate = now.minusDays(1).toString
-  override def endViewRenewalsDate = now.plusDays(1).toString
+  override def submissionStartDate: String = now.minusDays(2).toString
+  override def submissionEndDate: String = now.minusDays(1).toString
+  override def endViewRenewalsDate: String = now.plusDays(1).toString
 
   "POST /income/:nino/tax-credits/renewal" should {
     "return OK but not renew when submissions are view-only" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint
+      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 

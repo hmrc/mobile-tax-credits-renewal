@@ -21,8 +21,8 @@ import play.api.Play.current
 import play.api._
 import play.api.http.HeaderNames
 import play.api.libs.json.Json.toJson
-import play.api.libs.json.{JsError, Json}
-import play.api.mvc.{BodyParsers, Request, Result}
+import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.mvc._
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
@@ -42,11 +42,11 @@ import scala.concurrent.{ExecutionContext, Future}
 trait ErrorHandling {
   self: BaseController =>
 
-  def notFound = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
+  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
-  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier) = {
+  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
     func.recover {
-      case ex: NotFoundException => notFound
+      case _: NotFoundException => notFound
 
       case ex: ServiceUnavailableException =>
         // The hod can return a 503 HTTP status which is translated to a 429 response code.
@@ -71,10 +71,10 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
     result.withHeaders(HeaderNames.CACHE_CONTROL -> s"max-age=$maxAge")
   }
 
-  final def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None) =
+  final def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
-        implicit val hc = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
         errorWrapper(
           service.authenticateRenewal(nino, renewalReference).map {
             case Some(authToken) => Ok(toJson(authToken))
@@ -89,10 +89,10 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
     }
   }
 
-  final def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None) =
+  final def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
-        implicit val hc = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
         errorWrapper(validateTcrAuthHeader(claims) {
           implicit hc =>
@@ -106,14 +106,14 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
         })
   }
 
-  final def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None) =
+  final def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
-        implicit val hc = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
         errorWrapper({
           def fullClaimantDetails(claim: Claim): Future[Claim] = {
-            def getClaimantDetail(token:TcrAuthenticationToken, hc: HeaderCarrier) = {
+            def getClaimantDetail(token:TcrAuthenticationToken, hc: HeaderCarrier): Future[Claim] = {
               implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
 
               service.claimantDetails(nino).map { claimantDetails =>
@@ -127,10 +127,9 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
               if (maybeToken.nonEmpty) getClaimantDetail(maybeToken.get,hc)
               else  Future successful claim
             }.recover{
-              case e: Exception => {
+              case e: Exception =>
                 logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
                 claim
-              }
             }
           }
 
@@ -143,7 +142,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
               val barcodeReference = claim.household.barcodeReference
 
               if (barcodeReference.equals("000000000000000")) {
-                logger.warn(s"Invalid barcode reference ${barcodeReference} for journeyId $journeyId applicationId ${claim.household.applicationID}")
+                logger.warn(s"Invalid barcode reference $barcodeReference for journeyId $journeyId applicationId ${claim.household.applicationID}")
                 Future successful claim
               } else fullClaimantDetails(claim)
             }
@@ -155,10 +154,10 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
         })
   }
 
-  final def submitRenewal(nino: Nino, journeyId: Option[String] = None) =
+  final def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(BodyParsers.parse.json) {
       implicit request =>
-        implicit val hc = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
         val enabled = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState.submissionsState
 
@@ -175,18 +174,16 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
                   Future.successful(Ok)
                 } else {
                   service.submitRenewal(nino, renewal).map {
-                    case Error(status) => {
+                    case Error(status) =>
                       logger.warn(s"Tax credit renewal submission failed with status $status for journeyId $journeyId")
                       Status(status)(toJson(ErrorwithNtcRenewal))
-                    } case _ => {
+                    case _ =>
                       logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
                       Ok
-                    }
                   }.recover{
-                    case e: Exception => {
+                    case e: Exception =>
                       logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
                       throw e
-                    }
                   }
                 }
             })
@@ -198,14 +195,14 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
 
     (request.headers.get(tcrAuthToken), mode) match {
 
-      case (None , Some(value)) => func(hc)
+      case (None , Some(_)) => func(hc)
 
       case (Some(token), None) => func(hc.copy(extraHeaders = Seq(tcrAuthToken -> token)))
 
       case _ =>
         val default: ErrorResponse = ErrorNoAuthToken
         val authTokenShouldNotBeSupplied = ErrorAuthTokenSupplied
-        val response = mode.fold(default){ found => authTokenShouldNotBeSupplied}
+        val response = mode.fold(default){ _ => authTokenShouldNotBeSupplied}
         logger.warn("Either tcrAuthToken must be supplied as header or 'claims' as query param.")
         Future.successful(Forbidden(toJson(response)))
     }
@@ -225,14 +222,14 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(override val authConnec
                                                          @Named("controllers.confidenceLevel") override val confLevel: Int,
                                                          override val logger: LoggerLike) extends MobileTaxCreditsRenewalController {
   override lazy val requiresAuth: Boolean = false
-  override val service = SandboxMobileTaxCreditsRenewalService
+  override val service: MobileTaxCreditsRenewalService = SandboxMobileTaxCreditsRenewalService
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
     override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(false, true, true )
 
     override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
       TaxCreditsRenewalsState(submissionsState = "open")
   }
-  override def getConfigForClaimsMaxAge = current.configuration.getLong(maxAgeClaimsConfig)
+  override def getConfigForClaimsMaxAge: Option[Long] = current.configuration.getLong(maxAgeClaimsConfig)
 }
 
 @Singleton
@@ -241,5 +238,5 @@ class LiveMobileTaxCreditsRenewalController @Inject()(override val authConnector
                                                       override val logger: LoggerLike,
                                                       override val service: LiveMobileTaxCreditsRenewalService,
                                                       override val taxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig) extends MobileTaxCreditsRenewalController {
-  override def getConfigForClaimsMaxAge = current.configuration.getLong(maxAgeClaimsConfig)
+  override def getConfigForClaimsMaxAge: Option[Long] = current.configuration.getLong(maxAgeClaimsConfig)
 }

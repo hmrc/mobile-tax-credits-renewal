@@ -35,7 +35,7 @@ object TaxCreditsBrokerStub {
     stubFor(get(urlPathEqualTo(s"/tcs/${nino.value}/children")).willReturn(
       aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(childrenJson)))
 
-  def partnerJson(nino:Nino) =
+  def partnerJson(nino:Nino): String =
     s"""{
         "forename": "Frederick",
         "otherForenames": "Tarquin",
@@ -53,7 +53,7 @@ object TaxCreditsBrokerStub {
     stubFor(get(urlPathEqualTo(s"/tcs/${climantsNino.value}/partner-details")).willReturn(
       aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(partnerJson(partnersNino))))
 
-  val paymentSummaryJson =
+  val paymentSummaryJson: String =
     """
       |{
       |    "workingTaxCredit": {

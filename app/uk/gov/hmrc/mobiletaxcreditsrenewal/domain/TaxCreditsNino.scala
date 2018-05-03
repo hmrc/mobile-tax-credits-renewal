@@ -22,7 +22,7 @@ import uk.gov.hmrc.domain.{SimpleName, SimpleObjectReads, SimpleObjectWrites, Ta
 // Tax Credits Service allows certain Nino formats (e.g. NONOs) which are not permitted by standard uk.gov.hmrc.domain.Nino validation
 case class TaxCreditsNino(taxCreditsNino: String) extends TaxIdentifier with SimpleName {
   require(TaxCreditsNino.isValid(taxCreditsNino), s"$taxCreditsNino is not a valid taxCreditsNino.")
-  override lazy val toString = taxCreditsNino
+  override lazy val toString: String = taxCreditsNino
 
   def value: String = taxCreditsNino
 
@@ -37,5 +37,5 @@ object TaxCreditsNino {
 
   private val validTaxCreditsNinoFormat = "^[A-Za-z]{2}( )?([0-9]{2} ?){3}[A-Da-d]{0,1}$"
 
-  def isValid(taxCreditsNino: String): Boolean = taxCreditsNino != null && (taxCreditsNino.matches(validTaxCreditsNinoFormat))
+  def isValid(taxCreditsNino: String): Boolean = taxCreditsNino != null && taxCreditsNino.matches(validTaxCreditsNinoFormat)
 }

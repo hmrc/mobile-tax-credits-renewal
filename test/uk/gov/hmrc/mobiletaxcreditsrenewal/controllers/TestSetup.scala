@@ -107,7 +107,7 @@ trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with
   def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
     new String(Base64.encode(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino) =
+  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino): FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   def buildClaims(claims: Claims): Claims = {

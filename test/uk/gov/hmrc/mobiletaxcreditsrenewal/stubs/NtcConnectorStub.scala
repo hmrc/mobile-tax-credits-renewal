@@ -45,6 +45,6 @@ trait NtcConnectorStub extends UnitSpec {
   }
 
   def stubSubmitRenewalsException(e: Exception)(implicit ntcConnector: NtcConnector): OngoingStubbing[Future[Response]] = {
-    when(ntcConnector.submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())).thenReturn(Future failed (e))
+    when(ntcConnector.submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())).thenReturn(Future failed e)
   }
 }

@@ -39,10 +39,10 @@ trait Authorisation extends AuthorisedFunctions {
   def grantAccess(requestedNino: Nino)(implicit hc: HeaderCarrier): Future[Authority] = {
     authorised(Enrolment("HMRC-NI", Seq(EnrolmentIdentifier("NINO", requestedNino.value)), "Activated", None))
       .retrieve(nino and confidenceLevel) {
-        case Some(nino) ~ confidenceLevel =>
-          if (nino.isEmpty) throw ninoNotFoundOnAccount
-          if (!nino.equals(requestedNino.nino)) throw failedToMatchNino
-          if (confLevel > confidenceLevel.level) throw lowConfidenceLevel
+        case Some(foundNino) ~ foundConfidenceLevel =>
+          if (foundNino.isEmpty) throw ninoNotFoundOnAccount
+          if (!foundNino.equals(requestedNino.nino)) throw failedToMatchNino
+          if (confLevel > foundConfidenceLevel.level) throw lowConfidenceLevel
           Future(Authority(requestedNino))
         case None ~ _ =>
           throw ninoNotFoundOnAccount

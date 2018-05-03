@@ -1,7 +1,7 @@
 mobile-tax-credits-renewal
 =============================================
 
-[![Build Status](https://travis-ci.org/hmrc/mobile-tax-credits-renewal.svg?branch=master)](https://travis-ci.org/hmrc/mobile-tax-credits-renewal) [ ![Download](https://api.bintray.com/packages/hmrc/releases/mobile-tax-credits-renewal/images/download.svg) ](https://bintray.com/hmrc/releases/mobile-tax-credits-renewal/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/hmrc/releases/mobile-tax-credits-renewal/images/download.svg) ](https://bintray.com/hmrc/releases/mobile-tax-credits-renewal/_latestVersion)
 
 An API designed for mobile device use which provides services pertaining to tax credits renewal.
 

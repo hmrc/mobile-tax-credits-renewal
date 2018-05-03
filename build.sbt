@@ -3,7 +3,7 @@ import play.sbt.routes.RoutesKeys._
 import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, _}
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
 
-name := "mobile-tax-credits-renewa"
+name := "mobile-tax-credits-renewal"
 
 lazy val root = (project in file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)

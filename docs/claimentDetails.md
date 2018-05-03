@@ -38,7 +38,7 @@ Return Claimant Details object
   * **Code:** 200 <br />
     **Content:**
 
-        [Source...](Please see https://github.com/hmrc/mobile-tax-credits-renewa/blob/master/app/uk/gov/hmrc/apigateway/personalincome/domain/Renewals.scala#L55)
+        [Source...](Please see https://github.com/hmrc/mobile-tax-credits-renewal/blob/master/app/uk/gov/hmrc/apigateway/personalincome/domain/Renewals.scala#L55)
 
 If 'claims' query parameter is not supplied as a query parameter then a single response will be returned based on the barcode reference supplied in the tcrAuthToken.
 

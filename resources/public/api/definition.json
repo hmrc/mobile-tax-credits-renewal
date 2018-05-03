@@ -1,7 +1,7 @@
 {
   "scopes":[
     {
-      "key":"read:mobile-tax-credits-renewa",
+      "key":"read:mobile-tax-credits-renewal",
       "name":"Execute tax-summary call",
       "description":"Retrieve the tax-summary for a specific NINO and year"
     }
@@ -9,7 +9,7 @@
   "api":{
     "name":"Personal Income",
     "description":"The API is used to retrieve tax-summary information.",
-    "context":"mobile-tax-credits-renewa",
+    "context":"mobile-tax-credits-renewal",
     "requiresTrust": true,
     "versions":[
       {

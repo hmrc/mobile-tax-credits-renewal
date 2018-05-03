@@ -24,7 +24,6 @@ import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.ConfidenceLevel._
 import uk.gov.hmrc.auth.core.syntax.retrieved._
@@ -52,10 +51,6 @@ class TestPersonalIncomeController(val authConnector: AuthConnector,
   }
 
   override def getConfigForClaimsMaxAge: Option[Long] = Some(1800)
-}
-
-class TestSummarySpec extends TestSetup with WithFakeApplication {
-
 }
 
 class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeApplication {

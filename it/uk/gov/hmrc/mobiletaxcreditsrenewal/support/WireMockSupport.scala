@@ -19,7 +19,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.support
 import java.net.URL
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.{configureFor, reset}
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
@@ -42,7 +42,7 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    WireMock.configureFor(wireMockHost, wireMockPort)
+    configureFor(wireMockHost, wireMockPort)
     wireMockServer.start()
   }
 
@@ -53,6 +53,6 @@ trait WireMockSupport extends BeforeAndAfterAll with BeforeAndAfterEach {
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
-    WireMock.reset()
+    reset()
   }
 }

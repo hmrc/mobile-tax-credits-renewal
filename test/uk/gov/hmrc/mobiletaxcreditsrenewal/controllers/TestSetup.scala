@@ -18,7 +18,9 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import com.ning.http.util.Base64
 import org.scalatest.mockito.MockitoSugar
-import play.api.libs.json.{JsValue, Json}
+import org.slf4j
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json.parse
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.{Configuration, Logger, LoggerLike}
@@ -29,21 +31,21 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.config.AppContext
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LivePersonalIncomeService
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, NtcConnectorStub, PersonalIncomeServiceStub, TaxCreditBrokerConnectorStub}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, NtcConnectorStub, PersonalIncomeServiceStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class TestLoggerLike extends LoggerLike {
-  override val logger: org.slf4j.Logger = Logger("test").logger
+  override val logger: slf4j.Logger = Logger("test").logger
 
   var infoMessages: Seq[String] = Seq()
   var warnMessages: Seq[String] = Seq()
 
-  override def info(message: => scala.Predef.String): scala.Unit = {
+  override def info(message: => String): scala.Unit = {
     infoMessages = infoMessages ++ Seq(message)
   }
 
-  override def warn(message: => scala.Predef.String): scala.Unit = {
+  override def warn(message: => String): scala.Unit = {
     warnMessages = warnMessages ++ Seq(message)
   }
 
@@ -63,7 +65,7 @@ class TestLoggerLike extends LoggerLike {
 
 
 trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with PersonalIncomeServiceStub
-  with AuthorisationStub with TaxCreditBrokerConnectorStub with NtcConnectorStub {
+  with AuthorisationStub with NtcConnectorStub {
 
   trait mocks {
     implicit val hc: HeaderCarrier = HeaderCarrier()
@@ -78,8 +80,9 @@ trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with
     implicit val logger: TestLoggerLike = new TestLoggerLike()
   }
 
-  val noNinoFoundOnAccount: JsValue = Json.parse("""{"code":"UNAUTHORIZED","message":"NINO does not exist on account"}""")
-  val lowConfidenceLevelError: JsValue = Json.parse("""{"code":"LOW_CONFIDENCE_LEVEL","message":"Confidence Level on account does not allow access"}""")
+  val noNinoFoundOnAccount: JsValue = parse("""{"code":"UNAUTHORIZED","message":"NINO does not exist on account"}""")
+  val lowConfidenceLevelError: JsValue =
+    parse("""{"code":"LOW_CONFIDENCE_LEVEL","message":"Confidence Level on account does not allow access"}""")
 
   val nino = "CS700100A"
   val incorrectNino = Nino("SC100700A")
@@ -101,17 +104,19 @@ trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with
 
   def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
-  def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String = new String(Base64.encode(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
+  def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
+    new String(Base64.encode(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino) = FakeRequest().withHeaders(
-    acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
+  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino) =
+    FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   def buildClaims(claims: Claims): Claims = {
     val applicantNotFound: Option[Applicant] = None
     val updated = claims.references.get.map { item =>
       val applicant1 = item.household.applicant1
       val newApp = applicant1.copy(nino = "AM242413B")
-      val secondApp: Option[Applicant] = item.household.applicant2.fold(applicantNotFound) { found => Some(found.copy(nino = "AM242413B")) }
+      val secondApp: Option[Applicant] =
+        item.household.applicant2.fold(applicantNotFound) { found => Some(found.copy(nino = "AM242413B")) }
       val newHousehold = item.household.copy(applicant1 = newApp, applicant2 = secondApp)
       item.copy(household = newHousehold, renewal = item.renewal)
     }

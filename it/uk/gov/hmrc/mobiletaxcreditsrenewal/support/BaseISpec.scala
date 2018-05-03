@@ -46,10 +46,7 @@ class BaseISpec extends UnitSpec with Matchers with OptionValues with WsScalaTes
     "microservice.services.auth.port" -> wireMockPort,
     "microservice.services.datastream.port" -> wireMockPort,
     "microservice.services.ntc.port" -> wireMockPort,
-    "microservice.services.personal-tax-summary.port" -> wireMockPort,
-    "microservice.services.service-locator.port" -> wireMockPort,
-    "microservice.services.tai.port" -> wireMockPort,
-    "microservice.services.tax-credits-broker.port" -> wireMockPort)
+    "microservice.services.service-locator.port" -> wireMockPort)
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder().configure(config)
 

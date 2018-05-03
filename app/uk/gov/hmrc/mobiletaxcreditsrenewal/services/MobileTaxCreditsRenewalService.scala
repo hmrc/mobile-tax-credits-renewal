@@ -33,7 +33,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait PersonalIncomeService {
+trait MobileTaxCreditsRenewalService {
   // Renewal specific - authenticateRenewal must be called first to retrieve the authToken before calling claimantDetails, submitRenewal.
   def authenticateRenewal(nino: Nino, tcrRenewalReference: RenewalReference)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Option[TcrAuthenticationToken]]
 
@@ -45,10 +45,10 @@ trait PersonalIncomeService {
 }
 
 @Singleton
-class LivePersonalIncomeService @Inject()(ntcConnector: NtcConnector,
-                                          val auditConnector: AuditConnector,
-                                          val appNameConfiguration: Configuration,
-                                          val appContext: AppContext) extends PersonalIncomeService with Auditor with RenewalStatus {
+class LiveMobileTaxCreditsRenewalService @Inject()(ntcConnector: NtcConnector,
+                                                   val auditConnector: AuditConnector,
+                                                   val appNameConfiguration: Configuration,
+                                                   val appContext: AppContext) extends MobileTaxCreditsRenewalService with Auditor with RenewalStatus {
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
 
   // Note: The TcrAuthenticationToken must be supplied to claimantDetails and submitRenewal.
@@ -135,7 +135,7 @@ trait RenewalStatus {
   }
 }
 
-object SandboxPersonalIncomeService extends PersonalIncomeService with FileResource {
+object SandboxMobileTaxCreditsRenewalService extends MobileTaxCreditsRenewalService with FileResource {
   private def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
   private def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =

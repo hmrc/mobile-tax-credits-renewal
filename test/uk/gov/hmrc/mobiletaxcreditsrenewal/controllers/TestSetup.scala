@@ -30,8 +30,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.AppContext
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LivePersonalIncomeService
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, NtcConnectorStub, PersonalIncomeServiceStub}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LiveMobileTaxCreditsRenewalService
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, NtcConnectorStub, ServiceStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -64,7 +64,7 @@ class TestLoggerLike extends LoggerLike {
 }
 
 
-trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with PersonalIncomeServiceStub
+trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with ServiceStub
   with AuthorisationStub with NtcConnectorStub {
 
   trait mocks {
@@ -72,7 +72,7 @@ trait TestSetup extends MockitoSugar with UnitSpec with WithFakeApplication with
     implicit val mockAuthConnector: AuthConnector = mock[AuthConnector]
     implicit val mockNtcConnector: NtcConnector = mock[NtcConnector]
     implicit val mockAuditConnector: AuditConnector = mock[AuditConnector]
-    implicit val mockLivePersonalIncomeService: LivePersonalIncomeService = mock[LivePersonalIncomeService]
+    implicit val mockService: LiveMobileTaxCreditsRenewalService = mock[LiveMobileTaxCreditsRenewalService]
     implicit val mockTaxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig = mock[TaxCreditsSubmissionControlConfig]
     implicit val mockConfiguration: Configuration = fakeApplication.injector.instanceOf[Configuration]
     implicit val mockAppContext: AppContext = mock[AppContext]

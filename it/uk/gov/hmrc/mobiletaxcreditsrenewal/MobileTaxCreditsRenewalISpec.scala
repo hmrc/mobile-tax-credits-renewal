@@ -26,7 +26,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthStub.grantAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 
-class PersonalIncomeISpec extends BaseISpec with FileResource {
+class MobileTaxCreditsRenewalISpec extends BaseISpec with FileResource {
   "GET /income/:nino/tax-credits/:renewalReference/auth" should {
     val url = wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").withHeaders(acceptJsonHeader)
 

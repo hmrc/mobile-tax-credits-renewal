@@ -11,7 +11,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub.renewalIsSuccessful
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 import uk.gov.hmrc.time.DateTimeUtils
 
-class PersonalIncomeTaxCreditRenewalSpec extends BaseISpec{
+class TaxCreditRenewalStateSpec extends BaseISpec{
   protected val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
   protected val renewal = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, false)
 
@@ -50,7 +50,7 @@ class PersonalIncomeTaxCreditRenewalSpec extends BaseISpec{
 }
 
 
-class TaxCreditRenewalOpenSpec extends PersonalIncomeTaxCreditRenewalSpec{
+class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
   "POST /income/:nino/tax-credits/renewal" should {
     "renew when submissions are enabled" in {
       renewalIsSuccessful(nino1, renewal)
@@ -69,7 +69,7 @@ class TaxCreditRenewalOpenSpec extends PersonalIncomeTaxCreditRenewalSpec{
 }
 
 
-class PersonalIncomeTaxCreditRenewalClosedSpec extends PersonalIncomeTaxCreditRenewalSpec{
+class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionStartDate = now.plusDays(1).toString
   override def submissionEndDate = now.plusDays(2).toString
   override def endViewRenewalsDate = now.plusDays(3).toString
@@ -90,7 +90,7 @@ class PersonalIncomeTaxCreditRenewalClosedSpec extends PersonalIncomeTaxCreditRe
 }
 
 
-class PersonalIncomeTaxCreditRenewalShutteredSpec extends PersonalIncomeTaxCreditRenewalSpec{
+class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionShuttered: Boolean = true
 
   "POST /income/:nino/tax-credits/renewal" should {
@@ -109,7 +109,7 @@ class PersonalIncomeTaxCreditRenewalShutteredSpec extends PersonalIncomeTaxCredi
 }
 
 
-class PersonalIncomeTaxCreditRenewalCheckStatusOnlyPeriodSpec extends PersonalIncomeTaxCreditRenewalSpec{
+class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionStartDate = now.minusDays(2).toString
   override def submissionEndDate = now.minusDays(1).toString
   override def endViewRenewalsDate = now.plusDays(1).toString

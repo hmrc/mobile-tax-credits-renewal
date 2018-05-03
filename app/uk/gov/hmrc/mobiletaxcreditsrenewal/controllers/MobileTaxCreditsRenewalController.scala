@@ -31,7 +31,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.Error
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.AccessControl
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LivePersonalIncomeService, PersonalIncomeService, SandboxPersonalIncomeService}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService, SandboxMobileTaxCreditsRenewalService}
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -61,9 +61,9 @@ trait ErrorHandling {
   }
 }
 
-trait PersonalIncomeController extends BaseController with AccessControl with ErrorHandling with ConfigLoad {
+trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ErrorHandling with ConfigLoad {
 
-  val service: PersonalIncomeService
+  val service: MobileTaxCreditsRenewalService
   val taxCreditsSubmissionControlConfig: TaxCreditsControl
   val logger: LoggerLike
 
@@ -221,11 +221,11 @@ trait ConfigLoad {
 }
 
 @Singleton
-class SandboxPersonalIncomeController @Inject()(override val authConnector: AuthConnector,
-                                                @Named("controllers.confidenceLevel") override val confLevel: Int,
-                                                override val logger: LoggerLike) extends PersonalIncomeController {
+class SandboxMobileTaxCreditsRenewalController @Inject()(override val authConnector: AuthConnector,
+                                                         @Named("controllers.confidenceLevel") override val confLevel: Int,
+                                                         override val logger: LoggerLike) extends MobileTaxCreditsRenewalController {
   override lazy val requiresAuth: Boolean = false
-  override val service = SandboxPersonalIncomeService
+  override val service = SandboxMobileTaxCreditsRenewalService
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
     override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(false, true, true )
 
@@ -236,10 +236,10 @@ class SandboxPersonalIncomeController @Inject()(override val authConnector: Auth
 }
 
 @Singleton
-class LivePersonalIncomeController @Inject()(override val authConnector: AuthConnector,
-                                             @Named("controllers.confidenceLevel") override val confLevel: Int,
-                                             override val logger: LoggerLike,
-                                             override val service: LivePersonalIncomeService,
-                                             override val taxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig) extends PersonalIncomeController {
+class LiveMobileTaxCreditsRenewalController @Inject()(override val authConnector: AuthConnector,
+                                                      @Named("controllers.confidenceLevel") override val confLevel: Int,
+                                                      override val logger: LoggerLike,
+                                                      override val service: LiveMobileTaxCreditsRenewalService,
+                                                      override val taxCreditsSubmissionControlConfig: TaxCreditsSubmissionControlConfig) extends MobileTaxCreditsRenewalController {
   override def getConfigForClaimsMaxAge = current.configuration.getLong(maxAgeClaimsConfig)
 }

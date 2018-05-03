@@ -31,19 +31,19 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.PersonalIncomeService
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.test.WithFakeApplication
 
 import scala.concurrent.ExecutionContext
 
-class TestPersonalIncomeController(val authConnector: AuthConnector,
-                                   val service: PersonalIncomeService,
-                                   val confLevel: Int,
-                                   val logger: LoggerLike,
-                                   taxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(
+class TestMobileTaxCreditsRenewalController(val authConnector: AuthConnector,
+                                            val service: MobileTaxCreditsRenewalService,
+                                            val confLevel: Int,
+                                            val logger: LoggerLike,
+                                            taxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(
                                      submissionShuttered = false,
                                      inSubmitRenewalsPeriod = true,
-                                     inViewRenewalsPeriod = true)) extends PersonalIncomeController {
+                                     inViewRenewalsPeriod = true)) extends MobileTaxCreditsRenewalController {
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
     override def toTaxCreditsSubmissions: TaxCreditsSubmissions = taxCreditsSubmissions
 
@@ -53,7 +53,7 @@ class TestPersonalIncomeController(val authConnector: AuthConnector,
   override def getConfigForClaimsMaxAge: Option[Long] = Some(1800)
 }
 
-class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeApplication {
+class RenewalAuthenticationSpec extends TestSetup with WithFakeApplication {
 
   "authenticate Live" should {
 
@@ -61,7 +61,7 @@ class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeA
       val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubAuthRenewalResponse(Some(tcrAuthToken))
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.getRenewalAuthentication(Nino(nino), renewalReference).apply(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(tcrAuthToken)
@@ -69,15 +69,15 @@ class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeA
 
     "return 401 when the nino in the request does not match the authority nino" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.getRenewalAuthentication(incorrectNino, renewalReference).apply(fakeRequest))) shouldBe 401
     }
 
     "process the authentication successfully when journeyId is supplied" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubAuthRenewalResponse(Some(tcrAuthToken))
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.getRenewalAuthentication(Nino(nino), renewalReference, Some("some-unique-journey-id")).apply(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(tcrAuthToken)
@@ -88,17 +88,17 @@ class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeA
       stubAuthenticateRenewal(None)(mockNtcConnector)
       stubAuthorisationGrantAccess(Some(nino) and L200)
 
-      override val mockLivePersonalIncomeService: TestPersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
 
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       status(await(controller.getRenewalAuthentication(Nino(nino), renewalReferenceNines)(fakeRequest))) shouldBe 404
     }
 
     "return unauthorized when authority record does not contain a NINO" in new mocks {
       stubAuthorisationGrantAccess(None and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.getRenewalAuthentication(Nino(nino), renewalReference, Option("unique-journey-id")).apply(fakeRequest))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe noNinoFoundOnAccount
@@ -106,8 +106,8 @@ class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeA
 
     "return unauthorized when authority record has a low CL" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L100)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.getRenewalAuthentication(Nino(nino), renewalReference, Option("unique-journey-id")).apply(fakeRequest))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe lowConfidenceLevelError
@@ -115,14 +115,14 @@ class TestPersonalIncomeRenewalAuthenticateSpec extends TestSetup with WithFakeA
 
     "return status code 406 when the headers are invalid" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L100)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.getRenewalAuthentication(Nino(nino), renewalReference, Option("unique-journey-id")).apply(requestInvalidHeaders))) shouldBe 406
     }
   }
 }
 
-class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFakeApplication with ClaimsJson {
+class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with ClaimsJson {
 
   "requesting claimant details Live" should {
 
@@ -130,7 +130,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino, None, availableForCOCAutomation = false, "some-app-id")
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubClaimantDetailsResponse(claimantDetails)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino)).apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
 
       status(result) shouldBe 200
@@ -142,7 +142,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id")
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubClaimantDetailsResponse(claimantDetails)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(claimantDetails.copy(mainApplicantNino = "false"))
@@ -153,7 +153,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
       val matchedClaims: Claims = Json.parse(matchedClaimsJson).as[Claims]
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubClaimantClaimsResponse(matchedClaims)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJson)
@@ -163,9 +163,9 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "return claimant claims successfully and drop invalid dates from the response" in new mocks {
       stubClaimantClaims(Json.parse(claimsJsonWithInvalidDates).as[Claims])
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockLivePersonalIncomeService: TestPersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithInvalidDates)
@@ -174,9 +174,9 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "return claimant claims successfully where dates are formatted yyyyMMdd" in new mocks {
       stubClaimantClaims(Json.parse(claimsJsonWithDatesFormattedYYYYMMDD).as[Claims])
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockLivePersonalIncomeService: TestPersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithAllDates)
@@ -185,9 +185,9 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "return claimant claims successfully where dates are formatted yyyy-MM-dd" in new mocks {
       stubClaimantClaims(Json.parse(claimsJsonWithDatesFormattedHyphenatedYYYYMMDD).as[Claims])
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockLivePersonalIncomeService: TestPersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithAllDates)
@@ -196,16 +196,16 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "return 404 when no claims matched the supplied nino" in new mocks {
       stubClaimantClaims(buildClaims(toJson(Json.parse(claimsJson)).as[Claims]))
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockLivePersonalIncomeService: TestPersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       status(await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))) shouldBe 404
     }
 
     "return 403 when no tcrAuthHeader is supplied to claimant details API" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, None)(fakeRequest))
       status(result) shouldBe 403
       contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"No auth header supplied in http request"}""")
@@ -213,8 +213,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return 403 when tcrAuthHeader is supplied to claims API" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
       status(result) shouldBe 403
       contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"Auth header is not required in the request"}""")
@@ -222,8 +222,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return 401 when the nino in the request does not match the authority nino" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.claimantDetails(incorrectNino)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, incorrectNino)))) shouldBe 401
     }
 
@@ -231,7 +231,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino, None, availableForCOCAutomation = false, "some-app-id")
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubClaimantDetailsResponse(claimantDetails)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), Some("unique-journey-id"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(claimantDetails.copy(mainApplicantNino = "true"))
@@ -239,8 +239,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return unauthorized when authority record does not contain a NINO" in new mocks {
       stubAuthorisationGrantAccess(None and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.claimantDetails(Nino(nino))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe noNinoFoundOnAccount
@@ -248,8 +248,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return unauthorized when authority record has a low CL" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L50)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.claimantDetails(Nino(nino))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe lowConfidenceLevelError
@@ -257,8 +257,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return 403 response when the tcr auth header is not supplied in the request" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.claimantDetails(Nino(nino))(fakeRequest))
       status(result) shouldBe 403
       contentAsJson(result) shouldBe toJson(ErrorNoAuthToken)
@@ -266,8 +266,8 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return status code 406 when the Accept header is invalid" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.claimantDetails(Nino(nino))(requestInvalidHeaders))) shouldBe 406
     }
   }
@@ -276,7 +276,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return claimant details successfully when an unknown bar code reference is supplied" in new mocks {
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino, None, availableForCOCAutomation = false, "some-app-id")
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino))(emptyRequestWithAcceptHeaderAndAuthHeader(RenewalReference("888888888888888"), Nino(nino))))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(claimantDetails.copy(mainApplicantNino = "false", hasPartner = false, renewalFormType = "r"))
@@ -284,7 +284,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
     "return claimant claims successfully" in new mocks {
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino, None, availableForCOCAutomation = false, "some-app-id")
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJson)
@@ -297,7 +297,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
 
       val testData = Seq(TestData("111111111111111", "r"), TestData("222222222222222", "d"), TestData("333333333333333", "d2"),
         TestData("444444444444444", "d", hasPartner = true), TestData("555555555555555", "d2", hasPartner = true))
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       testData.map(item => {
         val result = await(controller.claimantDetails(Nino(nino))(emptyRequestWithAcceptHeaderAndAuthHeader(RenewalReference(item.barcode), Nino(nino))))
         status(result) shouldBe 200
@@ -306,14 +306,14 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     }
 
     "return 403 response when the tcr auth header is not supplied in the request" in new mocks {
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino))(fakeRequest))
       status(result) shouldBe 403
       contentAsJson(result) shouldBe toJson(ErrorNoAuthToken)
     }
 
     "return status code 406 when the Accept header is invalid" in new mocks {
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       val result: Result = await(controller.claimantDetails(Nino(nino))(requestInvalidHeaders))
       status(result) shouldBe 406
     }
@@ -326,7 +326,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     val renewalFormType = "renewalFormType"
 
     "return details with the renewalFormType set" in new mocks {
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val household = Household("barcodeReference", "applicationId", applicant, None, None, None)
       val expectedClaimDetails = Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
 
@@ -344,7 +344,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "log a message if the barcode reference is 000000000000000" in new mocks {
       logger.clearMessages()
 
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val claims = Claims(Some(Seq(Claim(Household("000000000000000", "applicationId", applicant, None, None, None), renewal))))
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
@@ -359,7 +359,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
     "log a message if an empty sequence of claims is found" in new mocks {
       logger.clearMessages()
 
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       val claims = Claims(Some(Seq()))
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
@@ -372,7 +372,7 @@ class TestPersonalIncomeRenewalClaimantDetailsSpec extends TestSetup with WithFa
   }
 }
 
-class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
+class RenewalSpec extends TestSetup with WithFakeApplication {
 
   val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
   val certainBenefits = CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
@@ -396,9 +396,9 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubSubmitRenewals(Success(200))
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       status(await(controller.submitRenewal(Nino(nino)).apply(submitRenewalRequest))) shouldBe 200
       verify(mockNtcConnector, times(1)).submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())
 
@@ -407,17 +407,17 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
     "return 401 when the nino in the request does not match the authority nino" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.submitRenewal(incorrectNino).apply(submitRenewalRequest))) shouldBe 401
     }
 
     "return a 200 response if renewals are disabled" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       val submissionsShuttered = new TaxCreditsSubmissions(false, false, true)
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger, taxCreditsSubmissions = submissionsShuttered)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger, taxCreditsSubmissions = submissionsShuttered)
       status(await(controller.submitRenewal(Nino(nino)).apply(submitRenewalRequest))) shouldBe 200
       verify(mockNtcConnector, never()).submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())
     }
@@ -427,9 +427,9 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubSubmitRenewals(Success(200))
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       status(await(controller.submitRenewal(Nino(nino), Some("unique-journey-id")).apply(submitRenewalRequest))) shouldBe 200
       verify(mockNtcConnector, times(1)).submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())
 
@@ -439,9 +439,9 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
     "process returns a 200 when journeyId is supplied and Renewals are disabled" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       val submissionsShuttered = new TaxCreditsSubmissions(false, false, true)
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger, submissionsShuttered)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger, submissionsShuttered)
       status(await(controller.submitRenewal(Nino(nino), Some("unique-journey-id")).apply(submitRenewalRequest))) shouldBe 200
       verify(mockNtcConnector, never()).submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())
     }
@@ -452,8 +452,8 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
         fakeApplication.injector.instanceOf[TaxCreditsSubmissionControlConfig]
 
       val invalidRequest: FakeRequest[JsValue] = FakeRequest().withBody(toJson(renewal)).withHeaders(acceptHeader)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.submitRenewal(Nino(nino)).apply(invalidRequest))) shouldBe 403
     }
 
@@ -463,15 +463,15 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
         fakeApplication.injector.instanceOf[TaxCreditsSubmissionControlConfig]
 
       val badRequest: FakeRequest[JsObject] = FakeRequest().withBody(Json.obj()).withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> "some-auth-token")
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.submitRenewal(Nino(nino)).apply(badRequest))) shouldBe 400
     }
 
     "return 401 result when authority record does not contain a NINO" in new mocks {
       stubAuthorisationGrantAccess(None and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.submitRenewal(Nino(nino)).apply(submitRenewalRequest))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe noNinoFoundOnAccount
@@ -479,8 +479,8 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
     "return unauthorized when authority record has a low CL" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L50)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       val result: Result = await(controller.submitRenewal(Nino(nino)).apply(submitRenewalRequest))
       status(result) shouldBe 401
       contentAsJson(result) shouldBe lowConfidenceLevelError
@@ -488,8 +488,8 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
     "return 406 result when the headers are invalid" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LivePersonalIncomeController(mockAuthConnector, 200, logger,
-        mockLivePersonalIncomeService, mockTaxCreditsSubmissionControlConfig)
+      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
+        mockService, mockTaxCreditsSubmissionControlConfig)
       status(await(controller.submitRenewal(Nino(nino)).apply(requestIncorrectNoHeader))) shouldBe 406
     }
 
@@ -498,9 +498,9 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubSubmitRenewals(Error(300))
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
       status(await(controller.submitRenewal(Nino(nino), journeyId).apply(submitRenewalRequest))) shouldBe 300
       verify(mockNtcConnector, times(1)).submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())
 
@@ -512,9 +512,9 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
 
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubSubmitRenewalsException(new RuntimeException("some 5XX message"))
-      override val mockLivePersonalIncomeService = new TestPersonalIncomeService(mockNtcConnector,
+      override val mockService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
         mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestPersonalIncomeController(mockAuthConnector, mockLivePersonalIncomeService, 200, logger)
+      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
 
       status(await(controller.submitRenewal(Nino(nino), journeyId).apply(submitRenewalRequest))) shouldBe 500
 
@@ -525,18 +525,18 @@ class TestPersonalIncomeRenewalSpec extends TestSetup with WithFakeApplication {
   "renewal sandbox" should {
 
     "return success response" in new mocks {
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       status(await(controller.submitRenewal(Nino(nino)).apply(submitRenewalRequest))) shouldBe 200
     }
 
     "return 403 result when no tcr auth header has been supplied" in new mocks {
       val invalidRequest: FakeRequest[JsValue] = FakeRequest().withBody(toJson(renewal)).withHeaders(acceptHeader)
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       status(await(controller.submitRenewal(Nino(nino)).apply(invalidRequest))) shouldBe 403
     }
 
     "return 406 result when the headers are invalid" in new mocks {
-      val controller = new SandboxPersonalIncomeController(mockAuthConnector, 200, logger)
+      val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
       status(await(controller.submitRenewal(Nino(nino)).apply(requestIncorrectNoHeader))) shouldBe 406
     }
   }

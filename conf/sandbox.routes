@@ -1,7 +1,9 @@
-GET         /income/:nino/tax-credits/:renewalReference/auth        @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference:uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])
+GET     /claimants/:nino                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-GET         /income/:nino/tax-credits/claimant-details              @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String], claims:Option[String])
+GET     /claims/:nino                     @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.claimsDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-POST        /income/:nino/tax-credits/renewal                       @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
+POST    /declarations/:nino               @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-GET         /income/tax-credits/submission/state/enabled            @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxServiceStateController.taxCreditsSubmissionStateEnabled(journeyId: Option[String])
+GET     /states/current                   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxServiceStateController.taxCreditsSubmissionStateEnabled(journeyId: Option[String])
+
+GET     /tokens/:nino/:renewalReference   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference:uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])

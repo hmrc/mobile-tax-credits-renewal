@@ -23,117 +23,125 @@ uses:
   types: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/types.raml
 
 /mobile-tax-credits-renewal:
-  /income:
-    /tax-credits:
-      /submission:
-        /state:
-          /enabled:
-            get:
-              displayName: Get tax credits submission state enabled
-              description: This endpoint retrieves the current state of tax credit submissions
-              is: [headers.acceptHeader]
-              (annotations.scope): "read:mobile-tax-credits-renewal"
-              securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
-              queryParameters:
-                journeyId:
-                  type: string
-                  required: false
-              responses:
-                200:
-                  body:
-                    application/json:
-                      examples:
-                        example-1:
-                          value: !include examples/get-tax-credits-submission-state-enabled-example-1.json
+  /claimants:
     /{nino}:
       uriParameters:
         nino:
           description: The NINO for the individual.
           type: string
           example: NS123456B
-      /tax-credits:
-        /{renewalReference}:
-          uriParameters:
-            renewalReference:
+      get:
+        displayName: Get claimant details
+        description: This endpoint retrieves the claimant details.
+        is: [headers.acceptHeader]
+        (annotations.scope): "read:mobile-tax-credits-renewal"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        queryParameters:
+          journeyId:
+            type: string
+            required: false
+        responses:
+          200:
+            body:
+              application/json:
+                examples:
+                  example-1:
+                    value: !include examples/claimants-example.json
+  /claims:
+    /{nino}:
+      uriParameters:
+        nino:
+          description: The NINO for the individual.
+          type: string
+          example: NS123456B
+      get:
+        displayName: Get claims details
+        description: This endpoint retrieves the claims details.
+        is: [headers.acceptHeader]
+        (annotations.scope): "read:mobile-tax-credits-renewal"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        queryParameters:
+          journeyId:
+            type: string
+            required: false
+        responses:
+          200:
+            body:
+              application/json:
+                examples:
+                  example-1:
+                    value: !include examples/claims-example.json
+  /declarations:
+    /{nino}:
+      uriParameters:
+        nino:
+          description: The NINO for the individual.
+          type: string
+          example: NS123456B
+      post:
+        displayName: Submit renewal
+        description: This endpoint submits a renewal.
+        is: [headers.acceptHeader]
+        (annotations.scope): "read:mobile-tax-credits-renewal"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        queryParameters:
+          journeyId:
+            type: string
+            required: false
+        responses:
+          200:
+            body:
+              application/json:
+                examples:
+                  example-1:
+                    value: !include examples/declarations-example.json
+  /states:
+    /current:
+      get:
+        displayName: Get tax credits submission state enabled
+        description: This endpoint retrieves the current state of tax credit submissions
+        is: [headers.acceptHeader]
+        (annotations.scope): "read:mobile-tax-credits-renewal"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        queryParameters:
+          journeyId:
+            type: string
+            required: false
+        responses:
+          200:
+            body:
+              application/json:
+                examples:
+                  example-1:
+                    value: !include examples/states-current-example.json
+  /tokens:
+    /{nino}:
+      uriParameters:
+        nino:
+          description: The NINO for the individual.
+          type: string
+          example: NS123456B
+      /{renewalReference}:
+        uriParameters:
+          renewalReference:
+            type: string
+        get:
+          displayName: Get auth token
+          description: This endpoint retrieves the auth token and validates the nino and tax reference number.
+          is: [headers.acceptHeader]
+          (annotations.scope): "read:mobile-tax-credits-renewal"
+          securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+          queryParameters:
+            journeyId:
               type: string
-          /auth:
-            get:
-              displayName: Get auth token
-              description: This endpoint retrieves the auth token and validates the nino and tax reference number.
-              is: [headers.acceptHeader]
-              (annotations.scope): "read:mobile-tax-credits-renewal"
-              securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
-              queryParameters:
-                journeyId:
-                  type: string
-                  required: false
-              responses:
-                200:
-                  body:
-                    application/json:
-                      examples:
-                        example-1:
-                          value: !include examples/get-auth-token-example-1.json
-        /claimant-details:
-          get:
-            displayName: Get claiment details
-            description: This endpoint retrieves the claiment details.
-            is: [headers.acceptHeader]
-            (annotations.scope): "read:mobile-tax-credits-renewal"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
-            queryParameters:
-              journeyId:
-                type: string
-                required: false
-              claims:
-                type: string
-                required: false
-            responses:
-              200:
-                body:
-                  application/json:
-                    examples:
-                      example-1:
-                        value: !include examples/get-claiment-details-example-1.json
-        /full-claimant-details:
-          get:
-            displayName: Get claiment details
-            description: This endpoint retrieves the full claiment details.
-            is: [headers.acceptHeader]
-            (annotations.scope): "read:mobile-tax-credits-renewal"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
-            queryParameters:
-              journeyId:
-                type: string
-                required: false
-              claims:
-                type: string
-                required: false
-            responses:
-              200:
-                body:
-                  application/json:
-                    examples:
-                      example-1:
-                        value: !include examples/get-claiment-details-example-1.json
-        /renewal:
-          post:
-            displayName: Submit renewal
-            description: This endpoint submits a renewal.
-            is: [headers.acceptHeader]
-            (annotations.scope): "read:mobile-tax-credits-renewal"
-            securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
-            queryParameters:
-              journeyId:
-                type: string
-                required: false
-            responses:
-              200:
-                body:
-                  application/json:
-                    examples:
-                      example-1:
-                        value: !include examples/submit-renewal-example-1.json
+              required: false
+          responses:
+            200:
+              body:
+                application/json:
+                  examples:
+                    example-1:
+                      value: !include examples/tokens-example.json
 
 
 

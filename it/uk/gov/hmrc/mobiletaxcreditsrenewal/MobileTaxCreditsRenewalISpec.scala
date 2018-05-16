@@ -27,8 +27,8 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 
 class MobileTaxCreditsRenewalISpec extends BaseISpec with FileResource {
-  "GET /income/:nino/tax-credits/:renewalReference/auth" should {
-    val url = wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").withHeaders(acceptJsonHeader)
+  "GET /tokens/:nino/:renewalReference" should {
+    val url = wsUrl(s"/tokens/${nino1.value}/${renewalReference.value}").withHeaders(acceptJsonHeader)
 
     "return a tcrAuthenticationToken" in {
 
@@ -51,10 +51,10 @@ class MobileTaxCreditsRenewalISpec extends BaseISpec with FileResource {
     }
   }
 
-  "GET /income/:nino/tax-credits/full-claimant-details" should {
+  "GET /claims/:nino" should {
     val mainApplicantNino = Nino("CS700100A")
     val barcodeReference = RenewalReference("200000000000013")
-    val request = wsUrl(s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    val request = wsUrl(s"/claims/${mainApplicantNino.value}").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     "retrieve claimant claims for main applicant and set renewalFormType for a renewal where bar code ref is not '000000000000000'" in {
       grantAccess(mainApplicantNino.value)
@@ -103,8 +103,8 @@ class MobileTaxCreditsRenewalISpec extends BaseISpec with FileResource {
     }
   }
 
-  "GET /income/:nino/tax-credits/claimant-details" should {
-    def request(nino:Nino) = wsUrl(s"/income/${nino.value}/tax-credits/claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+  "GET /claimants/:nino" should {
+    def request(nino:Nino) = wsUrl(s"/claimants/${nino.value}").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     "retrieve claimant details for main applicant" in {
       grantAccess(nino1.value)

@@ -48,7 +48,7 @@ class NtcConnectorSpec
     val renewal = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
     val renewalReference = RenewalReference("123456")
     val tcrAuthToken = TcrAuthenticationToken("some-token")
-    val claimentDetails = ClaimantDetails(hasPartner = false, 1, "renewalForm", nino.value, None, availableForCOCAutomation = false, "some-app-id")
+    val claimantDetails = ClaimantDetails(hasPartner = false, 1, "renewalForm", nino.value, None, availableForCOCAutomation = false, "some-app-id")
 
     val claimsJson: String =
       """{
@@ -127,7 +127,7 @@ class NtcConnectorSpec
     lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
     lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
     lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
-    lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(claimentDetails))))
+    lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
     lazy val response: Future[HttpResponse] = http400Response
 
 
@@ -241,7 +241,7 @@ class NtcConnectorSpec
       override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimantDetailsResponse
       val result: ClaimantDetails = await(connector.claimantDetails(taxCreditNino))
 
-      result shouldBe claimentDetails
+      result shouldBe claimantDetails
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {

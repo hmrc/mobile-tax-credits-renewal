@@ -19,7 +19,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec{
 
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
 
-  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").withHeaders(acceptJsonHeader)
+  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/states/current").withHeaders(acceptJsonHeader)
 
   protected def submissionShuttered = false
   protected def submissionStartDate: String = now.minusDays(1).toString
@@ -36,7 +36,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec{
    }
 
   protected def submitTaxCreditRenewal: Assertion = {
-    def request(nino: Nino) = wsUrl(s"/income/${nino.value}/tax-credits/renewal").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    def request(nino: Nino) = wsUrl(s"/declarations/${nino.value}").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     grantAccess(nino1.value)
 
@@ -53,7 +53,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec{
 
 
 class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
-  "POST /income/:nino/tax-credits/renewal" should {
+  "POST /declarations/:nino" should {
     "renew when submissions are enabled" in {
       renewalIsSuccessful(nino1, renewal)
       submitTaxCreditRenewal
@@ -61,7 +61,7 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
     }
   }
 
-  "GET /income/tax-credits/submission/state/enabled" should {
+  "GET /states/current" should {
     "return open state " in {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
@@ -76,13 +76,13 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionEndDate: String = now.plusDays(2).toString
   override def endViewRenewalsDate: String = now.plusDays(3).toString
 
-  "POST /income/:nino/tax-credits/renewal" should {
+  "POST /declarations/:nino" should {
     "return OK but not renew when submissions are closed" in {
       verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 
-  "GET /income/tax-credits/submission/state/enabled" should {
+  "GET /states/current" should {
     "return closed state " in {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
@@ -95,13 +95,13 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
 class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionShuttered: Boolean = true
 
-  "POST /income/:nino/tax-credits/renewal" should {
+  "POST /declarations/:nino" should {
     "return OK but not renew when submissions are shuttered" in {
       verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 
-  "GET /income/tax-credits/submission/state/enabled" should {
+  "GET /rstates/current" should {
     "return shuttered state " in {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
@@ -116,13 +116,13 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
   override def submissionEndDate: String = now.minusDays(1).toString
   override def endViewRenewalsDate: String = now.plusDays(1).toString
 
-  "POST /income/:nino/tax-credits/renewal" should {
+  "POST /declarations/:nino" should {
     "return OK but not renew when submissions are view-only" in {
       verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
 
-  "GET /income/tax-credits/submission/state/enabled" should {
+  "GET /states/current" should {
     "return check-only state " in {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200

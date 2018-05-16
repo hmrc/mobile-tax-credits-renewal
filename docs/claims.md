@@ -1,12 +1,10 @@
-Return Claimant Details object
+Return Claims
 ----
-  Return claimant details object based on NINO. The service can either return details a single claim or multiple claims.
-  Requesting a single claim the 'claims' parameter must not be supplied and the tcrTokenAuth must be supplied in the header.
-  Requesting multiple claims, the 'claim' parameter must be supplied with no tcrTokenAuth header.
+  Return claims by NINO. 
 
 * **URL**
 
-  `/income/:nino/tax-credits/claimant-details`
+  `/claims/:nino`
 
 * **Method:**
   
@@ -14,9 +12,9 @@ Return Claimant Details object
 
 *  **URL Params**
 
-  `claims=yes`
+  `journeyId=journeyId`
 
-   Supplying the claims query parameter will drive the service to return all claims associated from the supplied NINO.
+   Optional journey id provides clarity to log messages.
 
 
    **Required:**
@@ -25,36 +23,12 @@ Return Claimant Details object
    
    The nino given must be a valid nino. ([http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm](http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm))
 
-*  **HTTP Headers**
-
-   **Required:**
- 
-   `tcrAuthToken: [TCRAuthToken]` to be supplied when requesting a single claim.
-
-   Note: The tcrAuthToken is only required when the claims query parameter is not supplied.
-
 * **Success Response:**
 
   * **Code:** 200 <br />
     **Content:**
 
-        [Source...](Please see https://github.com/hmrc/mobile-tax-credits-renewal/blob/master/app/uk/gov/hmrc/apigateway/personalincome/domain/Renewals.scala#L55)
-
-If 'claims' query parameter is not supplied as a query parameter then a single response will be returned based on the barcode reference supplied in the tcrAuthToken.
-
-```json
-{
-  "hasPartner": false,
-  "claimantNumber": 1,
-  "renewalFormType": "r",
-  "mainApplicantNino": "true",
-  "availableForCOCAutomation": false,
-  "applicationId": "some-app-id"
-}
-```
-
-If 'claims' query parameter is supplied, all barcode references associated to the NINO will be returned.
-Note the returned 'authenticationToken' attribute is the tcrAuthToken supplied to the claimant-details service.
+        [Source...](Please see https://github.com/hmrc/mobile-tax-credits-renewal/blob/master/app/uk/gov/hmrc/apigateway/personalincome/domain/Claims.scala#L30)
 
 ```json
 {

@@ -1,10 +1,10 @@
-Submit renewal
+Submit declaration
 ----
   Submit the renewal for off-line processing.
 
 * **URL**
 
-  `/income/:nino/tax-credits/renewal`
+  `/declarations/:nino`
 
 * **Method:**
 

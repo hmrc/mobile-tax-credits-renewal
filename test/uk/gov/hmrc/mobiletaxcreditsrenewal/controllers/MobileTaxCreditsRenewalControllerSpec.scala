@@ -149,75 +149,13 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
       result.header.headers.get("Cache-Control") shouldBe None
     }
 
-    "return claimant claims successfully" in new mocks {
-      val matchedClaims: Claims = Json.parse(matchedClaimsJson).as[Claims]
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      stubClaimantClaimsResponse(matchedClaims)
-      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
-      status(result) shouldBe 200
-      contentAsJson(result) shouldBe Json.parse(matchedClaimsJson)
-      result.header.headers.get("Cache-Control") shouldBe Some("max-age=1800")
-    }
-
-    "return claimant claims successfully and drop invalid dates from the response" in new mocks {
-      stubClaimantClaims(Json.parse(claimsJsonWithInvalidDates).as[Claims])
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
-        mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
-      status(result) shouldBe 200
-      contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithInvalidDates)
-    }
-
-    "return claimant claims successfully where dates are formatted yyyyMMdd" in new mocks {
-      stubClaimantClaims(Json.parse(claimsJsonWithDatesFormattedYYYYMMDD).as[Claims])
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
-        mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
-      status(result) shouldBe 200
-      contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithAllDates)
-    }
-
-    "return claimant claims successfully where dates are formatted yyyy-MM-dd" in new mocks {
-      stubClaimantClaims(Json.parse(claimsJsonWithDatesFormattedHyphenatedYYYYMMDD).as[Claims])
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
-        mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
-      status(result) shouldBe 200
-      contentAsJson(result) shouldBe Json.parse(matchedClaimsJsonWithAllDates)
-    }
-
-    "return 404 when no claims matched the supplied nino" in new mocks {
-      stubClaimantClaims(buildClaims(toJson(Json.parse(claimsJson)).as[Claims]))
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      override val mockService: TestMobileTaxCreditsRenewalService = new TestMobileTaxCreditsRenewalService(mockNtcConnector,
-        mockAuditConnector, mockConfiguration, mockAppContext)
-      val controller = new TestMobileTaxCreditsRenewalController(mockAuthConnector, mockService, 200, logger)
-      status(await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))) shouldBe 404
-    }
-
     "return 403 when no tcrAuthHeader is supplied to claimant details API" in new mocks {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
         mockService, mockTaxCreditsSubmissionControlConfig)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, None)(fakeRequest))
+      val result: Result = await(controller.claimantDetails(Nino(nino))(fakeRequest))
       status(result) shouldBe 403
       contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"No auth header supplied in http request"}""")
-    }
-
-    "return 403 when tcrAuthHeader is supplied to claims API" in new mocks {
-      stubAuthorisationGrantAccess(Some(nino) and L200)
-      val controller = new LiveMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger,
-        mockService, mockTaxCreditsSubmissionControlConfig)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, Nino(nino))))
-      status(result) shouldBe 403
-      contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"Auth header is not required in the request"}""")
     }
 
     "return 401 when the nino in the request does not match the authority nino" in new mocks {
@@ -285,7 +223,7 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
     "return claimant claims successfully" in new mocks {
       val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino, None, availableForCOCAutomation = false, "some-app-id")
       val controller = new SandboxMobileTaxCreditsRenewalController(mockAuthConnector, 200, logger)
-      val result: Result = await(controller.claimantDetails(Nino(nino), None, Some("claims"))(fakeRequest))
+      val result: Result = await(controller.claimsDetails(Nino(nino))(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe Json.parse(matchedClaimsJson)
     }
@@ -319,7 +257,7 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
     }
   }
 
-  "full claimant details" should {
+  "claim details" should {
     val applicant = Applicant(nino, "MR", "BOB", None, "ROBSON")
     val renewal = Renewal(None, None, None, None, None, None)
     val journeyId = Some("unique-journey-id")
@@ -336,7 +274,7 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
       stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None,
         availableForCOCAutomation = false, "some-app-id"))
 
-      val result: Result = await(controller.fullClaimantDetails(Nino(nino), journeyId)(fakeRequest))
+      val result: Result = await(controller.claimsDetails(Nino(nino), journeyId)(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
@@ -350,7 +288,7 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubServiceClaimantClaims(claims)
 
-      val result: Result = await(controller.fullClaimantDetails(Nino(nino), journeyId)(fakeRequest))
+      val result: Result = await(controller.claimsDetails(Nino(nino), journeyId)(fakeRequest))
       status(result) shouldBe 200
       contentAsJson(result) shouldBe toJson(claims)
       logger.warnMessageWaslogged(s"Invalid barcode reference 000000000000000 for journeyId $journeyId applicationId applicationId") shouldBe true
@@ -365,7 +303,7 @@ class ClaimantDetailsSpec extends TestSetup with WithFakeApplication with Claims
       stubAuthorisationGrantAccess(Some(nino) and L200)
       stubServiceClaimantClaims(claims)
 
-      val result: Result = await(controller.fullClaimantDetails(Nino(nino), journeyId)(fakeRequest))
+      val result: Result = await(controller.claimsDetails(Nino(nino), journeyId)(fakeRequest))
       status(result) shouldBe 200
       logger.warnMessageWaslogged(s"Empty claims list for journeyId $journeyId") shouldBe true
     }

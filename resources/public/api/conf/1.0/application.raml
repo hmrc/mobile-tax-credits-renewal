@@ -46,7 +46,7 @@ uses:
               application/json:
                 examples:
                   example-1:
-                    value: !include examples/claiments-example.json
+                    value: !include examples/claimants-example.json
   /claims:
     /{nino}:
       uriParameters:
@@ -71,7 +71,7 @@ uses:
                 examples:
                   example-1:
                     value: !include examples/claims-example.json
-  /declerations:
+  /declarations:
     /{nino}:
       uriParameters:
         nino:
@@ -94,7 +94,7 @@ uses:
               application/json:
                 examples:
                   example-1:
-                    value: !include examples/declerations-example.json
+                    value: !include examples/declarations-example.json
   /states:
     /current:
       get:

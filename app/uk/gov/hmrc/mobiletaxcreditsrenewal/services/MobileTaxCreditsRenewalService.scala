@@ -165,7 +165,7 @@ object SandboxMobileTaxCreditsRenewalService extends MobileTaxCreditsRenewalServ
   }
 
   override def claimantClaims(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Claims] = {
-    val resource: String = findResource(s"/resources/claimantdetails/claims-example.json").getOrElse(throw new IllegalArgumentException("Resource not found!"))
+    val resource: String = findResource(s"/resources/claimantdetails/claims.json").getOrElse(throw new IllegalArgumentException("Resource not found!"))
     Future.successful(Json.parse(resource).as[Claims])
   }
 

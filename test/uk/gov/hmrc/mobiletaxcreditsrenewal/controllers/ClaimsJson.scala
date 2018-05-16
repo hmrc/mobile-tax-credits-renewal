@@ -184,7 +184,8 @@ trait ClaimsJson {
                             |        "awardEndDate": "31/08/2016",
                             |        "renewalStatus": "NOT_SUBMITTED",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
-                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010"
+                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+                            |        "renewalFormType": "r"
                             |      }
                             |    },
                             |    {
@@ -206,7 +207,8 @@ trait ClaimsJson {
                             |        "awardEndDate": "31/12/2016",
                             |        "renewalStatus": "SUBMITTED_AND_PROCESSING",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
-                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010"
+                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+                            |        "renewalFormType": "d"
                             |      }
                             |    },
                             |    {
@@ -233,7 +235,8 @@ trait ClaimsJson {
                             |        "awardEndDate": "31/07/2017",
                             |        "renewalStatus": "COMPLETE",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
-                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010"
+                            |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+                            |        "renewalFormType": "r"
                             |      }
                             |    }
                             |  ]

@@ -4,7 +4,7 @@ First step in Renewal process
   
 * **URL**
 
-  `/income/:nino/tax-credits/:renewalReference/auth`
+  `/tokens/:nino/:renewalReference`
 
 * **Method:**
   
@@ -25,7 +25,7 @@ First step in Renewal process
   * **Code:** 200 <br />
     **Content:** 
 
-        [Source...](https://github.com/hmrc/mobile-tax-credits-renewal/blob/master/app/uk/gov/hmrc/apigateway/personalincome/domain/Renewals.scala#L33)
+        [Source...](https://github.com/hmrc/mobile-tax-credits-renewal/blob/master/app/uk/gov/hmrc/mobiletaxcreditsrenewal/domain/Renewals.scala#L33)
 
 ```json
 {

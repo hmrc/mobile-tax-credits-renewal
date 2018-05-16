@@ -82,31 +82,23 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
           })
   }
 
-  def addMainApplicantFlag(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Result] = {
-    service.claimantDetails(nino).map { claim =>
-      val mainApplicantFlag: String = if (claim.mainApplicantNino == nino.value) "true" else "false"
-      Ok(toJson(claim.copy(mainApplicantNino = mainApplicantFlag)))
-    }
-  }
-
-  final def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None): Action[AnyContent] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
+  def claimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async{
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        errorWrapper(validateTcrAuthHeader(claims) {
+        errorWrapper(validateTcrAuthHeader(None) {
           implicit hc =>
-            def singleClaim: Future[Result] = addMainApplicantFlag(nino)
 
-            def retrieveAllClaims = service.claimantClaims(nino).map { claims =>
-              claims.references.fold(notFound) { found => if (found.isEmpty) notFound else Ok(toJson(claims)) }
-            }
-
-            claims.fold(singleClaim) { _ => retrieveAllClaims.map(addCacheHeader(maxAgeForClaims, _)) }
-        })
+            service.claimantDetails(nino).map { claimant =>
+              val mainApplicantFlag: String = if (claimant.mainApplicantNino == nino.value) "true" else "false"
+              Ok(toJson(claimant.copy(mainApplicantNino = mainApplicantFlag)))
+        }
+      }
+    )
   }
 
-  final def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+  final def claimsDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
@@ -148,8 +140,8 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
             }
           }
 
-          eventualClaims.map{ claimantDetails =>
-            Ok(toJson(Claims(if (claimantDetails.isEmpty) None else Some(claimantDetails))))
+          eventualClaims.map{ claimss =>
+            Ok(toJson(Claims(if (claimss.isEmpty) None else Some(claimss))))
           }
         })
   }

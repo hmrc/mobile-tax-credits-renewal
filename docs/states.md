@@ -4,7 +4,7 @@ Tax Credits Submission State
   
 * **URL**
 
-  `/income/tax-credits/submission/state/enabled`
+  `/states/current`
 
 * **Method:**
   

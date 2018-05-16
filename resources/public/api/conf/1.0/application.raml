@@ -31,8 +31,8 @@ uses:
           type: string
           example: NS123456B
       get:
-        displayName: Get claiment details
-        description: This endpoint retrieves the claiment details.
+        displayName: Get claimant details
+        description: This endpoint retrieves the claimant details.
         is: [headers.acceptHeader]
         (annotations.scope): "read:mobile-tax-credits-renewal"
         securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]

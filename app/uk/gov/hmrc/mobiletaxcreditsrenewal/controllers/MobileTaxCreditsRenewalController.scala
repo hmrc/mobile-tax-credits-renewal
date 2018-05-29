@@ -37,7 +37,7 @@ import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 trait ErrorHandling {
   self: BaseController =>
@@ -67,7 +67,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
   val taxCreditsSubmissionControlConfig: TaxCreditsControl
   val logger: LoggerLike
 
-  def addCacheHeader(maxAge:Long, result:Result):Result = {
+  def addCacheHeader(maxAge: Long, result: Result): Result = {
     result.withHeaders(HeaderNames.CACHE_CONTROL -> s"max-age=$maxAge")
   }
 
@@ -93,10 +93,22 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
             service.claimantDetails(nino).map { claimant =>
               val mainApplicantFlag: String = if (claimant.mainApplicantNino == nino.value) "true" else "false"
               Ok(toJson(claimant.copy(mainApplicantNino = mainApplicantFlag)))
-        }
-      }
-    )
-  }
+            }
+          }
+        )
+    }
+
+  final def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
+      implicit request =>
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+
+        errorWrapper(
+          service.renewals(nino, journeyId).map{ renewals =>
+            Ok(toJson(renewals))
+          }
+        )
+    }
 
   final def claimsDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
@@ -111,7 +123,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
               service.claimantDetails(nino).map { claimantDetails =>
                 claim.copy(
                   household = claim.household.copy(),
-                  renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+                  renewal = claim.renewal.copy(claimantDetails = Some(claimantDetails)))
               }
             }
 
@@ -214,7 +226,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(override val authConnec
                                                          @Named("controllers.confidenceLevel") override val confLevel: Int,
                                                          override val logger: LoggerLike) extends MobileTaxCreditsRenewalController {
   override lazy val requiresAuth: Boolean = false
-  override val service: MobileTaxCreditsRenewalService = SandboxMobileTaxCreditsRenewalService
+  override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(taxCreditsSubmissionControlConfig)
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
     override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(false, true, true )
 

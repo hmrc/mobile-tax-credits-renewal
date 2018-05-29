@@ -185,7 +185,14 @@ trait ClaimsJson {
                             |        "renewalStatus": "NOT_SUBMITTED",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
                             |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-                            |        "renewalFormType": "r"
+                            |        "claimantDetails": {
+                            |          "hasPartner": false,
+                            |          "claimantNumber": 1,
+                            |          "renewalFormType": "r",
+                            |          "mainApplicantNino": "CS700100A",
+                            |          "availableForCOCAutomation": false,
+                            |          "applicationId": "some-app-id"
+                            |        }
                             |      }
                             |    },
                             |    {
@@ -208,7 +215,14 @@ trait ClaimsJson {
                             |        "renewalStatus": "SUBMITTED_AND_PROCESSING",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
                             |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-                            |        "renewalFormType": "d"
+                            |        "claimantDetails": {
+                            |          "hasPartner": false,
+                            |          "claimantNumber": 1,
+                            |          "renewalFormType": "d",
+                            |          "mainApplicantNino": "CS700100A",
+                            |          "availableForCOCAutomation": false,
+                            |          "applicationId": "some-app-id"
+                            |        }
                             |      }
                             |    },
                             |    {
@@ -236,7 +250,15 @@ trait ClaimsJson {
                             |        "renewalStatus": "COMPLETE",
                             |        "renewalNoticeIssuedDate": "12/10/2030",
                             |        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-                            |        "renewalFormType": "r"
+                            |        "claimantDetails": {
+                            |          "hasPartner": false,
+                            |          "claimantNumber": 1,
+                            |          "renewalFormType": "r",
+                            |          "mainApplicantNino": "false",
+                            |          "availableForCOCAutomation": false,
+                            |          "applicationId": "some-app-id"
+                            |        }
+                            |
                             |      }
                             |    }
                             |  ]

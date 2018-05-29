@@ -1,5 +1,5 @@
 {
-  "submissionsState":"open", // if "open" or "check_status_only" then claims returned. "submitted" no longer supported
+  "submissionsState":"open",
   "claims": {
     "references": [
       {
@@ -21,13 +21,14 @@
           "renewalStatus": "NOT_SUBMITTED",
           "renewalNoticeIssuedDate": "12/10/2030",
           "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-          "renewalFormType": "D",
-          "nino":"KM569110B",
-          "version":1,
-          "workingTaxableTotal":0,
-          "actualTaxableTotal":0,
-          "remainingTaxFree":0,
-          "adjustedNetIncome":0
+          "claimant-details": {
+            "hasPartner": false,
+            "claimantNumber": 1,
+            "renewalFormType": "r",
+            "mainApplicantNino": "true",
+            "availableForCOCAutomation": false,
+            "applicationId": "some-app-id"
+          }
         }
       },
       {

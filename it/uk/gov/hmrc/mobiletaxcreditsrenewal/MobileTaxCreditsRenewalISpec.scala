@@ -69,7 +69,7 @@ class MobileTaxCreditsRenewalISpec extends BaseISpec with FileResource {
       response.json shouldBe expectedJson
 
       val references = (response.json \ "references" ).as[JsArray]
-      val renewal = (references(0) \ "renewal" ).as[JsObject]
+      val renewal = (references(0) \ "renewal" \ "claimantDetails").as[JsObject]
       renewal.value("renewalFormType").as[String] shouldBe "D"
     }
 

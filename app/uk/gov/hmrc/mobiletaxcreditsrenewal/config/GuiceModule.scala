@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
+import java.util
+
 import com.google.inject.name.Named
 import com.google.inject.name.Names.named
 import com.google.inject.{AbstractModule, Provides, TypeLiteral}
@@ -25,11 +27,11 @@ import uk.gov.hmrc.api.connector.ServiceLocatorConnector
 import uk.gov.hmrc.api.controllers.DocumentationController
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.CoreGet
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{TaxCreditsControl, TaxCreditsSubmissionControlConfig}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.tasks.ServiceLocatorRegistrationTask
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
-import java.util
 
 class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
 
@@ -45,6 +47,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[HttpClient]).to(classOf[WSHttpImpl])
     bind(classOf[DocumentationController]).toInstance(DocumentationController)
     bind(classOf[ServiceLocatorRegistrationTask]).asEagerSingleton()
+    bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")

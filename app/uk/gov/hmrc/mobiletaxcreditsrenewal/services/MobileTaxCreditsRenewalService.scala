@@ -19,7 +19,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 import com.google.inject.{Inject, Singleton}
 import com.ning.http.util.Base64
 import play.api.libs.json.Json
-import play.api.{Configuration, Logger}
+import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.api.sandbox._
 import uk.gov.hmrc.api.service._
 import uk.gov.hmrc.domain.Nino
@@ -27,13 +27,17 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.{AppContext, RenewalStatusTransform}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys
+import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 
+import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalService {
+  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary]
+
   // Renewal specific - authenticateRenewal must be called first to retrieve the authToken before calling claimantDetails, submitRenewal.
   def authenticateRenewal(nino: Nino, tcrRenewalReference: RenewalReference)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Option[TcrAuthenticationToken]]
 
@@ -45,11 +49,67 @@ trait MobileTaxCreditsRenewalService {
 }
 
 @Singleton
-class LiveMobileTaxCreditsRenewalService @Inject()(ntcConnector: NtcConnector,
-                                                   val auditConnector: AuditConnector,
-                                                   val appNameConfiguration: Configuration,
-                                                   val appContext: AppContext) extends MobileTaxCreditsRenewalService with Auditor with RenewalStatus {
+class LiveMobileTaxCreditsRenewalService @Inject()(
+  ntcConnector: NtcConnector,
+  val auditConnector: AuditConnector,
+  val appNameConfiguration: Configuration,
+  val appContext: AppContext,
+  val taxCreditsSubmissionControlConfig: TaxCreditsControl,
+  val logger: LoggerLike ) extends MobileTaxCreditsRenewalService with Auditor with RenewalStatus {
+
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
+
+  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+    val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
+
+    if (currentState.showSummaryData) {
+      claimsDetails(nino,journeyId).map{ claims =>
+        RenewalsSummary(currentState.submissionsState, Some(claims))
+      }
+    } else {
+      Future successful RenewalsSummary(currentState.submissionsState, None)
+    }
+  }
+
+  def claimsDetails(nino: Nino, journeyId: Option[String] = None)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Seq[Claim]] = {
+    def fullClaimantDetails(claim: Claim): Future[Claim] = {
+      def getClaimantDetail(token:TcrAuthenticationToken, hc: HeaderCarrier): Future[Claim] = {
+        implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
+
+        claimantDetails(nino).map { claimantDetails =>
+          claim.copy(
+            household = claim.household.copy(),
+            renewal = claim.renewal.copy(claimantDetails = Some(claimantDetails)))
+        }
+      }
+
+      authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference)).flatMap { maybeToken =>
+        if (maybeToken.nonEmpty) getClaimantDetail(maybeToken.get,hc)
+        else  Future successful claim
+      }.recover{
+        case e: Exception =>
+          logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
+          claim
+      }
+    }
+
+    val eventualClaims: Future[Seq[Claim]] = claimantClaims(nino).flatMap { claimantClaims =>
+      val claims: Seq[Claim] = claimantClaims.references.getOrElse(Seq.empty[Claim])
+
+      if ( claims.isEmpty ) logger.warn(s"Empty claims list for journeyId $journeyId")
+
+      Future sequence claims.map { claim =>
+        val barcodeReference = claim.household.barcodeReference
+
+        if (barcodeReference.equals("000000000000000")) {
+          logger.warn(s"Invalid barcode reference $barcodeReference for journeyId $journeyId applicationId ${claim.household.applicationID}")
+          Future successful claim
+        } else fullClaimantDetails(claim)
+      }
+    }
+
+    eventualClaims
+  }
 
   // Note: The TcrAuthenticationToken must be supplied to claimantDetails and submitRenewal.
   override def authenticateRenewal(nino: Nino, tcrRenewalReference: RenewalReference)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Option[TcrAuthenticationToken]] = {
@@ -135,7 +195,7 @@ trait RenewalStatus {
   }
 }
 
-object SandboxMobileTaxCreditsRenewalService extends MobileTaxCreditsRenewalService with FileResource {
+class SandboxMobileTaxCreditsRenewalService(val taxCreditsSubmissionControlConfig: TaxCreditsControl) extends MobileTaxCreditsRenewalService with FileResource {
   private def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
   private def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
@@ -171,4 +231,10 @@ object SandboxMobileTaxCreditsRenewalService extends MobileTaxCreditsRenewalServ
 
   override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Response] =
     Future.successful(Success(200))
+
+  override def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+    claimantClaims(nino).map{ claims =>
+      RenewalsSummary(taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState.submissionsState, claims.references)
+    }
+  }
 }

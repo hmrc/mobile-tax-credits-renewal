@@ -19,12 +19,12 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
-import play.api.Configuration
+import play.api.{Configuration, LoggerLike}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.{AppContext, RenewalStatusTransform}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, RenewalReference, TcrAuthenticationToken}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.UnitSpec
@@ -56,8 +56,10 @@ trait ServiceStub extends UnitSpec {
   class TestMobileTaxCreditsRenewalService(val ntcConnector: NtcConnector,
                                            override val auditConnector: AuditConnector,
                                            configuration: Configuration,
-                                           appContext: AppContext)
-    extends LiveMobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, appContext) {
+                                           appContext: AppContext,
+                                           taxCreditsSubmissionControlConfig: TaxCreditsControl,
+                                           logger: LoggerLike)
+    extends LiveMobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, appContext, taxCreditsSubmissionControlConfig, logger) {
     override lazy val config: List[RenewalStatusTransform] = List.empty
   }
 }

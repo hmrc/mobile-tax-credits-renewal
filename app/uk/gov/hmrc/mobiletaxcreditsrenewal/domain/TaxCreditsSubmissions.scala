@@ -24,6 +24,8 @@ import org.joda.time.DateTimeZone.UTC
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.time.DateTimeUtils
 
+import scala.collection.Seq
+
 case class TaxCreditsSubmissions(submissionShuttered: Boolean, inSubmitRenewalsPeriod: Boolean, inViewRenewalsPeriod: Boolean) {
   def toTaxCreditsRenewalsState: TaxCreditsRenewalsState = {
     new TaxCreditsRenewalsState(
@@ -34,7 +36,11 @@ case class TaxCreditsSubmissions(submissionShuttered: Boolean, inSubmitRenewalsP
   }
 }
 
-case class TaxCreditsRenewalsState(submissionsState: String)
+case class TaxCreditsRenewalsState(submissionsState: String) {
+  private val statesThatRequireSummaryData = Seq("open", "check_status_only")
+
+  val showSummaryData: Boolean = statesThatRequireSummaryData.contains(submissionsState)
+}
 
 object TaxCreditsSubmissions extends DateTimeUtils {
   implicit val formats: OFormat[TaxCreditsSubmissions] = Json.format[TaxCreditsSubmissions]

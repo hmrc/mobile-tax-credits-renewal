@@ -65,14 +65,6 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
     }
   }
 
-  "GET /states/current" should {
-    "return open state " in {
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 200
-      (response.json \ "submissionsState").as[String] shouldBe "open"
-    }
-  }
-
   "GET /renewals/:nino" should {
     "return closed state " in {
       grantAccess(nino1.value)
@@ -106,14 +98,6 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
     }
   }
 
-  "GET /states/current" should {
-    "return closed state " in {
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 200
-      (response.json \ "submissionsState").as[String] shouldBe "closed"
-    }
-  }
-
   "GET /renewals/:nino" should {
     "return closed state " in {
       grantAccess(nino1.value)
@@ -125,26 +109,6 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
   }
 }
 
-
-class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
-  override def submissionShuttered: Boolean = true
-
-  "POST /declarations/:nino" should {
-    "return OK but not renew when submissions are shuttered" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
-    }
-  }
-
-  "GET /rstates/current" should {
-    "return shuttered state " in {
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 200
-      (response.json \ "submissionsState").as[String] shouldBe "shuttered"
-    }
-  }
-}
-
-
 class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionStartDate: String = now.minusDays(2).toString
   override def submissionEndDate: String = now.minusDays(1).toString
@@ -155,15 +119,7 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
     }
   }
-
-  "GET /states/current" should {
-    "return check-only state " in {
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 200
-      (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
-    }
-  }
-
+  
   "GET /renewals/:nino" should {
     "return closed state " in {
       grantAccess(nino1.value)

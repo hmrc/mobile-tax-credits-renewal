@@ -4,6 +4,4 @@ GET     /claims/:nino                     @uk.gov.hmrc.mobiletaxcreditsrenewal.c
 
 POST    /declarations/:nino               @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-GET     /states/current                   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxServiceStateController.taxCreditsSubmissionStateEnabled(journeyId: Option[String])
-
 GET     /tokens/:nino/:renewalReference   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference:uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])

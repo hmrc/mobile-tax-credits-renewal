@@ -18,7 +18,6 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import javax.inject.{Inject, Named, Singleton}
 import play.api._
-import play.api.http.HeaderNames
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
@@ -60,14 +59,9 @@ trait ErrorHandling {
 }
 
 trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ErrorHandling {
-  val maxAgeForClaims: Long
   val service: MobileTaxCreditsRenewalService
   val taxCreditsSubmissionControlConfig: TaxCreditsControl
   val logger: LoggerLike
-
-  def addCacheHeader(maxAge: Long, result: Result): Result = {
-    result.withHeaders(HeaderNames.CACHE_CONTROL -> s"max-age=$maxAge")
-  }
 
   final def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
@@ -76,7 +70,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
 
         errorWrapper(
           service.renewals(nino, journeyId).map{ renewals =>
-            addCacheHeader(maxAgeForClaims, Ok(toJson(renewals)))
+            Ok(toJson(renewals))
           }
         )
     }
@@ -115,7 +109,6 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
   }
 
   private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier) = {
-
     (request.headers.get(tcrAuthToken), mode) match {
 
       case (None , Some(_)) => func(hc)
@@ -132,13 +125,11 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
   }
 }
 
-
 @Singleton
 class SandboxMobileTaxCreditsRenewalController @Inject()(
   override val authConnector: AuthConnector,
   override val logger: LoggerLike,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  @Named ("controllers.confidenceLevel") override val maxAgeForClaims: Long ) extends MobileTaxCreditsRenewalController {
+  @Named("controllers.confidenceLevel") override val confLevel: Int ) extends MobileTaxCreditsRenewalController {
   override lazy val requiresAuth: Boolean = false
   override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(taxCreditsSubmissionControlConfig)
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
@@ -155,6 +146,5 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
   override val logger: LoggerLike,
   override val service: LiveMobileTaxCreditsRenewalService,
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  @Named("claims.maxAge") override val maxAgeForClaims: Long) extends MobileTaxCreditsRenewalController {
+  @Named("controllers.confidenceLevel") override val confLevel: Int ) extends MobileTaxCreditsRenewalController {
 }

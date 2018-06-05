@@ -48,12 +48,11 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
   }
 
-  private val maxAge: Long = 3600
   private val nino = Nino("CS700100A")
   private val journeyId= "journeyId"
 
   private val controller =
-    new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, config, L200.level, maxAge)
+    new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, config, L200.level)
 
   val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
@@ -74,7 +73,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
       val result: Future[Result] = await(controller.renewals(nino,Some(journeyId))).apply(fakeRequest)
       status(result) shouldBe 200
       contentAsJson(result) shouldBe parse("""{"submissionsState":"closed"}""")
-      headers(result).get(HeaderNames.CACHE_CONTROL).contains(s"max-age=$maxAge") shouldBe true
     }
 
     "return forbidden for a user with L100 confidence level" in {

@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
-import java.util
-
 import com.google.inject.name.Named
 import com.google.inject.name.Names.named
-import com.google.inject.{AbstractModule, Provides, TypeLiteral}
+import com.google.inject.{AbstractModule, Provides}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment, Logger, LoggerLike}
 import uk.gov.hmrc.api.connector.ServiceLocatorConnector
@@ -48,7 +46,6 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
     bindConfigInt("controllers.confidenceLevel")
-    bindConfigLong("claims.maxAge")
     bindConfigString("appUrl", "appUrl")
     bindConfigBoolean("submission.submissionShuttered", "microservice.services.ntc.submission.submissionShuttered")
     bindConfigString("submission.startDate", "microservice.services.ntc.submission.startDate")

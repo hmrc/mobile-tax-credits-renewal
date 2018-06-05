@@ -81,7 +81,6 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
 
       val response = await(renewalsRequest.get)
       response.status shouldBe 200
-      response.allHeaders(HeaderNames.CACHE_CONTROL).contains("max-age=1800") shouldBe true
       (response.json \ "submissionsState").as[String] shouldBe "open"
 
       val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_open.json").get)
@@ -109,7 +108,6 @@ class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
 
       val response = await(renewalsRequest.get)
       response.status shouldBe 200
-      response.allHeaders(HeaderNames.CACHE_CONTROL).contains("max-age=1800") shouldBe true
       (response.json \ "submissionsState").as[String] shouldBe "shuttered"
     }
   }
@@ -132,7 +130,6 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
 
       val response = await(renewalsRequest.get)
       response.status shouldBe 200
-      response.allHeaders(HeaderNames.CACHE_CONTROL).contains("max-age=1800") shouldBe true
       (response.json \ "submissionsState").as[String] shouldBe "closed"
     }
   }
@@ -158,7 +155,6 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
 
       val response = await(renewalsRequest.get)
       response.status shouldBe 200
-      response.allHeaders(HeaderNames.CACHE_CONTROL).contains("max-age=1800") shouldBe true
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
 
       val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_check_status_only.json").get)

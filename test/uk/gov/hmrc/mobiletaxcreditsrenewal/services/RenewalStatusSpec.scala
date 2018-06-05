@@ -16,31 +16,43 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.mobiletaxcreditsrenewal.config.{AppContext, RenewalStatusTransform}
+import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Claim, Household, Renewal}
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.play.test.UnitSpec
 
-class RenewalStatusSpec extends UnitSpec with WithFakeApplication with MockitoSugar {
+class RenewalStatusSpec extends UnitSpec with MockFactory {
 
-  val renewalStatus: RenewalStatus  = new RenewalStatus {
-    val appContext: AppContext = mock[AppContext]
-    override lazy val config: List[RenewalStatusTransform] = List(
-      RenewalStatusTransform("NOT_SUBMITTED", Seq("DISREGARD", "UNKNOWN")),
-      RenewalStatusTransform("SUBMITTED_AND_PROCESSING", Seq("S17 LOGGED", "SUPERCEDED", "PARTIAL CAPTURE", "AWAITING PROCESS", "INHIBITED", "AWAITING CHANGE OF CIRCUMSTANCES", "1 REPLY FROM 2 APPLICANT HOUSEHOLD", "DUPLICATE")),
-      RenewalStatusTransform("COMPLETE", Seq("REPLY USED FOR FINALISATION", "SYSTEM FINALISED")))
-  }
+  val renewalStatus: RenewalStatus  = new RenewalStatus {}
 
   val household = Household("1010101", "1234", Applicant("NINO", "MR", "TOM", None, "SMITH"), None, None, None)
 
-  def claim(renewalStatus: Some[String] = Some("SUPERCEDED")) = Claim(household, Renewal(None, None, renewalStatus, None, None))
+  def claim(renewalStatus: Option[String] = Some("SUPERCEDED")) = Claim(household, Renewal(None, None, renewalStatus, None, None))
 
   "Renewal status" should {
-    "transform a status" in {
+    "resolve to NOT_SUBMITTED" in {
+      renewalStatus.resolveStatus(claim(Some("DISREGARD"))) shouldBe "NOT_SUBMITTED"
+      renewalStatus.resolveStatus(claim(Some("UNKNOWN"))) shouldBe "NOT_SUBMITTED"
+    }
+
+    "resolve to SUBMITTED_AND_PROCESSING" in {
+      renewalStatus.resolveStatus(claim(Some("S17 LOGGED"))) shouldBe "SUBMITTED_AND_PROCESSING"
       renewalStatus.resolveStatus(claim(Some("SUPERCEDED"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("PARTIAL CAPTURE"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("AWAITING PROCESS"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("INHIBITED"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("AWAITING CHANGE OF CIRCUMSTANCES"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("1 REPLY FROM 2 APPLICANT HOUSEHOLD"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("DUPLICATE"))) shouldBe "SUBMITTED_AND_PROCESSING"
+    }
+
+    "resolve to COMPLETE" in {
+      renewalStatus.resolveStatus(claim(Some("REPLY USED FOR FINALISATION"))) shouldBe "COMPLETE"
+      renewalStatus.resolveStatus(claim(Some("SYSTEM FINALISED"))) shouldBe "COMPLETE"
     }
 
     "handle unknown status as NOT_SUBMITTED" in {
+      renewalStatus.resolveStatus(claim(None)) shouldBe "NOT_SUBMITTED"
+      renewalStatus.resolveStatus(claim(Some(""))) shouldBe "NOT_SUBMITTED"
       renewalStatus.resolveStatus(claim(Some("foo"))) shouldBe "NOT_SUBMITTED"
     }
 

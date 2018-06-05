@@ -19,7 +19,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 import uk.gov.hmrc.api.controllers.ErrorResponse
 import uk.gov.hmrc.http.HttpException
 
-case object ErrorUnauthorizedNoNino extends ErrorResponse(401, "UNAUTHORIZED", "NINO does not exist on account")
+case object ErrorUnauthorizedNoNino extends ErrorResponse(403, "UNAUTHORIZED", "NINO does not exist on account")
 case object ErrorwithNtcRenewal extends ErrorResponse(500, "NTC_RENEWAL_ERROR", "Failed to process renewal")
 case object ErrorNoAuthToken extends ErrorResponse(500, "NTC_RENEWAL_AUTH_ERROR", "No auth header supplied in http request")
 case object ErrorAuthTokenSupplied extends ErrorResponse(500, "NTC_RENEWAL_AUTH_ERROR", "Auth header is not required in the request")

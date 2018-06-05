@@ -39,8 +39,6 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
   override protected lazy val runModeConfiguration: Configuration = configuration
 
   override def configure(): Unit = {
-    bindConfigList("renewalStatus", "renewalstatus")
-
     bind(classOf[ServiceLocatorConnector]).to(classOf[ApiServiceLocatorConnector])
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
     bind(classOf[CoreGet]).to(classOf[WSHttpImpl])
@@ -50,6 +48,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
     bindConfigInt("controllers.confidenceLevel")
+    bindConfigLong("claims.maxAge")
     bindConfigString("appUrl", "appUrl")
     bindConfigBoolean("submission.submissionShuttered", "microservice.services.ntc.submission.submissionShuttered")
     bindConfigString("submission.startDate", "microservice.services.ntc.submission.startDate")
@@ -68,24 +67,15 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     * Binds a configuration value using the `path` as the name for the binding.
     * Throws an exception if the configuration value does not exist or cannot be read as an Int.
     */
-  private def bindConfigInt(path: String): Unit = {
-    bindConstant().annotatedWith(named(path))
-      .to(configuration.underlying.getInt(path))
-  }
+  private def bindConfigInt(path: String): Unit =
+    bindConstant().annotatedWith(named(path)).to(configuration.underlying.getInt(path))
 
-  private def bindConfigString(name: String, path: String): Unit = {
-    bindConstant().annotatedWith(named(name))
-      .to(configuration.underlying.getString(path))
-  }
+  private def bindConfigLong(path: String): Unit =
+    bindConstant().annotatedWith(named(path)).to(configuration.underlying.getLong(path))
+
+  private def bindConfigString(name: String, path: String): Unit =
+    bindConstant().annotatedWith(named(name)).to(configuration.underlying.getString(path))
 
   private def bindConfigBoolean(name: String, path: String): Unit =
     bindConstant().annotatedWith(named(name)).to(configuration.underlying.getBoolean(path))
-
-  private def bindConfigList(name: String, path: String): Unit = {
-    val configValue: util.List[Configuration] = configuration.getConfigList(path).getOrElse(throw new RuntimeException(s"""Config property "$path" missing"""))
-    bind(new TypeLiteral[util.List[Configuration]] {})
-      .annotatedWith(named(name))
-      .toInstance(configValue)
-  }
-
 }

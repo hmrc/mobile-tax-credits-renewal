@@ -17,8 +17,8 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import com.typesafe.config.Config
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.{Configuration, Environment}
@@ -29,12 +29,11 @@ import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class NtcConnectorSpec
-  extends UnitSpec with ScalaFutures with WithFakeApplication with CircuitBreakerTest with MockitoSugar {
+class NtcConnectorSpec extends UnitSpec with ScalaFutures with CircuitBreakerTest with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -158,7 +157,7 @@ class NtcConnectorSpec
     val connector = new TestNtcConnector(http, mock[Configuration], mock[Environment])
   }
 
-  "authenticate tcsConnector" should {
+  "authenticate" should {
 
     "return None when 404 returned" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http404Response
@@ -192,7 +191,7 @@ class NtcConnectorSpec
     }
   }
 
-  "claims tcsConnector" should {
+  "claims" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http400Response
@@ -221,7 +220,7 @@ class NtcConnectorSpec
     }
   }
 
-  "claimantDetails tcsConnector" should {
+  "claimantDetails" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http400Response
@@ -250,7 +249,7 @@ class NtcConnectorSpec
     }
   }
 
-  "submitRenewal tcsConnector" should {
+  "submitRenewal" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http400Response
@@ -268,14 +267,12 @@ class NtcConnectorSpec
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http204Response
-      val result: Response = await(connector.submitRenewal(taxCreditNino, renewal))
-      result.status shouldBe 204
+      await(connector.submitRenewal(taxCreditNino, renewal)) shouldBe 204
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.submitRenewal(taxCreditNino, renewal))
     }
-
   }
 }

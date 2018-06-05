@@ -58,9 +58,9 @@ trait LoadConfig {
 }
 
 trait TaxCreditsControl {
-  def toTaxCreditsSubmissions: TaxCreditsSubmissions
+  def toTaxCreditsSubmissions(): TaxCreditsSubmissions
 
-  def toTaxCreditsRenewalsState: TaxCreditsRenewalsState
+  def toTaxCreditsRenewalsState(): TaxCreditsRenewalsState
 }
 
 @Singleton

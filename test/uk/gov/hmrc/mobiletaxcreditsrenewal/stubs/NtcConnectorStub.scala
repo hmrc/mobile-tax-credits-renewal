@@ -16,35 +16,42 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
-import org.mockito.stubbing.OngoingStubbing
+import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, Response}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NtcConnectorStub extends UnitSpec {
+trait NtcConnectorStub extends MockFactory {
 
-  def stubAuthenticateRenewal(response: Option[TcrAuthenticationToken])(implicit ntcConnector: NtcConnector): OngoingStubbing[Future[Option[TcrAuthenticationToken]]] = {
-    when(ntcConnector.authenticateRenewal(any[TaxCreditsNino](), any[RenewalReference]())(any[HeaderCarrier](), any[ExecutionContext]()))
-      .thenReturn(Future(response))
+  def stubAuthenticateRenewal(nino: TaxCreditsNino, renewalReference: RenewalReference, token: TcrAuthenticationToken)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.authenticateRenewal(_: TaxCreditsNino, _: RenewalReference)
+      (_: HeaderCarrier, _: ExecutionContext)).expects(nino,renewalReference,*,*).returning(Future successful Some(token))
   }
 
-  def stubClaimantClaims(response: Claims)(implicit ntcConnector: NtcConnector): OngoingStubbing[Future[Claims]] = {
-    when(ntcConnector.claimantClaims(any[TaxCreditsNino]())(any[HeaderCarrier](), any[ExecutionContext]()))
-      .thenReturn(Future(response))
+  def stubAuthenticateRenewalFailure(nino: TaxCreditsNino, renewalReference: RenewalReference)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.authenticateRenewal(_: TaxCreditsNino, _: RenewalReference)
+      (_: HeaderCarrier, _: ExecutionContext)).expects(nino,renewalReference,*,*).returning(Future failed new RuntimeException())
   }
 
-  def stubSubmitRenewals(response: Response)(implicit ntcConnector: NtcConnector): OngoingStubbing[Future[Response]] = {
-    when(ntcConnector.submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]()))
-      .thenReturn(Future(response))
+  def stubClaimantClaims(nino: TaxCreditsNino, response: Claims)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.claimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext)).expects(nino,*,*).returning(Future successful response)
   }
 
-  def stubSubmitRenewalsException(e: Exception)(implicit ntcConnector: NtcConnector): OngoingStubbing[Future[Response]] = {
-    when(ntcConnector.submitRenewal(any[TaxCreditsNino](), any[TcrRenewal]())(any[HeaderCarrier](), any[ExecutionContext]())).thenReturn(Future failed e)
+  def stubClaimantDetails(nino: TaxCreditsNino, claimantDetails: ClaimantDetails)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.claimantDetails(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext)).expects(nino,*,*).returning(Future successful claimantDetails)
+  }
+
+  def stubClaimantDetailsFailure(nino: TaxCreditsNino)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.claimantDetails(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext)).expects(nino,*,*).returning(Future failed new RuntimeException())
+  }
+
+  def stubSubmitRenewals(nino: TaxCreditsNino, response: Int)(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.submitRenewal(_: TaxCreditsNino, _:TcrRenewal)(_: HeaderCarrier, _: ExecutionContext)).expects(nino,*,*,*).returning(Future successful response)
+  }
+
+  def stubSubmitRenewalsFailure(nino: TaxCreditsNino, e: RuntimeException = new RuntimeException())(implicit ntcConnector: NtcConnector): Unit = {
+    (ntcConnector.submitRenewal(_: TaxCreditsNino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext)).expects(nino,*,*,*).returning(Future failed e)
   }
 }

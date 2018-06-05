@@ -27,14 +27,6 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-sealed trait Response {
-  def status: Int
-}
-
-case class Success(status: Int) extends Response
-
-case class Error(status: Int) extends Response
-
 @Singleton
 class NtcConnector @Inject()(http: CoreGet with CorePost,
                              @Named("ntc") serviceUrl: String,
@@ -68,13 +60,12 @@ class NtcConnector @Inject()(http: CoreGet with CorePost,
   def claimantClaims(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Claims] =
     withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
-  def submitRenewal(nino: TaxCreditsNino,
-                    renewalData: TcrRenewal)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Response] = {
+  def submitRenewal(nino: TaxCreditsNino, renewalData: TcrRenewal)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
     val uri = s"$serviceUrl/tcs/${nino.taxCreditsNino}/renewal"
     withCircuitBreaker(http.POST[TcrRenewal, HttpResponse](uri, renewalData, Seq()).map(response => {
       response.status match {
-        case x if x >= 200 && x < 300 => Success(x)
-        case _ => Error(response.status)
+        case x if x >= 200 && x < 300 => x
+        case _ => throw new RuntimeException("Unsupported response code: " + response.status)
       }
     }))
   }

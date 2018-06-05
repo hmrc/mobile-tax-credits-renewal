@@ -87,4 +87,8 @@ object NtcStub {
   def renewalIsSuccessful(nino: Nino, renewalData: TcrRenewal): Unit =
     stubFor(post(urlEqualTo(s"/tcs/${nino.value}/renewal")).withRequestBody(
       equalToJson(toJson(renewalData).toString(), true, false)).willReturn(aResponse().withStatus(200)))
+
+  def renewalFails(nino: Nino, renewalData: TcrRenewal): Unit =
+    stubFor(post(urlEqualTo(s"/tcs/${nino.value}/renewal")).withRequestBody(
+      equalToJson(toJson(renewalData).toString(), true, false)).willReturn(aResponse().withStatus(500)))
 }

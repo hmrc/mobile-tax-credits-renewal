@@ -77,12 +77,12 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
     "return forbidden for a user with L100 confidence level" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L100)
-      status(await(controller.renewals(nino, Some(journeyId))).apply(fakeRequest)) shouldBe 401 //todo 403
+      status(await(controller.renewals(nino, Some(journeyId))).apply(fakeRequest)) shouldBe 403
     }
 
     "return forbidden when trying to access another users nino" in {
       stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(await(controller.renewals(nino, Some(journeyId))).apply(fakeRequest)) shouldBe 401 //todo 403
+      status(await(controller.renewals(nino, Some(journeyId))).apply(fakeRequest)) shouldBe 403
     }
 
     "return unauthoirsed for an unauthorised user" in {
@@ -144,12 +144,12 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
     "return forbidden for a user with L100 confidence level" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L100)
-      status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 401
+      status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 403
     }
 
     "return forbidden when trying to access another users nino" in {
       stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 401
+      status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 403
     }
 
     "return unauthoirsed for an unauthorised user" in {

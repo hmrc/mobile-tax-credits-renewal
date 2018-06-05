@@ -27,15 +27,11 @@ import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 import scala.concurrent.Future
 
-case object ErrorUnauthorizedMicroService extends ErrorResponse(401, "UNAUTHORIZED", "Unauthorized to access resource")
-
-case object ErrorUnauthorizedWeakCredStrength extends ErrorResponse(401, "WEAK_CRED_STRENGTH", "Credential Strength on account does not allow access")
+case object ErrorUnauthorizedMicroService extends ErrorResponse(401, "UNAUTHORIZED", "Unauthorized")
+case object ErrorForbidden extends ErrorResponse(4013, "FORBIDDEN", "Forbidden")
 
 trait AccountAccessControl extends Results with Authorisation {
-
   import scala.concurrent.ExecutionContext.Implicits.global
-
-  case object ErrorUnauthorized extends ErrorResponse(401, "UNAUTHORIZED", "Invalid request")
 
   lazy val requiresAuth: Boolean = true
 
@@ -51,19 +47,15 @@ trait AccountAccessControl extends Results with Authorisation {
 
       case _: NinoNotFoundOnAccount =>
         Logger.info("Unauthorized! NINO not found on account!")
-        Unauthorized(toJson(ErrorUnauthorizedNoNino))
+        Forbidden(toJson(ErrorForbidden))
 
       case _: FailToMatchTaxIdOnAuth =>
         Logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
-        Status(ErrorUnauthorized.httpStatusCode)(toJson(ErrorUnauthorized))
+        Forbidden(toJson(ErrorForbidden))
 
       case _: AccountWithLowCL =>
         Logger.info("Unauthorized! Account with low CL!")
-        Unauthorized(toJson(ErrorUnauthorizedLowCL))
-
-      case _: AccountWithWeakCredStrength =>
-        Logger.info("Unauthorized! Account with weak cred strength!")
-        Unauthorized(toJson(ErrorUnauthorizedWeakCredStrength))
+        Forbidden(toJson(ErrorForbidden))
     }
   }
 }

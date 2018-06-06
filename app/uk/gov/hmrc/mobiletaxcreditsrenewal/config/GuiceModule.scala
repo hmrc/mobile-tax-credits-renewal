@@ -25,6 +25,7 @@ import uk.gov.hmrc.api.connector.ServiceLocatorConnector
 import uk.gov.hmrc.api.controllers.DocumentationController
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.CoreGet
+import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.{ConfiguredShuttering, Shuttering}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{TaxCreditsControl, TaxCreditsSubmissionControlConfig}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.tasks.ServiceLocatorRegistrationTask
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
@@ -44,6 +45,11 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[DocumentationController]).toInstance(DocumentationController)
     bind(classOf[ServiceLocatorRegistrationTask]).asEagerSingleton()
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
+    bind(classOf[Shuttering]).to(classOf[ConfiguredShuttering])
+
+    bindConfigBoolean("shuttering.shuttered", ("shuttering.shuttered"))
+    bindConfigBase64String("shuttering.title")
+    bindConfigBase64String("shuttering.message")
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")
@@ -75,4 +81,11 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
 
   private def bindConfigBoolean(name: String, path: String): Unit =
     bindConstant().annotatedWith(named(name)).to(configuration.underlying.getBoolean(path))
+
+  private def bindConfigBase64String(path: String): Unit = {
+    val encoded = configuration.underlying.getString(path)
+    val decoded = Base64.decode(encoded)
+    bindConstant().annotatedWith(named(path)).to(decoded)
+  }
+
 }

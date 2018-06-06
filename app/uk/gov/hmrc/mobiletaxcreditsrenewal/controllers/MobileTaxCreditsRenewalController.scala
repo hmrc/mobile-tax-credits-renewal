@@ -140,7 +140,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(
   override lazy val requiresAuth: Boolean = false
   override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(taxCreditsSubmissionControlConfig)
   override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
-    override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(false, true, true )
+    override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(true, true )
 
     override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
       TaxCreditsRenewalsState(submissionsState = "open")

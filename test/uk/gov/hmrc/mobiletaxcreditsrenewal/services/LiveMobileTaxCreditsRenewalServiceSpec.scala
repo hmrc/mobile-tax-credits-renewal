@@ -135,11 +135,6 @@ class LiveMobileTaxCreditsRenewalServiceSpec
       await(service.renewals(nino, None)) shouldBe RenewalsSummary("closed", None)
     }
 
-    "return no claims details when current renewal sate is shuttered" in {
-      whenCurrentSubmissionStateIs("shuttered")
-      await(service.renewals(nino, None)) shouldBe RenewalsSummary("shuttered", None)
-    }
-
     "return multiple claims when the current renewal state is open" in {
       testMultipleClaimsWhenCurrentSubmissionStateIs("open")
     }

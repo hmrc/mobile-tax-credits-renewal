@@ -53,7 +53,6 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")
-    bindConfigBoolean("submission.submissionShuttered", "microservice.services.ntc.submission.submissionShuttered")
     bindConfigString("submission.startDate", "microservice.services.ntc.submission.startDate")
     bindConfigString("submission.endDate", "microservice.services.ntc.submission.endDate")
     bindConfigString("submission.endViewRenewalsDate", "microservice.services.ntc.submission.endViewRenewalsDate")

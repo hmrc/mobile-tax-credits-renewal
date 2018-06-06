@@ -3,7 +3,6 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal
 import com.github.tomakehurst.wiremock.client.WireMock.{postRequestedFor, urlEqualTo, verify}
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
-import play.api.http.HeaderNames
 import play.api.libs.json.Json.{parse, toJson}
 import play.api.libs.json.{JsArray, JsObject}
 import play.api.libs.ws.{WSRequest, WSResponse}
@@ -25,7 +24,6 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/states/current").withHeaders(acceptJsonHeader)
   protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").withHeaders(acceptJsonHeader)
 
-  protected def submissionShuttered = false
   protected def submissionStartDate: String = now.minusDays(1).toString
   protected def submissionEndDate: String = now.plusDays(1).toString
   protected def endViewRenewalsDate: String = now.plusDays(2).toString
@@ -33,7 +31,6 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   override def config: Map[String, Any] = {
      super.config ++
      Map(
-       "microservice.services.ntc.submission.submissionShuttered" -> submissionShuttered,
        "microservice.services.ntc.submission.startDate" -> submissionStartDate,
        "microservice.services.ntc.submission.endDate" -> submissionEndDate,
        "microservice.services.ntc.submission.endViewRenewalsDate" -> endViewRenewalsDate)
@@ -89,26 +86,6 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
       val claims = (response.json \ "claims").as[JsArray]
       val renewal = (claims(0) \ "renewal" \ "claimantDetails").as[JsObject]
       renewal.value("renewalFormType").as[String] shouldBe "D"
-    }
-  }
-}
-
-class TaxCreditRenewalShutteredStateSpec extends TaxCreditRenewalStateSpec{
-  override def submissionShuttered: Boolean = true
-
-  "POST /declarations/:nino" should {
-    "return OK but not renew when submissions are shuttered" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
-    }
-  }
-
-  "GET /renewals/:nino" should {
-    "return shuttered state " in {
-      grantAccess(nino1.value)
-
-      val response = await(renewalsRequest.get)
-      response.status shouldBe 200
-      (response.json \ "submissionsState").as[String] shouldBe "shuttered"
     }
   }
 }

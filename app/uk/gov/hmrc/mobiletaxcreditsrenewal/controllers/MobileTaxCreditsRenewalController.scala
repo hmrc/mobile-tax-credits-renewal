@@ -66,7 +66,6 @@ trait ShutteringErrorWrapper {
 
 trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ShutteringErrorWrapper {
   val service: MobileTaxCreditsRenewalService
-  val taxCreditsSubmissionControlConfig: TaxCreditsControl
   val logger: LoggerLike
 
   final def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
@@ -94,20 +93,13 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
           renewal => {
             shutteringErrorWrapper(validateTcrAuthHeader(None) {
               implicit hc =>
-                val enabled = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState.submissionsState
-
-                if (enabled != "open") {
-                  logger.info("Renewals have been disabled.")
-                  Future.successful(Ok)
-                } else {
-                  service.submitRenewal(nino, renewal).map { _ =>
-                    logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
-                    Ok
-                  }.recover{
-                    case e: Exception =>
-                      logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
-                      throw e
-                  }
+                service.submitRenewal(nino, renewal).map { _ =>
+                  logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
+                  Ok
+                }.recover{
+                  case e: Exception =>
+                    logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
+                    throw e
                 }
             })
           }
@@ -138,13 +130,12 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(
   @Named("controllers.confidenceLevel") override val confLevel: Int,
   override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
   override lazy val requiresAuth: Boolean = false
-  override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(taxCreditsSubmissionControlConfig)
-  override val taxCreditsSubmissionControlConfig: TaxCreditsControl = new TaxCreditsControl {
+  override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(new TaxCreditsControl {
     override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(true, true )
 
     override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
       TaxCreditsRenewalsState(submissionsState = "open")
-  }
+  })
 }
 
 @Singleton
@@ -152,7 +143,6 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
   override val authConnector: AuthConnector,
   override val logger: LoggerLike,
   override val service: LiveMobileTaxCreditsRenewalService,
-  override val taxCreditsSubmissionControlConfig: TaxCreditsControl,
   @Named("controllers.confidenceLevel") override val confLevel: Int,
   override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
 }

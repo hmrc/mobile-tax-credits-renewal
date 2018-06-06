@@ -50,10 +50,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
     response.status shouldBe 200
     verify(0, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
   }
-}
 
-
-class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
   "POST /declarations/:nino" should {
     "renew successfully" in {
       renewalIsSuccessful(nino1, renewal)
@@ -68,7 +65,10 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
     }
   }
+}
 
+
+class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
   "GET /renewals/:nino" should {
     "return open state " in {
       grantAccess(nino1.value)
@@ -95,12 +95,6 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
   override def submissionEndDate: String = now.plusDays(2).toString
   override def endViewRenewalsDate: String = now.plusDays(3).toString
 
-  "POST /declarations/:nino" should {
-    "return OK but not renew when submissions are closed" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
-    }
-  }
-
   "GET /renewals/:nino" should {
     "return closed state " in {
       grantAccess(nino1.value)
@@ -117,12 +111,6 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
   override def submissionEndDate: String = now.minusDays(1).toString
   override def endViewRenewalsDate: String = now.plusDays(1).toString
 
-  "POST /declarations/:nino" should {
-    "return OK but not renew when submissions are view-only" in {
-      verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint()
-    }
-  }
-  
   "GET /renewals/:nino" should {
     "return check_status_only state " in {
       grantAccess(nino1.value)

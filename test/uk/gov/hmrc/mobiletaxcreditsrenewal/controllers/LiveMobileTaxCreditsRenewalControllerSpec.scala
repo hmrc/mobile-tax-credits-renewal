@@ -58,9 +58,9 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
-  private def mockIsShuttered(isShuttered: Boolean): Unit = (shuttering.isShuttered _).expects().returning(isShuttered)
-  private def mockShutteringTitle(title: String): Unit = (shuttering.getTitle _).expects().returning(title)
-  private def mockShutteringMessage(message: String): Unit = (shuttering.getMessage _).expects().returning(message)
+  private def mockIsShuttered(isShuttered: Boolean): Unit = (shuttering.shuttered _).expects().returning(isShuttered)
+  private def mockShutteringTitle(title: String): Unit = (shuttering.title _).expects().returning(title)
+  private def mockShutteringMessage(message: String): Unit = (shuttering.message _).expects().returning(message)
 
   "renewals" should {
     lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =

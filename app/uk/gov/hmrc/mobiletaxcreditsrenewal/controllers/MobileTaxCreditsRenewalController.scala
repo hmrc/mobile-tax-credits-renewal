@@ -44,8 +44,8 @@ trait ShutteringErrorWrapper {
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
   def shutteringErrorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    if (shuttering.isShuttered()) {
-      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.getTitle(), "message" -> shuttering.getMessage()))
+    if (shuttering.shuttered) {
+      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.title, "message" -> shuttering.message))
     } else {
       func.recover {
         case _: NotFoundException => notFound
@@ -148,13 +148,9 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
 }
 
 trait Shuttering {
-  val shuttered: Boolean
-  val title: String
-  val message: String
-
-  def isShuttered(): Boolean = shuttered
-  def getTitle(): String = title
-  def getMessage(): String = message
+  def shuttered: Boolean
+  def title: String
+  def message: String
 }
 
 @Singleton

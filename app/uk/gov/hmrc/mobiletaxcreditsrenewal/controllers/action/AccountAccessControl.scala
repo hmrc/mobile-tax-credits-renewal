@@ -28,7 +28,7 @@ import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import scala.concurrent.Future
 
 case object ErrorUnauthorizedMicroService extends ErrorResponse(401, "UNAUTHORIZED", "Unauthorized")
-case object ErrorForbidden extends ErrorResponse(4013, "FORBIDDEN", "Forbidden")
+case object ErrorForbidden extends ErrorResponse(403, "FORBIDDEN", "Forbidden")
 
 trait AccountAccessControl extends Results with Authorisation {
   import scala.concurrent.ExecutionContext.Implicits.global

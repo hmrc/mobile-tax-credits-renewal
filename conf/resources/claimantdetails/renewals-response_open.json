@@ -1,11 +1,12 @@
 {
-  "references": [
+  "submissionsState": "open",
+  "claims": [
     {
       "household": {
         "barcodeReference": "200000000000013",
         "applicationID": "198765432134567",
         "applicant1": {
-          "nino": "CS700100A",
+          "nino": "AA000000A",
           "title": "MR",
           "firstForename": "JOHN",
           "secondForename": "",
@@ -23,7 +24,7 @@
           "hasPartner": true,
           "claimantNumber": 123,
           "renewalFormType": "D",
-          "mainApplicantNino": "CS700100A",
+          "mainApplicantNino": "AA000000A",
           "usersPartnerNino": "AP412713B",
           "availableForCOCAutomation": false,
           "applicationId": "198765432134566"
@@ -35,7 +36,7 @@
         "barcodeReference": "000000000000000",
         "applicationID": "198765432134567",
         "applicant1": {
-          "nino": "CS700100A",
+          "nino": "AA000000A",
           "title": "MR",
           "firstForename": "JOHN",
           "secondForename": "",

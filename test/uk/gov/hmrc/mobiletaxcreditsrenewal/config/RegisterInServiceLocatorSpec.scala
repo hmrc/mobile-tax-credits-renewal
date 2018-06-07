@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
+import org.scalamock.scalatest.MockFactory
 import play.api.Configuration
 import play.api.Mode.Mode
 import uk.gov.hmrc.api.config._
@@ -28,7 +26,7 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.Future
 
-class RegisterInServiceLocatorSpec extends UnitSpec with MockitoSugar with WithFakeApplication {
+class RegisterInServiceLocatorSpec extends UnitSpec with MockFactory with WithFakeApplication {
 
   trait Setup extends ServiceLocatorRegistration with ServiceLocatorConfig {
     val mockConnector: ServiceLocatorConnector = mock[ServiceLocatorConnector]
@@ -42,15 +40,13 @@ class RegisterInServiceLocatorSpec extends UnitSpec with MockitoSugar with WithF
     "register the microservice in service locator when registration is enabled" in new Setup {
       override lazy val registrationEnabled: Boolean = true
 
-      when(mockConnector.register(any())).thenReturn(Future.successful(true))
+      (mockConnector.register(_:HeaderCarrier)).expects(*).returning(Future.successful(true))
       onStart(fakeApplication)
-      verify(mockConnector).register(any())
     }
 
     "not register the microservice in service locator when registration is disabled" in new Setup {
       override lazy val registrationEnabled: Boolean = false
       onStart(fakeApplication)
-      verify(mockConnector, never()).register(any())
     }
   }
 }

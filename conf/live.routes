@@ -1,9 +1,3 @@
-GET     /claimants/:nino                 @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
-
-GET     /claims/:nino                    @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.claimsDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
-
 POST    /declarations/:nino              @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-GET     /states/current                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveServiceStateController.taxCreditsSubmissionStateEnabled(journeyId: Option[String])
-
-GET     /tokens/:nino/:renewalReference  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference:uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])
+GET     /renewals/:nino                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])

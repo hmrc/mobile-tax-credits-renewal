@@ -16,13 +16,23 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
+import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.ConfidenceLevel.{L100, L200}
 import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{Authorisation, Authority}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
+import uk.gov.hmrc.play.test.UnitSpec
 
-class AuthorisationSpec extends TestSetup {
+class AuthorisationSpec extends UnitSpec with AuthorisationStub with MockFactory {
+  val nino = "CS700100A"
+  val incorrectNino = Nino("SC100700A")
+
+  implicit val hc: HeaderCarrier = HeaderCarrier()
+
+  implicit val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   def authorisation(mockAuthConnector: AuthConnector): Authorisation = {
     new Authorisation {
@@ -33,20 +43,20 @@ class AuthorisationSpec extends TestSetup {
 
   "Authorisation grantAccess" should {
 
-    "successfully grant access when nino exists and confidence level is 200" in new mocks {
+    "successfully grant access when nino exists and confidence level is 200" in  {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       val authority: Authority = await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
       authority.nino.value shouldBe nino
     }
 
-    "error with unauthorised when account has low CL" in new mocks {
+    "error with unauthorised when account has low CL" in  {
       stubAuthorisationGrantAccess(Some(nino) and L100)
       intercept[AccountWithLowCL] {
         await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
       }
     }
 
-    "fail to return authority when no NINO exists" in new mocks {
+    "fail to return authority when no NINO exists" in  {
       stubAuthorisationGrantAccess(None and L200)
       intercept[NinoNotFoundOnAccount] {
         await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
@@ -58,7 +68,7 @@ class AuthorisationSpec extends TestSetup {
       }
     }
 
-    "fail to return authority when auth NINO does not match request NINO" in new mocks {
+    "fail to return authority when auth NINO does not match request NINO" in  {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       intercept[FailToMatchTaxIdOnAuth] {
         await(authorisation(mockAuthConnector).grantAccess(incorrectNino))

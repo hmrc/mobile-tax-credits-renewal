@@ -36,7 +36,8 @@ private object AppDependencies {
     def apply(): Seq[ModuleID] = new TestDependencies {
       override lazy val test = Seq(
         "uk.gov.hmrc" %% "hmrctest" % hmrctestVersion % scope,
-        "org.mockito" % "mockito-core" % mockitoVersion % scope
+        "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
+        "org.scalamock" %% "scalamock" % "4.0.0" % "test"
       )
     }.test
   }
@@ -52,7 +53,6 @@ private object AppDependencies {
         "info.cukes" %% "cucumber-scala" % cucumberVersion % scope,
         "info.cukes" % "cucumber-junit" % cucumberVersion % scope,
         "com.github.tomakehurst" % "wiremock" % wiremockVersion % scope,
-        "org.mockito" % "mockito-core" % mockitoVersion % scope,
         "org.scalatestplus.play" %% "scalatestplus-play" % scalatestplusPlayVersion % scope
       )
     }.test

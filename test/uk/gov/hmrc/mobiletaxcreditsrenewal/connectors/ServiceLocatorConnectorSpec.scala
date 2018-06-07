@@ -16,10 +16,8 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
-import org.mockito.Mockito._
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.Writes
 import uk.gov.hmrc.api.connector.ServiceLocatorConnector
 import uk.gov.hmrc.api.domain.Registration
@@ -28,19 +26,22 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ServiceLocatorConnectorSpec extends UnitSpec with MockitoSugar with ScalaFutures {
+class ServiceLocatorConnectorSpec extends UnitSpec with MockFactory with ScalaFutures {
 
   trait Setup {
     implicit val hc: HeaderCarrier = HeaderCarrier()
     val serviceLocatorException = new RuntimeException
+    val mockHttp: CorePost = mock[CorePost]
+    val mockHandlerOK: () => Unit = mock[() => Unit]
+    val mockHandlerError: Throwable => Unit = mock[(Throwable) => Unit]
 
-    lazy val connector: ServiceLocatorConnector = new ServiceLocatorConnector {
-      override lazy val http: CorePost = mock[CorePost]
+    val connector: ServiceLocatorConnector = new ServiceLocatorConnector {
+      override lazy val http: CorePost = mockHttp
       override lazy val appUrl: String = "http://api-microservice-template.service"
       override lazy val appName: String = "api-microservice-template"
       override lazy val serviceUrl: String = "https://SERVICE_LOCATOR"
-      override lazy val handlerOK: () => Unit = mock[() => Unit]
-      override lazy val handlerError: Throwable => Unit = mock[(Throwable) => Unit]
+      override lazy val handlerOK: () => Unit = mockHandlerOK
+      override lazy val handlerError: Throwable => Unit = mockHandlerError
       override lazy val metadata: Option[Map[String, String]] = Some(Map("third-party-api" -> "true"))
     }
   }
@@ -51,31 +52,25 @@ class ServiceLocatorConnectorSpec extends UnitSpec with MockitoSugar with ScalaF
       val registration = Registration(serviceName = "api-microservice-template", serviceUrl = "http://api-microservice-template.service",
         metadata = Some(Map("third-party-api" -> "true")))
 
-      when(connector.http.POST(eqs(s"${connector.serviceUrl}/registration"), eqs(registration),
-        eqs(Seq("Content-Type" -> "application/json")))(any[Writes[Registration]], any[HttpReads[HttpResponse]], any[HeaderCarrier], any[ExecutionContext]))
-        .thenReturn(Future.successful(HttpResponse(200)))
+      (mockHttp.POST(_: String, _: Registration, _: Seq[(String, String)])
+        (_: Writes[Registration], _: HttpReads[HttpResponse], _: HeaderCarrier, _:ExecutionContext)).expects(
+        s"${connector.serviceUrl}/registration", registration, *, *, *, *, *).returning(Future.successful(HttpResponse(200)))
+      (mockHandlerOK.apply _).expects()
 
       connector.register.futureValue shouldBe true
-      verify(connector.http).POST(eqs("https://SERVICE_LOCATOR/registration"), eqs(registration),
-        eqs(Seq("Content-Type" -> "application/json")))(any[Writes[Registration]], any[HttpReads[HttpResponse]], eqs(hc), any[ExecutionContext])
-      verify(connector.handlerOK).apply()
-      verify(connector.handlerError, never).apply(serviceLocatorException)
     }
-
 
     "fail registering in service locator" in new Setup {
 
       val registration = Registration(serviceName = "api-microservice-template", serviceUrl = "http://api-microservice-template.service",
         metadata = Some(Map("third-party-api" -> "true")))
-      when(connector.http.POST(eqs(s"${connector.serviceUrl}/registration"), eqs(registration),
-        eqs(Seq("Content-Type" -> "application/json")))(any[Writes[Registration]], any[HttpReads[HttpResponse]], any[HeaderCarrier], any[ExecutionContext]))
-        .thenReturn(Future.failed(serviceLocatorException))
+
+      (mockHttp.POST(_: String, _: Registration, _: Seq[(String, String)])
+      (_: Writes[Registration], _: HttpReads[HttpResponse], _: HeaderCarrier, _:ExecutionContext)).expects(
+        s"${connector.serviceUrl}/registration", registration, *, *, *, *, *).returning(Future.failed(serviceLocatorException))
+      (mockHandlerError.apply _).expects(*)
 
       connector.register.futureValue shouldBe false
-      verify(connector.http).POST(eqs("https://SERVICE_LOCATOR/registration"), eqs(registration),
-        eqs(Seq("Content-Type" -> "application/json")))(any[Writes[Registration]], any[HttpReads[HttpResponse]], eqs(hc), any[ExecutionContext])
-      verify(connector.handlerOK, never).apply()
-      verify(connector.handlerError).apply(serviceLocatorException)
     }
 
   }

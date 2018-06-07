@@ -16,23 +16,25 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
-import org.mockito.stubbing.OngoingStubbing
+import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
 import uk.gov.hmrc.auth.core.{AuthConnector, ConfidenceLevel}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AuthorisationStub extends UnitSpec with WithFakeApplication {
+trait AuthorisationStub extends MockFactory {
 
   type GrantAccess = Option[String] ~ ConfidenceLevel
 
-  def stubAuthorisationGrantAccess(response: GrantAccess)(implicit authConnector: AuthConnector): OngoingStubbing[Future[GrantAccess]] = {
-    when(authConnector.authorise(any[Predicate](), any[Retrieval[GrantAccess]]())(any[HeaderCarrier](), any[ExecutionContext]()))
-      .thenReturn(Future.successful(response))
+  def stubAuthorisationGrantAccess(response: GrantAccess)(implicit authConnector: AuthConnector): Unit = {
+    (authConnector.authorise(_: Predicate, _: Retrieval[GrantAccess])(_:HeaderCarrier, _: ExecutionContext)).
+      expects(*,*,*,*).returning(Future successful response)
+  }
+
+  def stubAuthorisationUnauthorised()(implicit authConnector: AuthConnector): Unit = {
+    (authConnector.authorise(_: Predicate, _: Retrieval[GrantAccess])(_ :HeaderCarrier, _: ExecutionContext)).
+      expects(*,*,*,*).returning(Future failed Upstream4xxResponse("401", 401, 401))
   }
 }

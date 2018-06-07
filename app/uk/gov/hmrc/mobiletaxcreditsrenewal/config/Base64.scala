@@ -16,21 +16,11 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
-import com.google.inject.Singleton
-import com.google.inject.name.Named
-import javax.inject.Inject
-import play.api.Configuration
-import java.util
+import java.nio.charset.StandardCharsets.UTF_8
+import java.util.Base64.getDecoder
 
-import scala.collection.JavaConversions._
+object Base64 {
+  private val decoder = getDecoder
 
-case class RenewalStatusTransform(name: String, statusValues: Seq[String])
-
-@Singleton
-class AppContext @Inject()(@Named("renewalStatus") val renewalStatus: util.List[Configuration]) {
-
-  lazy val renewalStatusTransform: List[RenewalStatusTransform] = renewalStatus.toList map {
-    item =>
-      RenewalStatusTransform(item.getString("toStatus").get, item.getStringList("fromStatus").get)
-  }
+  def decode(encoded: String): String = new String(decoder.decode(encoded), UTF_8)
 }

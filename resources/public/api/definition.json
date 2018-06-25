@@ -1,9 +1,9 @@
 {
   "scopes":[
     {
-      "key":"read:mobile-tax-credits-renewal",
-      "name":"Execute tax-summary call",
-      "description":"Retrieve the tax-summary for a specific NINO and year"
+      "key":"read:native-apps-api-orchestration",
+      "name":"Native Apps API Orchestration",
+      "description":"Access APIs that are provided specifically for use by the HMRC mobile apps"
     }
   ],
   "api":{

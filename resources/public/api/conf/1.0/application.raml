@@ -34,8 +34,8 @@ uses:
         displayName: Get claimant details
         description: This endpoint retrieves the claimant details.
         is: [headers.acceptHeader]
-        (annotations.scope): "read:mobile-tax-credits-renewal"
-        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        (annotations.scope): "read:native-apps-api-orchestration"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
         queryParameters:
           journeyId:
             type: string
@@ -58,8 +58,8 @@ uses:
         displayName: Get claims details
         description: This endpoint retrieves the claims details.
         is: [headers.acceptHeader]
-        (annotations.scope): "read:mobile-tax-credits-renewal"
-        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        (annotations.scope): "read:native-apps-api-orchestration"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
         queryParameters:
           journeyId:
             type: string
@@ -82,8 +82,8 @@ uses:
         displayName: Submit renewal
         description: This endpoint submits a renewal.
         is: [headers.acceptHeader]
-        (annotations.scope): "read:mobile-tax-credits-renewal"
-        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        (annotations.scope): "read:native-apps-api-orchestration"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
         queryParameters:
           journeyId:
             type: string
@@ -101,8 +101,8 @@ uses:
         displayName: Get tax credits submission state enabled
         description: This endpoint retrieves the current state of tax credit submissions
         is: [headers.acceptHeader]
-        (annotations.scope): "read:mobile-tax-credits-renewal"
-        securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+        (annotations.scope): "read:native-apps-api-orchestration"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
         queryParameters:
           journeyId:
             type: string
@@ -129,8 +129,8 @@ uses:
           displayName: Get auth token
           description: This endpoint retrieves the auth token and validates the nino and tax reference number.
           is: [headers.acceptHeader]
-          (annotations.scope): "read:mobile-tax-credits-renewal"
-          securedBy: [ sec.oauth_2_0: { scopes: [ "read:mobile-tax-credits-renewal" ] } ]
+          (annotations.scope): "read:native-apps-api-orchestration"
+          securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
           queryParameters:
             journeyId:
               type: string

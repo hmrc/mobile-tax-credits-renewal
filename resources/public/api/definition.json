@@ -2,8 +2,8 @@
   "scopes":[
     {
       "key":"read:native-apps-api-orchestration",
-      "name":"Execute tax-summary call",
-      "description":"Retrieve the tax-summary for a specific NINO and year"
+      "name":"Native Apps API Orchestration",
+      "description":"Access APIs that are provided specifically for use by the HMRC mobile apps"
     }
   ],
   "api":{

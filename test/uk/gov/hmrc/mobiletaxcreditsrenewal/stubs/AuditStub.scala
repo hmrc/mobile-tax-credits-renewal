@@ -18,8 +18,10 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
 import org.scalamock.matchers.MatcherBase
 import org.scalamock.scalatest.MockFactory
+import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Claim, RenewalsSummary, TcrRenewal}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
@@ -39,28 +41,16 @@ trait AuditStub extends MockFactory {
     })
   }
 
-  def stubAudit(nino: Nino, transactionName: String)(implicit auditConnector: AuditConnector): Unit = {
+  def stubAudit(auditType: String, details: Map[String,String])(implicit auditConnector: AuditConnector): Unit = {
     (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
-      dataEventWith(
-        "mobile-tax-credits-renewal",
-        "ServiceResponseSent",
-        Map("transactionName" -> transactionName),
-        Map("nino" -> nino.value)), *, * ).returning(Future successful Success)
+      dataEventWith("mobile-tax-credits-renewal", auditType, Map.empty, details), *, * ).returning(Future successful Success)
   }
 
-  def stubAuditSubmitRenewal(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "submitRenewal")
+  def stubAuditSubmitRenewal(nino: Nino, renewal: TcrRenewal)(implicit auditConnector: AuditConnector): Unit = {
+    stubAudit("SubmitDeclaration", Map("nino" -> nino.value, "declaration" -> toJson(renewal).toString))
   }
 
-  def stubAuditClaimantClaims(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino,  "claimantClaims")
-  }
-
-  def stubAuditAuthenticateRenewal(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "authenticateRenewal")
-  }
-
-  def stubAuditClaimantDetails(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "claimantDetails")
+  def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
+    stubAudit("Renewals", Map("nino" -> nino.value, "renewalsData" -> toJson(renewalsSummary).toString))
   }
 }

@@ -18,6 +18,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
 import org.slf4j
+import play.api.mvc.Request
+import play.api.test.FakeRequest
 import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
@@ -33,6 +35,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class LiveMobileTaxCreditsRenewalServiceSpec
   extends UnitSpec with MockFactory with WithFakeApplication with NtcConnectorStub with AuditStub with FileResource{
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val request: Request[_] = FakeRequest()
+
   implicit val ntcConnector: NtcConnector = mock[NtcConnector]
   implicit val auditConnector: AuditConnector = mock[AuditConnector]
   implicit val taxCreditsControl: TaxCreditsControl = mock[TaxCreditsControl]

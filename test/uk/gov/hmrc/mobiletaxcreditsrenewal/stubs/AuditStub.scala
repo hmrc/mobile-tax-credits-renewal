@@ -32,26 +32,32 @@ import scala.concurrent.{ExecutionContext, Future}
 trait AuditStub extends MockFactory {
   def dataEventWith(auditSource: String,
                     auditType: String,
-                    tags: Map[String, String],
+                    transactionName: String,
                     detail: JsValue): MatcherBase = {
     argThat((dataEvent: ExtendedDataEvent) => {
       dataEvent.auditSource.equals(auditSource) &&
         dataEvent.auditType.equals(auditType) &&
-        dataEvent.tags.equals(tags) &&
+        dataEvent.tags("transactionName").equals(transactionName) &&
+        dataEvent.tags.get("path").isDefined &&
+        dataEvent.tags.get("clientIP").isDefined &&
+        dataEvent.tags.get("clientPort").isDefined &&
+        dataEvent.tags.get("X-Request-ID").isDefined &&
+        dataEvent.tags.get("X-Session-ID").isDefined &&
+        dataEvent.tags.get("Unexpected").isEmpty &&
         dataEvent.detail.equals(detail)
     })
   }
 
-  def stubAudit(auditType: String, details: JsValue)(implicit auditConnector: AuditConnector): Unit = {
+  def stubAudit(auditType: String, transactionName: String, details: JsValue)(implicit auditConnector: AuditConnector): Unit = {
     (auditConnector.sendExtendedEvent(_: ExtendedDataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
-      dataEventWith("mobile-tax-credits-renewal", auditType, Map.empty, details), *, * ).returning(Future successful Success)
+      dataEventWith("mobile-tax-credits-renewal", auditType, transactionName, details), *, * ).returning(Future successful Success)
   }
 
   def stubAuditSubmitRenewal(nino: Nino, renewal: TcrRenewal)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit("SubmitDeclaration", obj("nino" -> nino.value, "declaration" -> renewal))
+    stubAudit("SubmitDeclaration", "submit-tax-credit-renewal",  obj("nino" -> nino.value, "declaration" -> renewal))
   }
 
   def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit("Renewals", toJson(renewalsSummary))
+    stubAudit("Renewals", "retrieve-tax-credit-renewal", toJson(renewalsSummary))
   }
 }

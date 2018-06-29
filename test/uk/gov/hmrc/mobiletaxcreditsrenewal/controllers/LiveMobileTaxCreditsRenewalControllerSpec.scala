@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory.getLogger
 import play.api.LoggerLike
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.{parse, toJson}
-import play.api.mvc.{AnyContentAsEmpty, Result}
+import play.api.mvc.{AnyContentAsEmpty, Request, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -70,8 +70,8 @@ class LiveMobileTaxCreditsRenewalControllerSpec
       val renewals = RenewalsSummary("closed", None)
 
       def mockServiceCall(): Unit =
-        (service.renewals(_: Nino, _: Option[String])(_: HeaderCarrier, _: ExecutionContext)).
-          expects(nino, Some(journeyId), *, *).returning(Future successful renewals)
+        (service.renewals(_: Nino, _: Option[String])(_: HeaderCarrier, _: ExecutionContext, _: Request[_])).
+          expects(nino, Some(journeyId), *, *, *).returning(Future successful renewals)
 
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockIsShuttered(false)
@@ -126,8 +126,8 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     )
 
     def mockServiceCall(): Unit =
-      (service.submitRenewal(_: Nino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext)).
-        expects(nino, renewal, *, *).returning(Future successful 200)
+      (service.submitRenewal(_: Nino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext, _: Request[_])).
+        expects(nino, renewal, *, *, *).returning(Future successful 200)
 
     "submit a valid form for an authorised user with the right nino and a L200 confidence level when renewals are open" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)

@@ -19,7 +19,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 import com.google.inject.{Inject, Singleton}
 import com.ning.http.util.Base64
 import play.api.libs.json.Json
-import play.api.libs.json.Json.toJson
+import play.api.libs.json.Json.{obj, toJson}
+import play.api.mvc.Request
 import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.api.sandbox._
 import uk.gov.hmrc.api.service._
@@ -30,6 +31,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
@@ -37,9 +39,9 @@ import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalService {
-  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary]
+  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary]
 
-  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int]
+  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int]
 }
 
 @Singleton
@@ -52,12 +54,17 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
 
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
 
-  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
 
     def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
       val renewalsData = RenewalsSummary(currentState.submissionsState, maybeClaims)
-      auditConnector.sendExtendedEvent(ExtendedDataEvent(appName, "Renewals", detail = toJson(renewalsData)))
+      auditConnector.sendExtendedEvent(
+        ExtendedDataEvent(
+          appName,
+          "Renewals",
+          tags = headerCarrier.toAuditTags("retrieve-tax-credit-renewal", request.path),
+          detail = toJson(renewalsData)))
       renewalsData
     }
 
@@ -146,10 +153,13 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
     }
   }
 
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
+  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] = {
       ntcConnector.submitRenewal(TaxCreditsNino(nino.value), tcrRenewal).map{ status =>
         auditConnector.sendExtendedEvent(ExtendedDataEvent(
-          appName, "SubmitDeclaration", detail = Json.obj("nino" -> nino, "declaration" -> tcrRenewal)))
+          appName,
+          "SubmitDeclaration",
+          tags = hc.toAuditTags("submit-tax-credit-renewal", request.path),
+          detail = obj("nino" -> nino, "declaration" -> tcrRenewal)))
         status
       }
   }
@@ -209,10 +219,12 @@ class SandboxMobileTaxCreditsRenewalService(val taxCreditsSubmissionControlConfi
     }
   }
 
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int] =
+  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)
+    (implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] =
     Future.successful(200)
 
-  override def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+  override def renewals(nino: Nino, journeyId: Option[String])
+    (implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val resource: String =
       findResource(s"/resources/claimantdetails/renewals-response-open.json").getOrElse(
         throw new IllegalArgumentException("Resource not found!"))

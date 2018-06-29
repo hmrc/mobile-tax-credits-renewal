@@ -18,13 +18,14 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
 import org.scalamock.matchers.MatcherBase
 import org.scalamock.scalatest.MockFactory
-import play.api.libs.json.Json.toJson
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json.{obj, toJson}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Claim, RenewalsSummary, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, TcrRenewal}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,8 +33,8 @@ trait AuditStub extends MockFactory {
   def dataEventWith(auditSource: String,
                     auditType: String,
                     tags: Map[String, String],
-                    detail: Map[String, String]): MatcherBase = {
-    argThat((dataEvent: DataEvent) => {
+                    detail: JsValue): MatcherBase = {
+    argThat((dataEvent: ExtendedDataEvent) => {
       dataEvent.auditSource.equals(auditSource) &&
         dataEvent.auditType.equals(auditType) &&
         dataEvent.tags.equals(tags) &&
@@ -41,16 +42,16 @@ trait AuditStub extends MockFactory {
     })
   }
 
-  def stubAudit(auditType: String, details: Map[String,String])(implicit auditConnector: AuditConnector): Unit = {
-    (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
+  def stubAudit(auditType: String, details: JsValue)(implicit auditConnector: AuditConnector): Unit = {
+    (auditConnector.sendExtendedEvent(_: ExtendedDataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
       dataEventWith("mobile-tax-credits-renewal", auditType, Map.empty, details), *, * ).returning(Future successful Success)
   }
 
   def stubAuditSubmitRenewal(nino: Nino, renewal: TcrRenewal)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit("SubmitDeclaration", Map("nino" -> nino.value, "declaration" -> toJson(renewal).toString))
+    stubAudit("SubmitDeclaration", obj("nino" -> nino.value, "declaration" -> renewal))
   }
 
   def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit("Renewals", Map("nino" -> nino.value, "renewalsData" -> toJson(renewalsSummary).toString))
+    stubAudit("Renewals", toJson(renewalsSummary))
   }
 }

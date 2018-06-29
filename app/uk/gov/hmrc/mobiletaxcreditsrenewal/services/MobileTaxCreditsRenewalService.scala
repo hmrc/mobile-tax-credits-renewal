@@ -31,7 +31,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,8 +57,7 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
 
     def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
       val renewalsData = RenewalsSummary(currentState.submissionsState, maybeClaims)
-      auditConnector.sendEvent(
-        DataEvent(appName, "Renewals", detail = Map("nino" -> nino.value, "renewalsData" -> toJson(renewalsData).toString())))
+      auditConnector.sendExtendedEvent(ExtendedDataEvent(appName, "Renewals", detail = toJson(renewalsData)))
       renewalsData
     }
 
@@ -149,8 +148,8 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
 
   override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
       ntcConnector.submitRenewal(TaxCreditsNino(nino.value), tcrRenewal).map{ status =>
-        auditConnector.sendEvent(
-          DataEvent(appName, "SubmitDeclaration", detail = Map("nino" -> nino.value, "declaration" -> toJson(tcrRenewal).toString())))
+        auditConnector.sendExtendedEvent(ExtendedDataEvent(
+          appName, "SubmitDeclaration", detail = Json.obj("nino" -> nino, "declaration" -> tcrRenewal)))
         status
       }
   }

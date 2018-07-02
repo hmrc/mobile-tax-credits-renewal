@@ -19,6 +19,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 import com.google.inject.{Inject, Singleton}
 import com.ning.http.util.Base64
 import play.api.libs.json.Json
+import play.api.libs.json.Json.{obj, toJson}
+import play.api.mvc.Request
 import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.api.sandbox._
 import uk.gov.hmrc.api.service._
@@ -29,15 +31,17 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
+import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalService {
-  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary]
+  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary]
 
-  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int]
+  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int]
 }
 
 @Singleton
@@ -50,15 +54,26 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
 
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
 
-  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
+
+    def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
+      val renewalsData = RenewalsSummary(currentState.submissionsState, maybeClaims)
+      auditConnector.sendExtendedEvent(
+        ExtendedDataEvent(
+          appName,
+          "Renewals",
+          tags = headerCarrier.toAuditTags("retrieve-tax-credit-renewal", request.path),
+          detail = toJson(renewalsData)))
+      renewalsData
+    }
 
     if (currentState.showSummaryData) {
       claimsDetails(nino,journeyId).map{ claims =>
-        RenewalsSummary(currentState.submissionsState, Some(claims))
+        auditAndReturnRenewalsData(Some(claims))
       }
     } else {
-      Future successful RenewalsSummary(currentState.submissionsState, None)
+      Future successful auditAndReturnRenewalsData(None)
     }
   }
 
@@ -67,28 +82,24 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
       def getClaimantDetail(token:TcrAuthenticationToken, hc: HeaderCarrier): Future[Claim] = {
         implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
 
-          withAudit("claimantDetails", Map("nino" -> nino.value)) {
-            ntcConnector.claimantDetails(TaxCreditsNino(nino.value)).map { claimantDetails =>
-              claim.copy(
-                household = claim.household.copy(),
-                renewal = claim.renewal.copy(claimantDetails = Some(claimantDetails)))
-            }
-          }
+        ntcConnector.claimantDetails(TaxCreditsNino(nino.value)).map { claimantDetails =>
+          claim.copy(
+            household = claim.household.copy(),
+            renewal = claim.renewal.copy(claimantDetails = Some(claimantDetails)))
+        }
       }
 
-        withAudit("authenticateRenewal", Map("nino" -> nino.value)) {
-          ntcConnector.authenticateRenewal(TaxCreditsNino(nino.value), RenewalReference(claim.household.barcodeReference)).flatMap {
-            maybeToken =>
-            if (maybeToken.nonEmpty)
-              getClaimantDetail(maybeToken.get,hc)
-            else
-              Future successful claim
-          }.recover{
-            case e: Exception =>
-              logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
-              claim
-          }
-        }
+      ntcConnector.authenticateRenewal(TaxCreditsNino(nino.value), RenewalReference(claim.household.barcodeReference)).flatMap {
+        maybeToken =>
+        if (maybeToken.nonEmpty)
+          getClaimantDetail(maybeToken.get,hc)
+        else
+          Future successful claim
+      }.recover{
+        case e: Exception =>
+          logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
+          claim
+      }
     }
 
     val eventualClaims: Future[Seq[Claim]] = claimantClaims(nino).flatMap { claimantClaims =>
@@ -110,44 +121,45 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
   }
 
   private def claimantClaims(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Claims] = {
-    withAudit("claimantClaims", Map("nino" -> nino.value)) {
+    def claimMatch(claim: Claim): Boolean = {
+      val match1 = claim.household.applicant1.nino == nino.value
+      val match2 = claim.household.applicant2.fold(false) { found => found.nino == nino.value }
+      match1 || match2
+    }
 
-      def claimMatch(claim: Claim) = {
-        val match1 = claim.household.applicant1.nino == nino.value
-        val match2 = claim.household.applicant2.fold(false) { found => found.nino == nino.value }
-        match1 || match2
-      }
-
-      def reformatDateAndLogErrors(maybeDateString: Option[String]): Option[String] = {
-        maybeDateString.flatMap { dateString =>
-          dateConverter.convertDateFormat(dateString).orElse {
-            Logger.error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
-            None
-          }
+    def reformatDateAndLogErrors(maybeDateString: Option[String]): Option[String] = {
+      maybeDateString.flatMap { dateString =>
+        dateConverter.convertDateFormat(dateString).orElse {
+          Logger.error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
+          None
         }
       }
+    }
 
-      ntcConnector.claimantClaims(TaxCreditsNino(nino.value)).map { claims =>
-        claims.references.fold(Claims(None)) { items => {
-          val references = items.filter(a => claimMatch(a)).map { claim =>
-              Claim(claim.household.copy(householdCeasedDate = reformatDateAndLogErrors(claim.household.householdCeasedDate)),
-                Renewal(
-                  reformatDateAndLogErrors(claim.renewal.awardStartDate),
-                  reformatDateAndLogErrors(claim.renewal.awardEndDate),
-                  Some(resolveStatus(claim)),
-                  reformatDateAndLogErrors(claim.renewal.renewalNoticeIssuedDate),
-                  reformatDateAndLogErrors(claim.renewal.renewalNoticeFirstSpecifiedDate)))
-              }
-            Claims(Some(references))
-          }
+    ntcConnector.claimantClaims(TaxCreditsNino(nino.value)).map { claims =>
+      claims.references.fold(Claims(None)) { items => {
+        val references = items.filter(a => claimMatch(a)).map { claim =>
+            Claim(claim.household.copy(householdCeasedDate = reformatDateAndLogErrors(claim.household.householdCeasedDate)),
+              Renewal(
+                reformatDateAndLogErrors(claim.renewal.awardStartDate),
+                reformatDateAndLogErrors(claim.renewal.awardEndDate),
+                Some(resolveStatus(claim)),
+                reformatDateAndLogErrors(claim.renewal.renewalNoticeIssuedDate),
+                reformatDateAndLogErrors(claim.renewal.renewalNoticeFirstSpecifiedDate)))
+            }
+          Claims(Some(references))
         }
       }
     }
   }
 
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
+  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] = {
       ntcConnector.submitRenewal(TaxCreditsNino(nino.value), tcrRenewal).map{ status =>
-        audit("submitRenewal", Map("nino" -> nino.value))
+        auditConnector.sendExtendedEvent(ExtendedDataEvent(
+          appName,
+          "SubmitDeclaration",
+          tags = hc.toAuditTags("submit-tax-credit-renewal", request.path),
+          detail = obj("nino" -> nino, "declaration" -> tcrRenewal)))
         status
       }
   }
@@ -207,10 +219,12 @@ class SandboxMobileTaxCreditsRenewalService(val taxCreditsSubmissionControlConfi
     }
   }
 
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Int] =
+  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)
+    (implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] =
     Future.successful(200)
 
-  override def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[RenewalsSummary] = {
+  override def renewals(nino: Nino, journeyId: Option[String])
+    (implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val resource: String =
       findResource(s"/resources/claimantdetails/renewals-response-open.json").getOrElse(
         throw new IllegalArgumentException("Resource not found!"))

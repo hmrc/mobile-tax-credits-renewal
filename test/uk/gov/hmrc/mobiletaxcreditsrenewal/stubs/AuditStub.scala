@@ -18,49 +18,46 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
 import org.scalamock.matchers.MatcherBase
 import org.scalamock.scalatest.MockFactory
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json.{obj, toJson}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, TcrRenewal}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait AuditStub extends MockFactory {
   def dataEventWith(auditSource: String,
                     auditType: String,
-                    tags: Map[String, String],
-                    detail: Map[String, String]): MatcherBase = {
-    argThat((dataEvent: DataEvent) => {
+                    transactionName: String,
+                    detail: JsValue): MatcherBase = {
+    argThat((dataEvent: ExtendedDataEvent) => {
       dataEvent.auditSource.equals(auditSource) &&
         dataEvent.auditType.equals(auditType) &&
-        dataEvent.tags.equals(tags) &&
+        dataEvent.tags("transactionName").equals(transactionName) &&
+        dataEvent.tags.get("path").isDefined &&
+        dataEvent.tags.get("clientIP").isDefined &&
+        dataEvent.tags.get("clientPort").isDefined &&
+        dataEvent.tags.get("X-Request-ID").isDefined &&
+        dataEvent.tags.get("X-Session-ID").isDefined &&
+        dataEvent.tags.get("Unexpected").isEmpty &&
         dataEvent.detail.equals(detail)
     })
   }
 
-  def stubAudit(nino: Nino, transactionName: String)(implicit auditConnector: AuditConnector): Unit = {
-    (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
-      dataEventWith(
-        "mobile-tax-credits-renewal",
-        "ServiceResponseSent",
-        Map("transactionName" -> transactionName),
-        Map("nino" -> nino.value)), *, * ).returning(Future successful Success)
+  def stubAudit(auditType: String, transactionName: String, details: JsValue)(implicit auditConnector: AuditConnector): Unit = {
+    (auditConnector.sendExtendedEvent(_: ExtendedDataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
+      dataEventWith("mobile-tax-credits-renewal", auditType, transactionName, details), *, * ).returning(Future successful Success)
   }
 
-  def stubAuditSubmitRenewal(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "submitRenewal")
+  def stubAuditSubmitRenewal(nino: Nino, renewal: TcrRenewal)(implicit auditConnector: AuditConnector): Unit = {
+    stubAudit("SubmitDeclaration", "submit-tax-credit-renewal",  obj("nino" -> nino.value, "declaration" -> renewal))
   }
 
-  def stubAuditClaimantClaims(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino,  "claimantClaims")
-  }
-
-  def stubAuditAuthenticateRenewal(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "authenticateRenewal")
-  }
-
-  def stubAuditClaimantDetails(nino: Nino)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit(nino, "claimantDetails")
+  def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
+    stubAudit("Renewals", "retrieve-tax-credit-renewal", toJson(renewalsSummary))
   }
 }

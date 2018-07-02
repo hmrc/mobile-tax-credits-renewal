@@ -18,6 +18,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
 import org.slf4j
+import play.api.mvc.Request
+import play.api.test.FakeRequest
 import play.api.{Configuration, Logger, LoggerLike}
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
@@ -33,6 +35,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class LiveMobileTaxCreditsRenewalServiceSpec
   extends UnitSpec with MockFactory with WithFakeApplication with NtcConnectorStub with AuditStub with FileResource{
   implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val request: Request[_] = FakeRequest()
+
   implicit val ntcConnector: NtcConnector = mock[NtcConnector]
   implicit val auditConnector: AuditConnector = mock[AuditConnector]
   implicit val taxCreditsControl: TaxCreditsControl = mock[TaxCreditsControl]
@@ -53,7 +57,7 @@ class LiveMobileTaxCreditsRenewalServiceSpec
 
     "audit succeess" in {
       stubSubmitRenewals(taxCreditsNino, 200)
-      stubAuditSubmitRenewal(nino)
+      stubAuditSubmitRenewal(nino, renewal)
 
       await(service.submitRenewal(nino, renewal)) shouldBe 200
     }
@@ -79,6 +83,7 @@ class LiveMobileTaxCreditsRenewalServiceSpec
     val awaitingBarcode = RenewalReference("000000000000000")
     val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
     val token = TcrAuthenticationToken("tcrAuthToken")
+    val summaryWithNoClaims = RenewalsSummary("open", Some(Seq.empty))
 
     def claim(barcodeReference: RenewalReference,
               maybeDate: Option[String],
@@ -105,34 +110,36 @@ class LiveMobileTaxCreditsRenewalServiceSpec
           claimWithAuthTokenButNoClaimantDetails,
           claimAaitingBarcode)))
 
-      val expectedClaims: Claims = Claims(Some(Seq(
+      val expectedClaimsSeq = Seq(
         claim(barcode1, mobileFormattedDate, Some(claimantDetails)),
         claim(barcode2, mobileFormattedDate),
         claim(barcode3, mobileFormattedDate),
-        claim(awaitingBarcode, mobileFormattedDate, None, Some("AWAITING_BARCODE")))))
+        claim(awaitingBarcode, mobileFormattedDate, None, Some("AWAITING_BARCODE")))
+
+      val expectedClaims: Claims = Claims(Some(expectedClaimsSeq))
+      val summary = RenewalsSummary(state, expectedClaims.references)
 
       stubClaimantClaims(taxCreditsNino, foundClaims)
-      stubAuditClaimantClaims(nino)
 
       stubAuthenticateRenewal(taxCreditsNino, barcode1, token)
-      stubAuditAuthenticateRenewal(nino)
       stubClaimantDetails(taxCreditsNino, claimantDetails)
-      stubAuditClaimantDetails(nino)
 
       stubAuthenticateRenewalFailure(taxCreditsNino, barcode2)
-      stubAuditAuthenticateRenewal(nino)
 
       stubAuthenticateRenewal(taxCreditsNino, barcode3, token)
-      stubAuditAuthenticateRenewal(nino)
       stubClaimantDetailsFailure(taxCreditsNino)
-      stubAuditClaimantDetails(nino)
+      stubAuditClaims(nino, summary)
 
-      await(service.renewals(nino, None)) shouldBe RenewalsSummary(state, expectedClaims.references)
+      await(service.renewals(nino, None)) shouldBe summary
     }
 
     "return no claims details when current renewal sate is closed" in {
+      val closedSummary = RenewalsSummary("closed", None)
+
       whenCurrentSubmissionStateIs("closed")
-      await(service.renewals(nino, None)) shouldBe RenewalsSummary("closed", None)
+      stubAuditClaims(nino, closedSummary)
+
+      await(service.renewals(nino, None)) shouldBe closedSummary
     }
 
     "return multiple claims when the current renewal state is open" in {
@@ -147,18 +154,17 @@ class LiveMobileTaxCreditsRenewalServiceSpec
       whenCurrentSubmissionStateIs("open")
 
       stubClaimantClaims(taxCreditsNino, Claims(None))
-      stubAuditClaimantClaims(nino)
-
-      await(service.renewals(nino, None)) shouldBe RenewalsSummary("open", Some(Seq.empty))
+      stubAuditClaims(nino, summaryWithNoClaims)
+      await(service.renewals(nino, None)) shouldBe summaryWithNoClaims
     }
 
     "handle empty claims found" in {
       whenCurrentSubmissionStateIs("open")
 
       stubClaimantClaims(taxCreditsNino, Claims(Some(Seq.empty)))
-      stubAuditClaimantClaims(nino)
+      stubAuditClaims(nino, summaryWithNoClaims)
 
-      await(service.renewals(nino, None)) shouldBe RenewalsSummary("open", Some(Seq.empty))
+      await(service.renewals(nino, None)) shouldBe summaryWithNoClaims
     }
   }
 }

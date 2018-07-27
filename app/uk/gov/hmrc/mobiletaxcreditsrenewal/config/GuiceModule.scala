@@ -22,7 +22,6 @@ import com.google.inject.{AbstractModule, Provides}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment, Logger, LoggerLike}
 import uk.gov.hmrc.api.connector.ServiceLocatorConnector
-import uk.gov.hmrc.api.controllers.DocumentationController
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.CoreGet
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.{ConfiguredShuttering, Shuttering}
@@ -31,6 +30,9 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.tasks.ServiceLocatorRegistrationTask
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
+
+import scala.collection.JavaConverters._
 
 class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
 
@@ -42,12 +44,14 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
     bind(classOf[CoreGet]).to(classOf[WSHttpImpl])
     bind(classOf[HttpClient]).to(classOf[WSHttpImpl])
-    bind(classOf[DocumentationController]).toInstance(DocumentationController)
     bind(classOf[ServiceLocatorRegistrationTask]).asEagerSingleton()
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
     bind(classOf[Shuttering]).to(classOf[ConfiguredShuttering])
 
-    bindConfigBoolean("shuttering.shuttered", ("shuttering.shuttered"))
+    bind(classOf[ApiAccess]).toInstance(
+      ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala))
+
+    bindConfigBoolean("shuttering.shuttered", "shuttering.shuttered")
     bindConfigBase64String("shuttering.title")
     bindConfigBase64String("shuttering.message")
 

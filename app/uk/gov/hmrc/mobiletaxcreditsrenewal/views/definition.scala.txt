@@ -1,0 +1,27 @@
+@import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
+@import play.api.libs.json.Json
+
+@(apiAccess: ApiAccess)
+{
+  "scopes":[
+    {
+      "key":"read:native-apps-api-orchestration",
+      "name":"Native Apps API Orchestration",
+      "description":"Access APIs that are provided specifically for use by the HMRC mobile apps"
+    }
+  ],
+  "api":{
+    "name":"Mobile Tax Credits Renewal",
+    "description":"The API is used fort tax credits renewal services.",
+    "context":"mobile-tax-credits-renewal",
+    "requiresTrust": true,
+    "versions":[
+      {
+        "version":"1.0",
+        "status":"STABLE",
+        "endpointsEnabled": true,
+        "access": @Json.toJson(apiAccess)
+      }
+    ]
+  }
+}

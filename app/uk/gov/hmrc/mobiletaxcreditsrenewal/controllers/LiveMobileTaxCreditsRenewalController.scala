@@ -36,35 +36,8 @@ import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait ShutteringErrorWrapper {
-  self: BaseController =>
 
-  val shuttering: Shuttering
-
-  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
-
-  def shutteringErrorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    if (shuttering.shuttered) {
-      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.title, "message" -> shuttering.message))
-    } else {
-      func.recover {
-        case _: NotFoundException => notFound
-
-        case ex: ServiceUnavailableException =>
-          // The hod can return a 503 HTTP status which is translated to a 429 response code.
-          // The 503 HTTP status code must only be returned from the API gateway and not from downstream API's.
-          Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
-          Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
-
-        case e: Throwable =>
-          Logger.error(s"Internal server error: ${e.getMessage}", e)
-          Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
-      }
-    }
-  }
-}
-
-trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ShutteringErrorWrapper {
+trait MobileTaxCreditsRenewalController extends BaseController with HeaderValidator{
   def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = ???
 
   def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] = ???
@@ -77,7 +50,26 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
                                                        val logger: LoggerLike,
                                                        val service: MobileTaxCreditsRenewalService,
                                                        @Named("controllers.confidenceLevel") override val confLevel: Int,
-                                                       override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
+                                                       val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController with AccessControl {
+  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
+
+  def shutteringErrorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    if (shuttering.shuttered) {
+      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.title, "message" -> shuttering.message))
+    } else {
+      func.recover {
+        case _: NotFoundException => notFound
+
+        case ex: ServiceUnavailableException =>
+          Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
+          Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
+
+        case e: Throwable =>
+          Logger.error(s"Internal server error: ${e.getMessage}", e)
+          Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
+      }
+    }
+  }
 
   override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {

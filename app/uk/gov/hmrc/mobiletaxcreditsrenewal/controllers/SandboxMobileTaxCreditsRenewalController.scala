@@ -16,26 +16,17 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{Inject, Singleton}
 import play.api.LoggerLike
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
-import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrRenewal
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 import scala.concurrent.Future
 
 @Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject()(
-    override val authConnector: AuthConnector,
-    val logger: LoggerLike,
-    @Named("controllers.confidenceLevel") override val confLevel: Int,
-    override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
-  override lazy val requiresAuth: Boolean = false
-
+class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike) extends MobileTaxCreditsRenewalController {
   override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = validateAccept(acceptHeaderValidationRules).async {
     Future successful Ok
   }
@@ -43,7 +34,6 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(
   override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(BodyParsers.parse.json) {
       implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
       request.body.validate[TcrRenewal].fold(
         errors => {

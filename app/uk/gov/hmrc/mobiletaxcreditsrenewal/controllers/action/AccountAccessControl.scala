@@ -21,7 +21,7 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.{ActionBuilder, Request, Result, Results}
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers._
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
@@ -41,7 +41,7 @@ trait AccountAccessControl extends Results with Authorisation {
     grantAccess(taxId.getOrElse(Nino(""))).flatMap { _ ⇒
       block(request)
     }.recover {
-      case _: uk.gov.hmrc.http.Upstream4xxResponse =>
+      case _: Upstream4xxResponse =>
         Logger.info("Unauthorized! Failed to grant access since 4xx response!")
         Unauthorized(toJson(ErrorUnauthorizedMicroService))
 
@@ -60,14 +60,11 @@ trait AccountAccessControl extends Results with Authorisation {
   }
 }
 
-trait AccessControl extends HeaderValidator with AccountAccessControl {
-
+trait AccessControl extends AccountAccessControl {
   def validateAcceptWithAuth(rules: Option[String] ⇒ Boolean, taxId: Option[Nino]): ActionBuilder[Request] = new ActionBuilder[Request] {
-
     def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]): Future[Result] = {
       if (rules(request.headers.get("Accept"))) {
-        if (requiresAuth) invokeAuthBlock(request, block, taxId)
-        else block(request)
+        invokeAuthBlock(request, block, taxId)
       }
       else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson(ErrorAcceptHeaderInvalid)))
     }

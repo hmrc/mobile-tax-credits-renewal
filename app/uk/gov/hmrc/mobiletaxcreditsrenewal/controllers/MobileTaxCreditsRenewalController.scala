@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableExc
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.AccessControl
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService, SandboxMobileTaxCreditsRenewalService}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService}
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -65,10 +65,21 @@ trait ShutteringErrorWrapper {
 }
 
 trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ShutteringErrorWrapper {
-  val service: MobileTaxCreditsRenewalService
-  val logger: LoggerLike
+  def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = ???
 
-  final def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] = ???
+}
+
+
+@Singleton
+class LiveMobileTaxCreditsRenewalController @Inject()(
+  override val authConnector: AuthConnector,
+  val logger: LoggerLike,
+  val service: LiveMobileTaxCreditsRenewalService,
+  @Named("controllers.confidenceLevel") override val confLevel: Int,
+  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
+
+  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
@@ -80,7 +91,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
         )
     }
 
-  final def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(BodyParsers.parse.json) {
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
@@ -104,9 +115,9 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
             })
           }
         )
-  }
+    }
 
-  private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier) = {
+  private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] = {
     (request.headers.get(tcrAuthToken), mode) match {
 
       case (None , Some(_)) => func(hc)
@@ -121,30 +132,6 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
         Future.successful(Forbidden(toJson(response)))
     }
   }
-}
-
-@Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector: AuthConnector,
-  override val logger: LoggerLike,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
-  override lazy val requiresAuth: Boolean = false
-  override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(new TaxCreditsControl {
-    override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(true, true )
-
-    override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
-      TaxCreditsRenewalsState(submissionsState = "open")
-  })
-}
-
-@Singleton
-class LiveMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector: AuthConnector,
-  override val logger: LoggerLike,
-  override val service: LiveMobileTaxCreditsRenewalService,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
 }
 
 trait Shuttering {

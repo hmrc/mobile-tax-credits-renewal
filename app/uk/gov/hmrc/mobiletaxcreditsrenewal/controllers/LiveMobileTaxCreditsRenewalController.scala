@@ -49,25 +49,20 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
                                                        override val authConnector: AuthConnector,
                                                        val logger: LoggerLike,
                                                        val service: MobileTaxCreditsRenewalService,
-                                                       @Named("controllers.confidenceLevel") override val confLevel: Int,
-                                                       val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController with AccessControl {
+                                                       @Named("controllers.confidenceLevel") override val confLevel: Int ) extends MobileTaxCreditsRenewalController with AccessControl {
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
-  def shutteringErrorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    if (shuttering.shuttered) {
-      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.title, "message" -> shuttering.message))
-    } else {
-      func.recover {
-        case _: NotFoundException => notFound
+  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    func.recover {
+      case _: NotFoundException => notFound
 
-        case ex: ServiceUnavailableException =>
-          Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
-          Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
+      case ex: ServiceUnavailableException =>
+        Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
+        Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
 
-        case e: Throwable =>
-          Logger.error(s"Internal server error: ${e.getMessage}", e)
-          Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
-      }
+      case e: Throwable =>
+        Logger.error(s"Internal server error: ${e.getMessage}", e)
+        Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
   }
 
@@ -76,7 +71,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        shutteringErrorWrapper(
+        errorWrapper(
           service.renewals(nino, journeyId).map{ renewals =>
             Ok(toJson(renewals))
           }
@@ -94,7 +89,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
             Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
           },
           renewal => {
-            shutteringErrorWrapper(validateTcrAuthHeader(None) {
+            errorWrapper(validateTcrAuthHeader(None) {
               implicit hc =>
                 service.submitRenewal(nino, renewal).map { _ =>
                   logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
@@ -124,17 +119,4 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
         Future.successful(Forbidden(toJson(response)))
     }
   }
-}
-
-trait Shuttering {
-  def shuttered: Boolean
-  def title: String
-  def message: String
-}
-
-@Singleton
-class ConfiguredShuttering @Inject() (
-  @Named("shuttering.shuttered") override val shuttered: Boolean,
-  @Named("shuttering.title") override val title: String,
-  @Named("shuttering.message") override val message: String ) extends Shuttering {
 }

@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableExc
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.AccessControl
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -73,11 +73,11 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
 
 @Singleton
 class LiveMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector: AuthConnector,
-  val logger: LoggerLike,
-  val service: LiveMobileTaxCreditsRenewalService,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
+                                                       override val authConnector: AuthConnector,
+                                                       val logger: LoggerLike,
+                                                       val service: MobileTaxCreditsRenewalService,
+                                                       @Named("controllers.confidenceLevel") override val confLevel: Int,
+                                                       override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
 
   override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {

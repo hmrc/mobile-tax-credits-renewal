@@ -31,7 +31,7 @@ import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LiveMobileTaxCreditsRenewalService
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -40,7 +40,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class LiveMobileTaxCreditsRenewalControllerSpec
   extends UnitSpec with MockFactory with WithFakeApplication with AuthorisationStub{
   implicit val authConnector: AuthConnector = mock[AuthConnector]
-  private val service = mock[LiveMobileTaxCreditsRenewalService]
+  private val service = mock[MobileTaxCreditsRenewalService]
   private val shuttering = mock[Shuttering]
 
   private val logger = new LoggerLike {

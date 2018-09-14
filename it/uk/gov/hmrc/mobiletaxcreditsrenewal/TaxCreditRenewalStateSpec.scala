@@ -80,7 +80,7 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "open"
 
-      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_open.json").get)
+      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response-open.json").get)
       response.json shouldBe expectedJson
 
       val claims = (response.json \ "claims").as[JsArray]
@@ -122,7 +122,7 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
 
-      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_check_status_only.json").get)
+      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response-check-status-only.json").get)
       response.json shouldBe expectedJson
 
       val claims = (response.json \ "claims").as[JsArray]

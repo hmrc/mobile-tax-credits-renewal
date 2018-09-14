@@ -16,7 +16,7 @@ class SandboxTaxCreditRenewalSpec extends BaseISpec {
   "GET /sandbox/renewals/:nino " should {
     def request(nino: Nino): WSRequest = wsUrl(s"/renewals/${nino.value}").withHeaders(acceptJsonHeader, mobileHeader)
 
-    "just work" in {
+    "return successfully" in {
       await(request(nino).get()).status shouldBe 200
     }
   }

@@ -20,16 +20,36 @@ import javax.inject.{Inject, Singleton}
 import play.api.LoggerLike
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
+import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrRenewal
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, TcrRenewal}
 
 import scala.concurrent.Future
 
 @Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike) extends MobileTaxCreditsRenewalController {
-  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = validateAccept(acceptHeaderValidationRules).async {
-    Future successful Ok
-  }
+class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike)
+  extends MobileTaxCreditsRenewalController with FileResource{
+  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+    validateAccept(acceptHeaderValidationRules).async {
+      implicit request =>
+        def returnRenewalsResponse(file: String): Result = {
+          val resource: String = findResource(s"/resources/claimantdetails/$file")
+            .getOrElse(throw new IllegalArgumentException("Resource not found!"))
+          Ok(Json.toJson(Json.parse(resource).as[RenewalsSummary]))
+        }
+
+        Future successful (
+          request.headers.get("SANDBOX-CONTROL") match {
+            case Some("ERROR-401") => Unauthorized
+            case Some("ERROR-403") => Forbidden
+            case Some("ERROR-404") => NotFound
+            case Some("ERROR-500") => InternalServerError
+            case Some("RENEWALS-RESPONSE-CLOSED") => returnRenewalsResponse("renewals-response-closed.json")
+            case Some("RENEWALS-RESPONSE-CHECK-STATUS-ONLY") => returnRenewalsResponse("renewals-response-check-status-only.json")
+            case _ => returnRenewalsResponse("renewals-response-open.json")
+          }
+        )
+    }
 
   override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(BodyParsers.parse.json) {
@@ -41,8 +61,16 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike)
           Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
         },
         renewal => {
-          Future successful Ok
+          Future successful (
+            request.headers.get("SANDBOX-CONTROL") match {
+              case Some("ERROR-401") => Unauthorized
+              case Some("ERROR-403") => Forbidden
+              case Some("ERROR-404") => NotFound
+              case Some("ERROR-500") => InternalServerError
+              case _ => Ok
+            }
+          )
         }
       )
-    }
+  }
 }

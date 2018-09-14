@@ -48,12 +48,8 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
   private val nino = Nino("CS700100A")
   private val journeyId= "journeyId"
-  private val shutteringTitle = "This service is unavailable due to scheduled maintenance"
-  private val shutteringMessage = "We expect to be available again at 12:00 on 06-06-2018. Please check the web..."
 
-
-  private val controller =
-    new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level)
+  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 

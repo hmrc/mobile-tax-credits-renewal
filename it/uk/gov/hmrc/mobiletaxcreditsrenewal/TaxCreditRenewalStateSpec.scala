@@ -21,7 +21,6 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
   val barcodeReference = RenewalReference("200000000000013")
 
-  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/states/current").withHeaders(acceptJsonHeader)
   protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").withHeaders(acceptJsonHeader)
 
   protected def submissionStartDate: String = now.minusDays(1).toString

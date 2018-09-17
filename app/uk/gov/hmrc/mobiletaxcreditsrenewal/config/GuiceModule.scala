@@ -21,16 +21,15 @@ import com.google.inject.name.Names.named
 import com.google.inject.{AbstractModule, Provides}
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment, Logger, LoggerLike}
-import uk.gov.hmrc.api.connector.ServiceLocatorConnector
+import uk.gov.hmrc.api.connector.{ApiServiceLocatorConnector, ServiceLocatorConnector}
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.CoreGet
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.{ConfiguredShuttering, Shuttering}
+import uk.gov.hmrc.http.{CoreGet, CorePost}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{TaxCreditsControl, TaxCreditsSubmissionControlConfig}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.tasks.ServiceLocatorRegistrationTask
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
 
 import scala.collection.JavaConverters._
 
@@ -43,17 +42,13 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[ServiceLocatorConnector]).to(classOf[ApiServiceLocatorConnector])
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
     bind(classOf[CoreGet]).to(classOf[WSHttpImpl])
+    bind(classOf[CorePost]).to(classOf[WSHttpImpl])
     bind(classOf[HttpClient]).to(classOf[WSHttpImpl])
     bind(classOf[ServiceLocatorRegistrationTask]).asEagerSingleton()
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
-    bind(classOf[Shuttering]).to(classOf[ConfiguredShuttering])
 
     bind(classOf[ApiAccess]).toInstance(
       ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala))
-
-    bindConfigBoolean("shuttering.shuttered", "shuttering.shuttered")
-    bindConfigBase64String("shuttering.title")
-    bindConfigBase64String("shuttering.message")
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")
@@ -76,19 +71,6 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
   private def bindConfigInt(path: String): Unit =
     bindConstant().annotatedWith(named(path)).to(configuration.underlying.getInt(path))
 
-  private def bindConfigLong(path: String): Unit =
-    bindConstant().annotatedWith(named(path)).to(configuration.underlying.getLong(path))
-
   private def bindConfigString(name: String, path: String): Unit =
     bindConstant().annotatedWith(named(name)).to(configuration.underlying.getString(path))
-
-  private def bindConfigBoolean(name: String, path: String): Unit =
-    bindConstant().annotatedWith(named(name)).to(configuration.underlying.getBoolean(path))
-
-  private def bindConfigBase64String(path: String): Unit = {
-    val encoded = configuration.underlying.getString(path)
-    val decoded = Base64.decode(encoded)
-    bindConstant().annotatedWith(named(path)).to(decoded)
-  }
-
 }

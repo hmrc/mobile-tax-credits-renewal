@@ -1,3 +1,3 @@
 POST    /declarations/:nino               @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-GET     /renewals/:nino                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])
+GET     /renewals/:nino                   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])

@@ -31,7 +31,7 @@ import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.LiveMobileTaxCreditsRenewalService
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
@@ -40,8 +40,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class LiveMobileTaxCreditsRenewalControllerSpec
   extends UnitSpec with MockFactory with WithFakeApplication with AuthorisationStub{
   implicit val authConnector: AuthConnector = mock[AuthConnector]
-  private val service = mock[LiveMobileTaxCreditsRenewalService]
-  private val shuttering = mock[Shuttering]
+  private val service = mock[MobileTaxCreditsRenewalService]
 
   private val logger = new LoggerLike {
     override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
@@ -49,18 +48,10 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
   private val nino = Nino("CS700100A")
   private val journeyId= "journeyId"
-  private val shutteringTitle = "This service is unavailable due to scheduled maintenance"
-  private val shutteringMessage = "We expect to be available again at 12:00 on 06-06-2018. Please check the web..."
 
-
-  private val controller =
-    new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level, shuttering)
+  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
-
-  private def mockIsShuttered(isShuttered: Boolean): Unit = (shuttering.shuttered _).expects().returning(isShuttered)
-  private def mockShutteringTitle(title: String): Unit = (shuttering.title _).expects().returning(title)
-  private def mockShutteringMessage(message: String): Unit = (shuttering.message _).expects().returning(message)
 
   "renewals" should {
     lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
@@ -74,7 +65,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
           expects(nino, Some(journeyId), *, *, *).returning(Future successful renewals)
 
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockIsShuttered(false)
       mockServiceCall()
 
       val result: Future[Result] = await(controller.renewals(nino,Some(journeyId))).apply(fakeRequest)
@@ -95,20 +85,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     "return unauthoirsed for an unauthorised user" in {
       stubAuthorisationUnauthorised()
       status(await(controller.renewals(nino, Some(journeyId))).apply(fakeRequest)) shouldBe 401
-    }
-
-    "return a shuttered title and message" in {
-      val shutteringTitle = "This service is unavailable due to scheduled maintenance"
-      val shutteringMessage = "We expect to be available again at 12:00 on 06-06-2018. Please check the web..."
-
-      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockIsShuttered(true)
-      mockShutteringTitle(shutteringTitle)
-      mockShutteringMessage(shutteringMessage)
-
-      val result: Future[Result] = await(controller.renewals(nino,Some(journeyId))).apply(fakeRequest)
-      status(result) shouldBe 503
-      contentAsJson(result) shouldBe parse(s"""{"title":"$shutteringTitle", "message": "$shutteringMessage"}""")
     }
   }
 
@@ -131,7 +107,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
     "submit a valid form for an authorised user with the right nino and a L200 confidence level when renewals are open" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockIsShuttered(false)
       mockServiceCall()
 
       status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 200
@@ -150,17 +125,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     "return unauthoirsed for an unauthorised user" in {
       stubAuthorisationUnauthorised()
       status(await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)) shouldBe 401
-    }
-
-    "return a shuttered title and message" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockIsShuttered(true)
-      mockShutteringTitle(shutteringTitle)
-      mockShutteringMessage(shutteringMessage)
-
-      val result: Future[Result] = await(controller.submitRenewal(nino, Some(journeyId))).apply(submitRenewalRequest)
-      status(result) shouldBe 503
-      contentAsJson(result) shouldBe parse(s"""{"title":"$shutteringTitle", "message": "$shutteringMessage"}""")
     }
   }
 }

@@ -17,24 +17,36 @@ API
 
 | *Task* | *Supported Methods* | *Description* |
 |--------|----|----|
-| ```/claimants/:nino``` | GET | Retrieve the claimant details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/claiments.md) |
-| ```/claims/:nino``` | GET | Retrieve the claims associated with the nino. [More...](docs/claims.md) |
-| ```/declarations/:nino``` | POST | Post a renewal declaration to NTC for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/declarations.md)|
-| ```/states/current``` | GET | Returns the current submission state of the tax credit renewals. [More...](docs/states.md)|
-| ```/tokens/:nino/:renewalReference``` | GET | Validate and retrieve the TCR auth-token assoicated with the NINO and renewal reference. [More...](docs/tokens.md)|
+| ```/declarations/:nino``` | GET | Retrieve the declaration details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/declarationss.md) |
+| ```/renewals/:nino``` | POST | Post a renewal declaration to NTC for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/renewals.md)|
 
 # Sandbox
-All the above endpoints are accessible on sandbox with `/sandbox` prefix on each endpoint,e.g.
+All the above endpoints are accessible on sandbox with `/sandbox` prefix on each endpoint, i.e:
 ```
-    GET /claimants/:nino
+    GET /declarations/:nino
+    POST /renewals/:nino
 ```
 
-# Definition
-API definition for the service will be available under `/api/definition` endpoint.
-See definition in `/conf/api-definition.json` for the format.
+To trigger the sandbox endpoints locally, use the "X-MOBILE-USER-ID" header with one of the following values:
+208606423740 or 167927702220
+
+To test different scenarios, add a header "SANDBOX-CONTROL" to specify the appropriate status code and return payload. 
+See each linked file for details:
+
+| *Task* | *Supported Methods* | *Description* |
+|--------|----|----|
+| ```/sandbox/declarations/:nino``` | GET | Acts as a stub for the related live endpoint. [More...](docs/sandbox/declarations.md)  |
+| ```/sandbox/renewals/:nino``` | POST | Acts as a stub for the related live endpoint. [More...](docs/sandbox/renewals.md)|
+
 
 # Version
 Version of API need to be provided in `Accept` request header
 ```
 Accept: application/vnd.hmrc.v1.0+json
 ```
+
+### License
+
+This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
+
+

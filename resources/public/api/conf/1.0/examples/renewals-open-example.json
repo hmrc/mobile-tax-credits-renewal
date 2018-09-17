@@ -1,64 +1,56 @@
 {
-  "submissionsState":"open",
-  "claims": {
-    "references": [
-      {
-        "household": {
-          "barcodeReference": "200000000000013",
-          "applicationID": "198765432134567",
-          "applicant1": {
-            "nino": "CS700100A",
-            "title": "MR",
-            "firstForename": "JOHN",
-            "secondForename": "",
-            "surname": "DENSMORE"
-          },
-          "householdEndReason": ""
+  "submissionsState": "open",
+  "claims": [
+    {
+      "household": {
+        "barcodeReference": "200000000000013",
+        "applicationID": "198765432134567",
+        "applicant1": {
+          "nino": "AA000000A",
+          "title": "MR",
+          "firstForename": "JOHN",
+          "secondForename": "",
+          "surname": "DENSMORE"
         },
-        "renewal": {
-          "awardStartDate": "12/10/2030",
-          "awardEndDate": "12/10/2010",
-          "renewalStatus": "NOT_SUBMITTED",
-          "renewalNoticeIssuedDate": "12/10/2030",
-          "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-          "claimant-details": {
-            "hasPartner": false,
-            "claimantNumber": 1,
-            "renewalFormType": "r",
-            "mainApplicantNino": "true",
-            "availableForCOCAutomation": false,
-            "applicationId": "some-app-id"
-          }
-        }
+        "householdEndReason": ""
       },
-      {
-        "household": {
-          "barcodeReference": "000000000000000",
-          "applicationID": "198765432134567",
-          "applicant1": {
-            "nino": "CS700100A",
-            "title": "MR",
-            "firstForename": "JOHN",
-            "secondForename": "",
-            "surname": "DENSMORE"
-          },
-          "householdEndReason": ""
-        },
-        "renewal": {
-          "awardStartDate": "12/10/2030",
-          "awardEndDate": "12/10/2010",
-          "renewalStatus": "AWAITING_BARCODE",
-          "renewalNoticeIssuedDate": "12/10/2030",
-          "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+      "renewal": {
+        "awardStartDate": "12/10/2030",
+        "awardEndDate": "12/10/2010",
+        "renewalStatus": "NOT_SUBMITTED",
+        "renewalNoticeIssuedDate": "12/10/2030",
+        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+        "claimantDetails": {
+          "hasPartner": true,
+          "claimantNumber": 123,
           "renewalFormType": "D",
-          "nino":"KM569110B",
-          "version":1,
-          "workingTaxableTotal":0,
-          "actualTaxableTotal":0,
-          "remainingTaxFree":0,
-          "adjustedNetIncome":0
+          "mainApplicantNino": "AA000000A",
+          "usersPartnerNino": "AP412713B",
+          "availableForCOCAutomation": false,
+          "applicationId": "198765432134566"
         }
       }
-    ]
-  }
+    },
+    {
+      "household": {
+        "barcodeReference": "000000000000000",
+        "applicationID": "198765432134567",
+        "applicant1": {
+          "nino": "AA000000A",
+          "title": "MR",
+          "firstForename": "JOHN",
+          "secondForename": "",
+          "surname": "DENSMORE"
+        },
+        "householdEndReason": ""
+      },
+      "renewal": {
+        "awardStartDate": "12/10/2030",
+        "awardEndDate": "12/10/2010",
+        "renewalStatus": "AWAITING_BARCODE",
+        "renewalNoticeIssuedDate": "12/10/2030",
+        "renewalNoticeFirstSpecifiedDate": "12/10/2010"
+      }
+    }
+  ]
 }

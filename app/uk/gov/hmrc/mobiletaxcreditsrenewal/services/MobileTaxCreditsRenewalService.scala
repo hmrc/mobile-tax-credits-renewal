@@ -17,17 +17,13 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import com.google.inject.{Inject, Singleton}
-import com.ning.http.util.Base64
-import play.api.libs.json.Json
 import play.api.libs.json.Json.{obj, toJson}
 import play.api.mvc.Request
 import play.api.{Configuration, Logger, LoggerLike}
-import uk.gov.hmrc.api.sandbox._
 import uk.gov.hmrc.api.service._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
@@ -38,23 +34,17 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
-trait MobileTaxCreditsRenewalService {
-  def renewals(nino: Nino, journeyId: Option[String])(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary]
-
-  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int]
-}
-
 @Singleton
-class LiveMobileTaxCreditsRenewalService @Inject()(
+class MobileTaxCreditsRenewalService @Inject()(
   val ntcConnector: NtcConnector,
   val auditConnector: AuditConnector,
   val appNameConfiguration: Configuration,
   val taxCreditsSubmissionControlConfig: TaxCreditsControl,
-  val logger: LoggerLike ) extends MobileTaxCreditsRenewalService with Auditor with RenewalStatus {
+  val logger: LoggerLike ) extends Auditor with RenewalStatus {
 
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
 
-  override def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
+  def renewals(nino: Nino, journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
 
     def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
@@ -153,7 +143,7 @@ class LiveMobileTaxCreditsRenewalService @Inject()(
     }
   }
 
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] = {
+  def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)(implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] = {
       ntcConnector.submitRenewal(TaxCreditsNino(nino.value), tcrRenewal).map{ status =>
         auditConnector.sendExtendedEvent(ExtendedDataEvent(
           appName,
@@ -206,29 +196,3 @@ trait RenewalStatus {
   }
 }
 
-class SandboxMobileTaxCreditsRenewalService(val taxCreditsSubmissionControlConfig: TaxCreditsControl) extends MobileTaxCreditsRenewalService with FileResource {
-  private def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
-
-  private def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
-    new String(Base64.encode(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
-
-  private def getTcrAuthHeader[T](func: TcrAuthenticationToken => T)(implicit headerCarrier: HeaderCarrier): T = {
-    headerCarrier.extraHeaders.headOption match {
-      case Some((HeaderKeys.tcrAuthToken, t@TcrAuthCheck(_))) => func(TcrAuthenticationToken(t))
-      case _ => throw new IllegalArgumentException("Failed to locate tcrAuthToken")
-    }
-  }
-
-  override def submitRenewal(nino: Nino, tcrRenewal: TcrRenewal)
-    (implicit hc: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[Int] =
-    Future.successful(200)
-
-  override def renewals(nino: Nino, journeyId: Option[String])
-    (implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
-    val resource: String =
-      findResource(s"/resources/claimantdetails/renewals-response-open.json").getOrElse(
-        throw new IllegalArgumentException("Resource not found!"))
-    val renewals = Json.parse(resource).as[RenewalsSummary]
-    Future successful renewals
-  }
-}

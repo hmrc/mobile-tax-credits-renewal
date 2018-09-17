@@ -32,7 +32,7 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class LiveMobileTaxCreditsRenewalServiceSpec
+class MobileTaxCreditsRenewalServiceSpec
   extends UnitSpec with MockFactory with WithFakeApplication with NtcConnectorStub with AuditStub with FileResource{
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val request: Request[_] = FakeRequest()
@@ -46,7 +46,7 @@ class LiveMobileTaxCreditsRenewalServiceSpec
   val nino = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
 
-  val service = new LiveMobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger)
+  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger)
 
   "Submit renewal" should{
     val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))

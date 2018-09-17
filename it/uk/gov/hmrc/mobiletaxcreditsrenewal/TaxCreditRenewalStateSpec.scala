@@ -21,7 +21,6 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
   val barcodeReference = RenewalReference("200000000000013")
 
-  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/states/current").withHeaders(acceptJsonHeader)
   protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").withHeaders(acceptJsonHeader)
 
   protected def submissionStartDate: String = now.minusDays(1).toString
@@ -80,7 +79,7 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "open"
 
-      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_open.json").get)
+      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response-open.json").get)
       response.json shouldBe expectedJson
 
       val claims = (response.json \ "claims").as[JsArray]
@@ -122,7 +121,7 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
 
-      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response_check_status_only.json").get)
+      val expectedJson = parse(findResource("/resources/claimantdetails/renewals-response-check-status-only.json").get)
       response.json shouldBe expectedJson
 
       val claims = (response.json \ "claims").as[JsArray]

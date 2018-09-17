@@ -1,10 +1,13 @@
 Submit declaration
 ----
-  Submit tax credits renewal declarations for off-line processing.
+  Acts as a stub implementation of the /declarations/:nino endpoint.
+
+  To use the sandbox endpoints, either access the /sandbox endpoint directly or supply the use the 
+  "X-MOBILE-USER-ID" header with one of the following values: 208606423740 or 167927702220
 
 * **URL**
 
-  `/declarations/:nino`
+  `/sandbox/declarations/:nino`
 
 * **Method:**
 
@@ -27,6 +30,7 @@ Submit declaration
 *  **Request body**
 
 Most fields are optional. A full payload looks like this:
+
 ```json
 {
     "renewalData": {
@@ -84,17 +88,25 @@ Most fields are optional. A full payload looks like this:
     "hasChangeOfCircs": true
 }   
 ```   
-   
+
 Here is a minimal payload:
 ```json
 { 
    "hasChangeOfCircs": true
 }   
 ```  
-   
-* **Success Response:**
+      
+* **Success Responses:**
 
-  * **Code:** 200 <br />
+  To test different scenarios, add a header "SANDBOX-CONTROL" with one of the following values:
+  
+  | *Value* | *HTTP Status Code* | *Description* 
+  |---------|--------------------|---------------|
+  | Not set or any value not specified below | 200 | Simulates a successful submission of a declaration. No body returned |
+  | "ERROR-401" | 401 | Triggers a 401 Unauthorized response |
+  | "ERROR-403" | 403 | Triggers a 403 Forbidden response |
+  | "ERROR-404" | 404 | Triggers a 404 NotFound response |
+  | "ERROR-500" | 500 | Triggers a 500 Internal Server Error response |   
 
 * **Error Responses:**
 
@@ -102,23 +114,9 @@ Here is a minimal payload:
     **Note:** Response body not valid <br/>
     **Content:** `{"message":"error1, error2"}`
 
-  * **Code:** 401 UNAUTHORIZED <br/>
-    **Content:** `{"code":"UNAUTHORIZED","message":"Bearer token is missing or not authorized for access"}`
-
-  * **Code:** 403 FORBIDDEN <br/>
-    **Content:** `{"code":"FORBIDDEN","message":Authenticated user is not authorised for this resource"}`
-
-  * **Code:** 404 NOT FOUND <br/>
-    **Content:** `{ "code" : "MATCHING_RESOURCE_NOT_FOUND", "message" : "A resource with the name in the request can not be found in the API" }`
-
   * **Code:** 406 NOT ACCEPTABLE <br />
     **Note:** Accept header missing <br/>
     **Content:** `{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}`
-
-  Or for a general error:
-
-  * **Code:** 500 INTERNAL_SERVER_ERROR <br/>
-
 
 
 

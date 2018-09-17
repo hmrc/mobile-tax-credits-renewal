@@ -28,7 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableExc
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.AccessControl
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.services.{LiveMobileTaxCreditsRenewalService, MobileTaxCreditsRenewalService, SandboxMobileTaxCreditsRenewalService}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
@@ -36,51 +36,49 @@ import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait ShutteringErrorWrapper {
-  self: BaseController =>
 
-  val shuttering: Shuttering
+trait MobileTaxCreditsRenewalController extends BaseController with HeaderValidator{
+  def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = ???
 
-  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
-
-  def shutteringErrorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    if (shuttering.shuttered) {
-      Future successful ServiceUnavailable(Json.obj("title" -> shuttering.title, "message" -> shuttering.message))
-    } else {
-      func.recover {
-        case _: NotFoundException => notFound
-
-        case ex: ServiceUnavailableException =>
-          // The hod can return a 503 HTTP status which is translated to a 429 response code.
-          // The 503 HTTP status code must only be returned from the API gateway and not from downstream API's.
-          Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
-          Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
-
-        case e: Throwable =>
-          Logger.error(s"Internal server error: ${e.getMessage}", e)
-          Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
-      }
-    }
-  }
+  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] = ???
 }
 
-trait MobileTaxCreditsRenewalController extends BaseController with AccessControl with ShutteringErrorWrapper {
-  val service: MobileTaxCreditsRenewalService
-  val logger: LoggerLike
 
-  final def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+@Singleton
+class LiveMobileTaxCreditsRenewalController @Inject()(
+                                                       override val authConnector: AuthConnector,
+                                                       val logger: LoggerLike,
+                                                       val service: MobileTaxCreditsRenewalService,
+                                                       @Named("controllers.confidenceLevel") override val confLevel: Int ) extends MobileTaxCreditsRenewalController with AccessControl {
+  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
+
+  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    func.recover {
+      case _: NotFoundException => notFound
+
+      case ex: ServiceUnavailableException =>
+        Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
+        Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
+
+      case e: Throwable =>
+        Logger.error(s"Internal server error: ${e.getMessage}", e)
+        Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
+    }
+  }
+
+  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        shutteringErrorWrapper(
+        errorWrapper(
           service.renewals(nino, journeyId).map{ renewals =>
             Ok(toJson(renewals))
           }
         )
     }
 
-  final def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(BodyParsers.parse.json) {
       implicit request =>
         implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
@@ -91,7 +89,7 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
             Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
           },
           renewal => {
-            shutteringErrorWrapper(validateTcrAuthHeader(None) {
+            errorWrapper(validateTcrAuthHeader(None) {
               implicit hc =>
                 service.submitRenewal(nino, renewal).map { _ =>
                   logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
@@ -104,9 +102,9 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
             })
           }
         )
-  }
+    }
 
-  private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier) = {
+  private def validateTcrAuthHeader(mode:Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] = {
     (request.headers.get(tcrAuthToken), mode) match {
 
       case (None , Some(_)) => func(hc)
@@ -121,41 +119,4 @@ trait MobileTaxCreditsRenewalController extends BaseController with AccessContro
         Future.successful(Forbidden(toJson(response)))
     }
   }
-}
-
-@Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector: AuthConnector,
-  override val logger: LoggerLike,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
-  override lazy val requiresAuth: Boolean = false
-  override val service: MobileTaxCreditsRenewalService = new SandboxMobileTaxCreditsRenewalService(new TaxCreditsControl {
-    override def toTaxCreditsSubmissions: TaxCreditsSubmissions = new TaxCreditsSubmissions(true, true )
-
-    override def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
-      TaxCreditsRenewalsState(submissionsState = "open")
-  })
-}
-
-@Singleton
-class LiveMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector: AuthConnector,
-  override val logger: LoggerLike,
-  override val service: LiveMobileTaxCreditsRenewalService,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  override val shuttering: Shuttering ) extends MobileTaxCreditsRenewalController {
-}
-
-trait Shuttering {
-  def shuttered: Boolean
-  def title: String
-  def message: String
-}
-
-@Singleton
-class ConfiguredShuttering @Inject() (
-  @Named("shuttering.shuttered") override val shuttered: Boolean,
-  @Named("shuttering.title") override val title: String,
-  @Named("shuttering.message") override val message: String ) extends Shuttering {
 }

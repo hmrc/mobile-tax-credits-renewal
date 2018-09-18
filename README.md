@@ -17,8 +17,8 @@ API
 
 | *Task* | *Supported Methods* | *Description* |
 |--------|----|----|
-| ```/declarations/:nino``` | GET | Retrieve the declaration details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/declarationss.md) |
-| ```/renewals/:nino``` | POST | Post a renewal declaration to NTC for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/renewals.md)|
+| ```/declarations/:nino``` | POST | Post a renewal declaration to NTC for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/declarations.md) |
+| ```/renewals/:nino``` | GET | Retrieve the declaration details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/renewals.md)|
 
 # Sandbox
 All the above endpoints are accessible on sandbox with `/sandbox` prefix on each endpoint, i.e:
@@ -35,8 +35,8 @@ See each linked file for details:
 
 | *Task* | *Supported Methods* | *Description* |
 |--------|----|----|
-| ```/sandbox/declarations/:nino``` | GET | Acts as a stub for the related live endpoint. [More...](docs/sandbox/declarations.md)  |
-| ```/sandbox/renewals/:nino``` | POST | Acts as a stub for the related live endpoint. [More...](docs/sandbox/renewals.md)|
+| ```/sandbox/declarations/:nino``` | POST | Acts as a stub for the related live endpoint. [More...](docs/sandbox/declarations.md)  |
+| ```/sandbox/renewals/:nino``` | GET | Acts as a stub for the related live endpoint. [More...](docs/sandbox/renewals.md)|
 
 
 # Version

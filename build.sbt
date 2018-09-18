@@ -15,7 +15,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(routesGenerator := StaticRoutesGenerator)
   .settings(
     majorVersion := 0,
-    playDefaultPort := 8231,
+    playDefaultPort := 8245,
     libraryDependencies ++= AppDependencies(),
     evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     resolvers += Resolver.jcenterRepo,

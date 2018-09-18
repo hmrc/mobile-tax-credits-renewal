@@ -92,6 +92,7 @@ Most fields are optional. A full payload looks like this:
 Here is a minimal payload:
 ```json
 { 
+   "renewalData": {},
    "hasChangeOfCircs": true
 }   
 ```  

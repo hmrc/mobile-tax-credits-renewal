@@ -4,13 +4,13 @@ private object AppDependencies {
   import play.core.PlayVersion
   import play.sbt.PlayImport._
 
-  private val bootstrap25Version = "1.7.0"
+  private val bootstrap25Version = "3.7.0"
   private val authClientVersion = "2.6.0"
   private val domainVersion = "5.2.0"
   private val playHmrcApiVersion = "3.2.0"
-  private val playUI = "7.18.0"
+  private val playUI = "7.22.0"
   private val circuitBreaker = "3.2.0"
-  private val hmrctestVersion = "3.0.0"
+  private val hmrctestVersion = "3.1.0"
   private val wiremockVersion = "2.10.1"
   private val mockitoVersion = "2.11.0"
   private val scalatestplusPlayVersion = "2.0.1"

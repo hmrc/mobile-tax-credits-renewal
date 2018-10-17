@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
-import com.ning.http.util.Base64
+import org.apache.commons.codec.binary.Base64.{decodeBase64, encodeBase64}
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.BadRequestException
@@ -40,7 +40,7 @@ case class TcrAuthenticationToken(tcrAuthToken: String) {
     Try {
       auth match {
         case BasicAuthPattern(encoded) =>
-          val parts = new String(Base64.decode(encoded)).split(":")
+          val parts = new String(decodeBase64(encoded)).split(":")
           (parts(0), parts(1))
       }
     }.toOption
@@ -53,7 +53,7 @@ object TcrAuthenticationToken {
 
   def basicAuthString(nino:String, renewalReference:String): String = "Basic " + encodedAuth(nino, renewalReference)
 
-  def encodedAuth(nino:String, renewalReference:String): String = new String(Base64.encode(s"$nino:$renewalReference".getBytes))
+  def encodedAuth(nino:String, renewalReference:String): String = new String(encodeBase64(s"$nino:$renewalReference".getBytes))
 
 }
 

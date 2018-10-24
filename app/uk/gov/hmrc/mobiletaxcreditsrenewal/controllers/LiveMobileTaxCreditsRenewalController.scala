@@ -38,9 +38,10 @@ import scala.concurrent.Future
 
 
 trait MobileTaxCreditsRenewalController extends BaseController with HeaderValidator{
-  def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] = ???
+  def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] = ???
+  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue]
+
 }
 
 

@@ -60,6 +60,9 @@ class NtcConnector @Inject()(http: CoreGet with CorePost,
   def claimantClaims(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Claims] =
     withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
+  def legacyClaimantClaims(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[LegacyClaims] =
+    withCircuitBreaker(http.GET[LegacyClaims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
+
   def submitRenewal(nino: TaxCreditsNino, renewalData: TcrRenewal)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
     val uri = s"$serviceUrl/tcs/${nino.taxCreditsNino}/renewal"
     withCircuitBreaker(http.POST[TcrRenewal, HttpResponse](uri, renewalData, Seq()).map(response => {

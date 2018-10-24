@@ -1,6 +1,6 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal
 
-import com.github.tomakehurst.wiremock.client.WireMock.{postRequestedFor, urlEqualTo, verify}
+import com.github.tomakehurst.wiremock.client.WireMock._
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import play.api.libs.json.Json.{parse, toJson}
@@ -20,6 +20,8 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
 
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
   val barcodeReference = RenewalReference("200000000000013")
+
+  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").withHeaders(acceptJsonHeader)
 
   protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").withHeaders(acceptJsonHeader)
 
@@ -64,8 +66,115 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
     }
   }
-}
 
+  "GET /income/:nino/tax-credits/:renewalReference/auth" should {
+    val url = wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").withHeaders(acceptJsonHeader)
+
+    "return a tcrAuthenticationToken" in {
+      grantAccess(nino1.value)
+      authenticationRenewalSuccessful(nino1, renewalReference, tcrAuthenticationToken)
+
+      val response = await(url.get())
+
+      response.status shouldBe 200
+      (response.json \ "tcrAuthToken").as[String] shouldBe tcrAuthenticationToken
+    }
+
+    "return 404 when no auth tcrAuthenticationToken is found" in {
+      grantAccess(nino1.value)
+      authenticationRenewalNotFound(nino1, renewalReference)
+
+      val response = await(url.get())
+
+      response.status shouldBe 404
+    }
+  }
+
+  "GET /income/:nino/tax-credits/claimant-details" should {
+    def request(nino:Nino) = wsUrl(s"/income/${nino.value}/tax-credits/claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+
+    "retrieve claimant details for main applicant" in {
+      grantAccess(nino1.value)
+      claimantDetailsAreFoundFor(nino1, nino1, nino2, tcrAuthenticationToken)
+
+      val response = await(request(nino1).get())
+
+      response.status shouldBe 200
+      (response.json \ "mainApplicantNino").as[String] shouldBe "true"
+    }
+
+    "retrieve claimant details for partner" in {
+      grantAccess(nino2.value)
+      claimantDetailsAreFoundFor(nino2, nino1, nino2, tcrAuthenticationToken)
+
+      val response = await(request(nino2).get())
+
+      response.status shouldBe 200
+      (response.json \ "mainApplicantNino").as[String] shouldBe "false"
+    }
+
+    "return 404 when claimant details are not found" in {
+      grantAccess(nino1.value)
+      claimantDetailsAreNotFoundFor(nino1)
+
+      val response = await(request(nino1).get())
+
+      response.status shouldBe 404
+    }
+  }
+
+  "GET /income/:nino/tax-credits/full-claimant-details" should {
+    val mainApplicantNino = Nino("CS700100A")
+    val barcodeReference = RenewalReference("200000000000013")
+    val request = wsUrl(s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+
+    "retrieve claimant claims for main applicant and set renewalFormType for a renewal where bar code ref is not '000000000000000'" in {
+      grantAccess(mainApplicantNino.value)
+      claimantClaimsAreFound(mainApplicantNino,barcodeReference)
+      authenticationRenewalSuccessful(mainApplicantNino,barcodeReference,tcrAuthenticationToken)
+      claimantDetailsAreFoundFor(mainApplicantNino, mainApplicantNino, nino2, tcrAuthenticationToken)
+
+      val response = await(request.get())
+      response.status shouldBe 200
+
+      val expectedJson = parse(findResource("/resources/claimantdetails/tax-credit-claimant-details-response.json").get)
+      response.json shouldBe expectedJson
+
+      val references = (response.json \ "references" ).as[JsArray]
+      val renewal = (references(0) \ "renewal" ).as[JsObject]
+      renewal.value("renewalFormType").as[String] shouldBe "D"
+    }
+
+    "retrieve claimant claims for main applicant and not set renewalFormType if no token is found" in {
+      grantAccess(mainApplicantNino.value)
+      claimantClaimsAreFound(mainApplicantNino,barcodeReference)
+      authenticationRenewalNotFound(mainApplicantNino,barcodeReference)
+
+      val response = await(request.get())
+      response.status shouldBe 200
+
+      val references = (response.json \ "references" ).as[JsArray]
+      val renewal = (references(0) \ "renewal" ).as[JsObject]
+      renewal.value.get("renewalFormType") shouldBe None
+
+      verify(0, getRequestedFor(urlEqualTo(s"/tcs/${mainApplicantNino.value}/claimant-details")))
+    }
+
+    "retrieve claimant claims for main applicant and not set renewalFormType if no claimant details found" in {
+      grantAccess(mainApplicantNino.value)
+      claimantClaimsAreFound(mainApplicantNino,barcodeReference)
+      authenticationRenewalSuccessful(mainApplicantNino,barcodeReference,tcrAuthenticationToken)
+      claimantDetailsAreNotFoundFor(mainApplicantNino)
+
+      val response = await(request.get())
+      response.status shouldBe 200
+
+      val references = (response.json \ "references" ).as[JsArray]
+      val renewal = (references(0) \ "renewal" ).as[JsObject]
+      renewal.value.get("renewalFormType") shouldBe None
+    }
+  }
+}
 
 class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
   "GET /renewals/:nino" should {
@@ -87,6 +196,22 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec{
       renewal.value("renewalFormType").as[String] shouldBe "D"
     }
   }
+
+  "POST /income/:nino/tax-credits/renewal" should {
+    "allow renewal" in {
+      renewalIsSuccessful(nino1, renewal)
+      submitTaxCreditRenewal
+      verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
+    }
+  }
+
+  "GET /income/tax-credits/submission/state/enabled" should {
+    "return open state" in {
+      val response = await(submissionStateEnabledRequest.get)
+      response.status shouldBe 200
+      (response.json \ "submissionsState").as[String] shouldBe "open"
+    }
+  }
 }
 
 class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
@@ -99,6 +224,22 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec{
       grantAccess(nino1.value)
 
       val response = await(renewalsRequest.get)
+      response.status shouldBe 200
+      (response.json \ "submissionsState").as[String] shouldBe "closed"
+    }
+  }
+
+  "POST /income/:nino/tax-credits/renewal" should {
+    "allow renewal so that anyone who has started a renewal can complete their journey even if the renewals period has just closed" in {
+      renewalIsSuccessful(nino1, renewal)
+      submitTaxCreditRenewal
+      verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
+    }
+  }
+
+  "GET /income/tax-credits/submission/state/enabled" should {
+    "return closed state so that no new renewals can be started" in {
+      val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "closed"
     }
@@ -127,6 +268,22 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       val claims = (response.json \ "claims").as[JsArray]
       val renewal = (claims(0) \ "renewal" \ "claimantDetails").as[JsObject]
       renewal.value("renewalFormType").as[String] shouldBe "D"
+    }
+  }
+
+  "POST /income/:nino/tax-credits/renewal" should {
+    "allow renewal so that anyone who has started a renewal can complete their journey even if the renewals period has just closed" in {
+      renewalIsSuccessful(nino1, renewal)
+      submitTaxCreditRenewal
+      verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
+    }
+  }
+
+  "GET /income/tax-credits/submission/state/enabled" should {
+    "return check-only state so that no new renewals can be started" in {
+      val response = await(submissionStateEnabledRequest.get)
+      response.status shouldBe 200
+      (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
     }
   }
 }

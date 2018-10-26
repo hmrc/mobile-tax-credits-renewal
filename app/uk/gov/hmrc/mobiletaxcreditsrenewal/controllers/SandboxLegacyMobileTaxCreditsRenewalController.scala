@@ -64,7 +64,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()()
             getTcrAuthHeader { header =>
               val resource: String = findResource(s"/resources/claimantdetails/${nino.value}-${header.extractRenewalReference.get}.json")
                 .getOrElse(throw new IllegalArgumentException("Resource not found!"))
-              Ok(Json.parse(resource).as[ClaimantDetails])
+              Ok(Json.toJson(Json.parse(resource).as[ClaimantDetails]))
             }
         })
     }
@@ -110,9 +110,9 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()()
           case Some("ERROR-403") => Forbidden
           case Some("ERROR-404") => NotFound
           case Some("ERROR-500") => InternalServerError
-          case Some("CLOSED") => Ok(TaxCreditsRenewalsState("closed"))
-          case Some("CHECK-STATUS-ONLY") => Ok(TaxCreditsRenewalsState("check_status_only"))
-          case _ => Ok(TaxCreditsRenewalsState("open"))
+          case Some("CLOSED") => Ok(Json.toJson(TaxCreditsRenewalsState("closed")))
+          case Some("CHECK-STATUS-ONLY") => Ok(Json.toJson(TaxCreditsRenewalsState("check_status_only")))
+          case _ => Ok(Json.toJson(TaxCreditsRenewalsState("open")))
         })
     }
 }

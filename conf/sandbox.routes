@@ -1,3 +1,14 @@
 POST    /declarations/:nino               @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
 GET     /renewals/:nino                   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])
+
+# Legacy endpoints copied across from personal-income
+GET     /income/:nino/tax-credits/:renewalReference/auth  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxLegacyMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference: uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])
+
+GET     /income/:nino/tax-credits/claimant-details        @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxLegacyMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String], claims:Option[String])
+
+GET     /income/:nino/tax-credits/full-claimant-details   @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxLegacyMobileTaxCreditsRenewalController.fullClaimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
+
+POST    /income/:nino/tax-credits/renewal                 @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxLegacyMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
+
+GET     /income/tax-credits/submission/state/enabled      @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.SandboxLegacyMobileTaxCreditsRenewalController.taxCreditsSubmissionStateEnabled(journeyId: Option[String])

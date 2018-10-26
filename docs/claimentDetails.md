@@ -140,14 +140,14 @@ Note the returned 'authenticationToken' attribute is the tcrAuthToken supplied t
   * **Code:** 400 BADREQUEST <br />
     **Content:** `{"code":"BADREQUEST","message":"Bad Request"}`
 
-  * **Code:** 404 BADREQUEST <br />
-    **Content:** `{"code":"NOT_FOUND","message":"Not Found"}`
-
   * **Code:** 401 UNAUTHORIZED <br />
     **Content:** `{"code":"UNAUTHORIZED","message":"Bearer token is missing or not authorized for access"}`
 
   * **Code:** 403 FORBIDDEN <br />
     **Content:** `{"code":"FORBIDDEN","message":"No auth header supplied in http request"}`
+    
+  * **Code:** 404 NOT_FOUND <br />
+    **Content:** `{"code":"NOT_FOUND","message":"Not Found"}`
 
   * **Code:** 406 NOT ACCEPTABLE <br />
     **Content:** `{"code":"ACCEPT_HEADER_INVALID","message":"The accept header is missing or invalid"}`

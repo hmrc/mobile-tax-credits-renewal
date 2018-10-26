@@ -28,9 +28,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuditStub, NtcConnectorStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
+import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 class MobileTaxCreditsRenewalServiceSpec
   extends UnitSpec with MockFactory with WithFakeApplication with NtcConnectorStub with AuditStub with FileResource{
@@ -165,6 +168,78 @@ class MobileTaxCreditsRenewalServiceSpec
       stubAuditClaims(nino, summaryWithNoClaims)
 
       await(service.renewals(nino, None)) shouldBe summaryWithNoClaims
+    }
+  }
+
+  "authenticateRenewal" should {
+    val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
+    val renewalReference = RenewalReference("111111111111111")
+    "authenticate the renewal and audit the request" in {
+      stubAuthenticateRenewal(taxCreditsNino, renewalReference, tcrAuthToken)
+      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, * ).returning(Future successful Success)
+
+      await(service.authenticateRenewal(nino, renewalReference)).get shouldBe tcrAuthToken
+    }
+  }
+
+  "claimantDetails" should {
+
+    "get claimant details and audit the request" in {
+      val claimantDetails =
+        ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+      stubClaimantDetails(taxCreditsNino, claimantDetails)
+      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, * ).returning(Future successful Success)
+
+      await(service.claimantDetails(nino)) shouldBe claimantDetails
+    }
+  }
+
+  "legacyClaimantClaims" should {
+    val ntcFormattedDate = Some("2018-05-30")
+    val mobileFormattedDate = Some("30/05/2018")
+    val barcode1 = RenewalReference("barcode1")
+    val barcode2 = RenewalReference("barcode2")
+    val barcode3 = RenewalReference("barcode3")
+    val awaitingBarcode = RenewalReference("000000000000000")
+
+    def claim(barcodeReference: RenewalReference,
+              maybeDate: Option[String],
+              renewalState: Option[String] = Some("NOT_SUBMITTED")): LegacyClaim = {
+      val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname")
+      val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
+      val foundRenewal = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
+      LegacyClaim(foundHouseHold, foundRenewal)
+    }
+
+    val claimWithAuthTokenAndClaimantDetails = claim(barcode1, ntcFormattedDate)
+    val claimWithNoAuthToken = claim(barcode2, ntcFormattedDate)
+    val claimWithAuthTokenButNoClaimantDetails = claim(barcode3, ntcFormattedDate)
+    val claimAaitingBarcode = claim(awaitingBarcode, ntcFormattedDate)
+
+    val foundClaims: LegacyClaims =
+      LegacyClaims(Some(Seq(
+        claimWithAuthTokenAndClaimantDetails,
+        claimWithNoAuthToken,
+        claimWithAuthTokenButNoClaimantDetails,
+        claimAaitingBarcode)))
+
+    val expectedClaimsSeq = Seq(
+      claim(barcode1, mobileFormattedDate),
+      claim(barcode2, mobileFormattedDate),
+      claim(barcode3, mobileFormattedDate),
+      claim(awaitingBarcode, mobileFormattedDate, Some("AWAITING_BARCODE")))
+
+    val expectedClaims: LegacyClaims = LegacyClaims(Some(expectedClaimsSeq))
+
+    "get claimant claims and audit the request" in {
+      (ntcConnector.legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(taxCreditsNino,*,*).returning(Future successful foundClaims)
+      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, * ).returning(Future successful Success)
+
+      await(service.legacyClaimantClaims(nino)) shouldBe expectedClaims
     }
   }
 }

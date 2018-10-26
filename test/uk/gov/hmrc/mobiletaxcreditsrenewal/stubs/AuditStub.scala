@@ -60,4 +60,5 @@ trait AuditStub extends MockFactory {
   def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
     stubAudit("Renewals", "retrieve-tax-credit-renewal", toJson(renewalsSummary))
   }
+
 }

@@ -70,3 +70,110 @@ uses:
                     value: !include examples/renewals-response-check-status-only-example.json
                   example-3:
                     value: !include examples/renewals-closed-example.json
+  /income:
+    /tax-credits:
+      /submission:
+        /state:
+          get:
+            displayName: Get tax credits submission state
+            description: This endpoint retrieves the current state of tax credit submissions
+            is: [headers.acceptHeader]
+            (annotations.scope): "read:native-apps-api-orchestration"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+            queryParameters:
+              journeyId:
+                type: string
+                required: false
+            responses:
+              200:
+                body:
+                  application/json:
+                    examples:
+                      example-1:
+                        value: !include examples/get-tax-credits-submission-state-example-1.json
+          /enabled:
+            get:
+              displayName: Get tax credits submission state enabled
+              description: This endpoint retrieves the current state of tax credit submissions
+              is: [headers.acceptHeader]
+              (annotations.scope): "read:native-apps-api-orchestration"
+              securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+              queryParameters:
+                journeyId:
+                  type: string
+                  required: false
+              responses:
+                200:
+                  body:
+                    application/json:
+                      examples:
+                        example-1:
+                          value: !include examples/get-tax-credits-submission-state-enabled-example-1.json
+    /{nino}:
+      uriParameters:
+        nino:
+          description: The NINO for the individual.
+          type: string
+          example: NS123456B
+      /tax-credits:
+        /{renewalReference}:
+          uriParameters:
+            renewalReference:
+              type: string
+          /auth:
+            get:
+              displayName: Get auth token
+              description: This endpoint retrieves the auth token and validates the nino and tax reference number.
+              is: [headers.acceptHeader]
+              (annotations.scope): "read:native-apps-api-orchestration"
+              securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+              queryParameters:
+                journeyId:
+                  type: string
+                  required: false
+              responses:
+                200:
+                  body:
+                    application/json:
+                      examples:
+                        example-1:
+                          value: !include examples/get-auth-token-example-1.json
+        /claimant-details:
+          get:
+            displayName: Get claiment details
+            description: This endpoint retrieves the claiment details.
+            is: [headers.acceptHeader]
+            (annotations.scope): "read:native-apps-api-orchestration"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+            queryParameters:
+              journeyId:
+                type: string
+                required: false
+              claims:
+                type: string
+                required: false
+            responses:
+              200:
+                body:
+                  application/json:
+                    examples:
+                      example-1:
+                        value: !include examples/get-claiment-details-example-1.json
+        /renewal:
+          post:
+            displayName: Submit renewal
+            description: This endpoint submits a renewal.
+            is: [headers.acceptHeader]
+            (annotations.scope): "read:native-apps-api-orchestration"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+            queryParameters:
+              journeyId:
+                type: string
+                required: false
+            responses:
+              200:
+                body:
+                  application/json:
+                    examples:
+                      example-1:
+                        value: !include examples/submit-renewal-example-1.json

@@ -220,6 +220,35 @@ class NtcConnectorSpec extends UnitSpec with ScalaFutures with CircuitBreakerTes
     }
   }
 
+  "legacy claims" should {
+
+    "throw BadRequestException when a 400 response is returned" in new Setup {
+      override lazy val response: Future[Nothing] = http400Response
+      intercept[BadRequestException] {
+        await(connector.legacyClaimantClaims(taxCreditNino))
+      }
+    }
+
+    "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
+      override lazy val response: Future[Nothing] = http500Response
+      intercept[Upstream5xxResponse] {
+        await(connector.legacyClaimantClaims(taxCreditNino))
+      }
+    }
+
+    "return a valid response when a 200 response is received with a valid json payload" in new Setup {
+      override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
+      val result: LegacyClaims = await(connector.legacyClaimantClaims(taxCreditNino))
+
+      result shouldBe toJson(claims200Success).as[LegacyClaims]
+    }
+
+    "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
+      override lazy val response: Future[Nothing] = http500Response
+      executeCB(connector.legacyClaimantClaims(taxCreditNino))
+    }
+  }
+
   "claimantDetails" should {
 
     "throw BadRequestException when a 400 response is returned" in new Setup {

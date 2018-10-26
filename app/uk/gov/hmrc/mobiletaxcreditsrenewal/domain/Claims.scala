@@ -25,10 +25,22 @@ object Claim {
   implicit val formats: Format[Claim] = Json.format[Claim]
 }
 
+case class LegacyClaim(household: Household, renewal: LegacyRenewal)
+
+object LegacyClaim {
+  implicit val formats: Format[LegacyClaim] = Json.format[LegacyClaim]
+}
+
 case class Claims(references: Option[Seq[Claim]])
 
 object Claims {
   implicit val formats: Format[Claims] = Json.format[Claims]
+}
+
+case class LegacyClaims(references: Option[Seq[LegacyClaim]])
+
+object LegacyClaims {
+  implicit val formats: Format[LegacyClaims] = Json.format[LegacyClaims]
 }
 
 
@@ -62,6 +74,17 @@ case class Renewal(awardStartDate: Option[String],
 
 object Renewal {
   implicit val formats: Format[Renewal] = Json.format[Renewal]
+}
+
+case class LegacyRenewal(awardStartDate: Option[String],
+                   awardEndDate: Option[String],
+                   renewalStatus: Option[String],
+                   renewalNoticeIssuedDate: Option[String],
+                   renewalNoticeFirstSpecifiedDate: Option[String],
+                   renewalFormType: Option[String] = None)
+
+object LegacyRenewal {
+  implicit val formats: Format[LegacyRenewal] = Json.format[LegacyRenewal]
 }
 
 case class RenewalsSummary(submissionsState: String, claims: Option[Seq[Claim]])

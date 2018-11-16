@@ -61,17 +61,16 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()()
           case Some("ERROR-404") => NotFound
           case Some("ERROR-500") => InternalServerError
           case _ =>
-            getTcrAuthHeader { header =>
-              val resource: String = findResource(s"/resources/claimantdetails/${nino.value}-${header.extractRenewalReference.get}.json")
-                .getOrElse(throw new IllegalArgumentException("Resource not found!"))
-              Ok(Json.toJson(Json.parse(resource).as[ClaimantDetails]))
-            }
+            val tcrAuthToken = getTcrAuthHeader(request.headers.get(HeaderKeys.tcrAuthToken))
+            val resource: String = findResource(s"/resources/claimantdetails/${nino.value}-${tcrAuthToken.extractRenewalReference.get}.json")
+              .getOrElse(throw new IllegalArgumentException("Resource not found!"))
+            Ok(Json.toJson(Json.parse(resource).as[ClaimantDetails]))
         })
     }
 
-  private def getTcrAuthHeader[T](func: TcrAuthenticationToken => T)(implicit headerCarrier: HeaderCarrier): T = {
-    headerCarrier.extraHeaders.headOption match {
-      case Some((HeaderKeys.tcrAuthToken, t@TcrAuthCheck(_))) => func(TcrAuthenticationToken(t))
+  private def getTcrAuthHeader(tcrAuthToken: Option[String]): TcrAuthenticationToken = {
+    tcrAuthToken match {
+      case Some(t@TcrAuthCheck(_)) => TcrAuthenticationToken(t)
       case _ => throw new IllegalArgumentException("Failed to locate tcrAuthToken")
     }
   }

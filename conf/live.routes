@@ -3,7 +3,7 @@ POST    /declarations/:nino              @uk.gov.hmrc.mobiletaxcreditsrenewal.co
 
 GET     /renewals/:nino                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-# The following are legacy end points copied across from personal-income - these end point ARE currently called by the apps
+# The following are legacy end points copied across from personal-income - these end points ARE currently called by the apps
 GET     /income/:nino/tax-credits/:renewalReference/auth  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveLegacyMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference: uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])
 
 GET     /income/:nino/tax-credits/claimant-details        @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveLegacyMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String], claims:Option[String])

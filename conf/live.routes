@@ -1,8 +1,9 @@
+# The following two end points are NOT currently called by the apps
 POST    /declarations/:nino              @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.submitRenewal(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
 GET     /renewals/:nino                  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveMobileTaxCreditsRenewalController.renewals(nino:uk.gov.hmrc.domain.Nino, journeyId: Option[String])
 
-# Legacy endpoints copied across from personal-income
+# The following are legacy end points copied across from personal-income - these end points ARE currently called by the apps
 GET     /income/:nino/tax-credits/:renewalReference/auth  @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveLegacyMobileTaxCreditsRenewalController.getRenewalAuthentication(nino:uk.gov.hmrc.domain.Nino, renewalReference: uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference, journeyId: Option[String])
 
 GET     /income/:nino/tax-credits/claimant-details        @uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.LiveLegacyMobileTaxCreditsRenewalController.claimantDetails(nino: uk.gov.hmrc.domain.Nino, journeyId: Option[String], claims:Option[String])

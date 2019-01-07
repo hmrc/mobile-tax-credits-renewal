@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import javax.inject.Inject
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Play}
 import uk.gov.hmrc.circuitbreaker.CircuitBreakerConfig
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http._
@@ -33,7 +35,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
-class NtcConnectorSpec extends UnitSpec with ScalaFutures with CircuitBreakerTest with MockFactory {
+class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with ScalaFutures with CircuitBreakerTest with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -145,6 +147,8 @@ class NtcConnectorSpec extends UnitSpec with ScalaFutures with CircuitBreakerTes
       override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
       override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+
+      override protected def actorSystem: ActorSystem = actor
     }
 
     class TestNtcConnector(http: CoreGet with CorePost,

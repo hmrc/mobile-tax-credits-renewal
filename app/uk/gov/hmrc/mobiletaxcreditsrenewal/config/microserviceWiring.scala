@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
+import akka.actor.ActorSystem
 import com.google.inject.Inject
+import com.typesafe.config.Config
 import javax.inject.Named
+import play.api.Play
 import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -34,7 +37,13 @@ class WSHttpImpl @Inject()(@Named("appName") val appName: String, val auditConne
   with WSPost
   with WSDelete
   with WSPatch
-  with Hooks
+  with Hooks {
+
+
+  override protected def configuration: Option[Config] = Some(Play.current.configuration.underlying)
+
+  override protected def actorSystem: ActorSystem = Play.current.actorSystem
+}
 
 class MicroserviceAudit @Inject()(@Named("appName") val applicationName: String,
                                   val auditConnector: AuditConnector) extends Audit(applicationName, auditConnector)

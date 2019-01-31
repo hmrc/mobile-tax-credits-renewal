@@ -17,10 +17,12 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.{Matchers, WordSpecLike}
 import org.slf4j
 import play.api.mvc.Request
 import play.api.test.FakeRequest
-import play.api.{Configuration, Logger, LoggerLike}
+import play.api.test.Helpers._
+import play.api.{Configuration, Logger, LoggerLike, MarkerContext}
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
@@ -29,34 +31,36 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuditStub, NtcConnectorStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class MobileTaxCreditsRenewalServiceSpec
-  extends UnitSpec with MockFactory with WithFakeApplication with NtcConnectorStub with AuditStub with FileResource{
-  implicit val hc: HeaderCarrier = HeaderCarrier()
-  implicit val request: Request[_] = FakeRequest()
+class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with MockFactory with NtcConnectorStub with AuditStub with FileResource {
+  implicit val hc:      HeaderCarrier = HeaderCarrier()
+  implicit val request: Request[_]    = FakeRequest()
 
-  implicit val ntcConnector: NtcConnector = mock[NtcConnector]
-  implicit val auditConnector: AuditConnector = mock[AuditConnector]
+  implicit val ntcConnector:      NtcConnector      = mock[NtcConnector]
+  implicit val auditConnector:    AuditConnector    = mock[AuditConnector]
   implicit val taxCreditsControl: TaxCreditsControl = mock[TaxCreditsControl]
-  implicit val configuration: Configuration = fakeApplication.injector.instanceOf[Configuration]
-  implicit val logger: TestLoggerLike = new TestLoggerLike()
+  implicit val configuration:     Configuration     = mock[Configuration]
+  implicit val logger:            TestLoggerLike    = new TestLoggerLike()
 
-  val nino = Nino("CS700100A")
+  val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
 
-  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger)
+  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger, "ntc")
 
-  "Submit renewal" should{
-    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
+  "Submit renewal" should {
+    val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
     val certainBenefits = CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
-    val otherIncome = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails),
-      Some(certainBenefits)), None, Some(otherIncome), Some(otherIncome), hasChangeOfCircs = false)
+    val otherIncome     = OtherIncome(Some(100), Some(false))
+    val renewal = TcrRenewal(
+      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+      None,
+      Some(otherIncome),
+      Some(otherIncome),
+      hasChangeOfCircs = false)
 
     "audit succeess" in {
       stubSubmitRenewals(taxCreditsNino, 200)
@@ -68,7 +72,7 @@ class MobileTaxCreditsRenewalServiceSpec
     "not audit a failed submission" in {
       stubSubmitRenewalsFailure(taxCreditsNino)
 
-      intercept[RuntimeException]{
+      intercept[RuntimeException] {
         await(service.submitRenewal(nino, renewal)) shouldBe 200
       }
     }
@@ -78,46 +82,44 @@ class MobileTaxCreditsRenewalServiceSpec
     def whenCurrentSubmissionStateIs(state: String): Unit =
       (taxCreditsControl.toTaxCreditsRenewalsState _).expects().returning(TaxCreditsRenewalsState(state))
 
-    val ntcFormattedDate = Some("2018-05-30")
+    val ntcFormattedDate    = Some("2018-05-30")
     val mobileFormattedDate = Some("30/05/2018")
-    val barcode1 = RenewalReference("barcode1")
-    val barcode2 = RenewalReference("barcode2")
-    val barcode3 = RenewalReference("barcode3")
-    val awaitingBarcode = RenewalReference("000000000000000")
-    val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
-    val token = TcrAuthenticationToken("tcrAuthToken")
+    val barcode1            = RenewalReference("barcode1")
+    val barcode2            = RenewalReference("barcode2")
+    val barcode3            = RenewalReference("barcode3")
+    val awaitingBarcode     = RenewalReference("000000000000000")
+    val claimantDetails     = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+    val token               = TcrAuthenticationToken("tcrAuthToken")
     val summaryWithNoClaims = RenewalsSummary("open", Some(Seq.empty))
 
-    def claim(barcodeReference: RenewalReference,
-              maybeDate: Option[String],
-              claimantDetails: Option[ClaimantDetails] = None,
-              renewalState: Option[String] = Some("NOT_SUBMITTED")): Claim = {
+    def claim(
+      barcodeReference: RenewalReference,
+      maybeDate:        Option[String],
+      claimantDetails:  Option[ClaimantDetails] = None,
+      renewalState:     Option[String] = Some("NOT_SUBMITTED")): Claim = {
       val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname")
       val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
-      val foundRenewal = Renewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate, claimantDetails)
+      val foundRenewal   = Renewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate, claimantDetails)
       Claim(foundHouseHold, foundRenewal)
     }
 
     def testMultipleClaimsWhenCurrentSubmissionStateIs(state: String): Unit = {
       whenCurrentSubmissionStateIs(state)
 
-      val claimWithAuthTokenAndClaimantDetails = claim(barcode1, ntcFormattedDate)
-      val claimWithNoAuthToken = claim(barcode2, ntcFormattedDate)
+      val claimWithAuthTokenAndClaimantDetails   = claim(barcode1, ntcFormattedDate)
+      val claimWithNoAuthToken                   = claim(barcode2, ntcFormattedDate)
       val claimWithAuthTokenButNoClaimantDetails = claim(barcode3, ntcFormattedDate)
-      val claimAaitingBarcode = claim(awaitingBarcode, ntcFormattedDate)
+      val claimAaitingBarcode                    = claim(awaitingBarcode, ntcFormattedDate)
 
       val foundClaims: Claims =
-        Claims(Some(Seq(
-          claimWithAuthTokenAndClaimantDetails,
-          claimWithNoAuthToken,
-          claimWithAuthTokenButNoClaimantDetails,
-          claimAaitingBarcode)))
+        Claims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
 
       val expectedClaimsSeq = Seq(
         claim(barcode1, mobileFormattedDate, Some(claimantDetails)),
         claim(barcode2, mobileFormattedDate),
         claim(barcode3, mobileFormattedDate),
-        claim(awaitingBarcode, mobileFormattedDate, None, Some("AWAITING_BARCODE")))
+        claim(awaitingBarcode, mobileFormattedDate, None, Some("AWAITING_BARCODE"))
+      )
 
       val expectedClaims: Claims = Claims(Some(expectedClaimsSeq))
       val summary = RenewalsSummary(state, expectedClaims.references)
@@ -172,12 +174,14 @@ class MobileTaxCreditsRenewalServiceSpec
   }
 
   "authenticateRenewal" should {
-    val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
+    val tcrAuthToken     = TcrAuthenticationToken("some-auth-token")
     val renewalReference = RenewalReference("111111111111111")
     "authenticate the renewal and audit the request" in {
       stubAuthenticateRenewal(taxCreditsNino, renewalReference, tcrAuthToken)
-      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
-        .expects(*, *, * ).returning(Future successful Success)
+      (auditConnector
+        .sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future successful Success)
 
       await(service.authenticateRenewal(nino, renewalReference)).get shouldBe tcrAuthToken
     }
@@ -189,55 +193,56 @@ class MobileTaxCreditsRenewalServiceSpec
       val claimantDetails =
         ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
       stubClaimantDetails(taxCreditsNino, claimantDetails)
-      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
-        .expects(*, *, * ).returning(Future successful Success)
+      (auditConnector
+        .sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future successful Success)
 
       await(service.claimantDetails(nino)) shouldBe claimantDetails
     }
   }
 
   "legacyClaimantClaims" should {
-    val ntcFormattedDate = Some("2018-05-30")
+    val ntcFormattedDate    = Some("2018-05-30")
     val mobileFormattedDate = Some("30/05/2018")
-    val barcode1 = RenewalReference("barcode1")
-    val barcode2 = RenewalReference("barcode2")
-    val barcode3 = RenewalReference("barcode3")
-    val awaitingBarcode = RenewalReference("000000000000000")
+    val barcode1            = RenewalReference("barcode1")
+    val barcode2            = RenewalReference("barcode2")
+    val barcode3            = RenewalReference("barcode3")
+    val awaitingBarcode     = RenewalReference("000000000000000")
 
-    def claim(barcodeReference: RenewalReference,
-              maybeDate: Option[String],
-              renewalState: Option[String] = Some("NOT_SUBMITTED")): LegacyClaim = {
+    def claim(barcodeReference: RenewalReference, maybeDate: Option[String], renewalState: Option[String] = Some("NOT_SUBMITTED")): LegacyClaim = {
       val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname")
       val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
-      val foundRenewal = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
+      val foundRenewal   = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
       LegacyClaim(foundHouseHold, foundRenewal)
     }
 
-    val claimWithAuthTokenAndClaimantDetails = claim(barcode1, ntcFormattedDate)
-    val claimWithNoAuthToken = claim(barcode2, ntcFormattedDate)
+    val claimWithAuthTokenAndClaimantDetails   = claim(barcode1, ntcFormattedDate)
+    val claimWithNoAuthToken                   = claim(barcode2, ntcFormattedDate)
     val claimWithAuthTokenButNoClaimantDetails = claim(barcode3, ntcFormattedDate)
-    val claimAaitingBarcode = claim(awaitingBarcode, ntcFormattedDate)
+    val claimAaitingBarcode                    = claim(awaitingBarcode, ntcFormattedDate)
 
     val foundClaims: LegacyClaims =
-      LegacyClaims(Some(Seq(
-        claimWithAuthTokenAndClaimantDetails,
-        claimWithNoAuthToken,
-        claimWithAuthTokenButNoClaimantDetails,
-        claimAaitingBarcode)))
+      LegacyClaims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
 
     val expectedClaimsSeq = Seq(
       claim(barcode1, mobileFormattedDate),
       claim(barcode2, mobileFormattedDate),
       claim(barcode3, mobileFormattedDate),
-      claim(awaitingBarcode, mobileFormattedDate, Some("AWAITING_BARCODE")))
+      claim(awaitingBarcode, mobileFormattedDate, Some("AWAITING_BARCODE"))
+    )
 
     val expectedClaims: LegacyClaims = LegacyClaims(Some(expectedClaimsSeq))
 
     "get claimant claims and audit the request" in {
-      (ntcConnector.legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
-        .expects(taxCreditsNino,*,*).returning(Future successful foundClaims)
-      (auditConnector.sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
-        .expects(*, *, * ).returning(Future successful Success)
+      (ntcConnector
+        .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(taxCreditsNino, *, *)
+        .returning(Future successful foundClaims)
+      (auditConnector
+        .sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future successful Success)
 
       await(service.legacyClaimantClaims(nino)) shouldBe expectedClaims
     }
@@ -250,25 +255,20 @@ class TestLoggerLike extends LoggerLike {
   var infoMessages: Seq[String] = Seq()
   var warnMessages: Seq[String] = Seq()
 
-  override def info(message: => String): scala.Unit = {
+  override def info(message: => String)(implicit m: MarkerContext): scala.Unit =
     infoMessages = infoMessages ++ Seq(message)
-  }
 
-  override def warn(message: => String): scala.Unit = {
+  override def warn(message: => String)(implicit m: MarkerContext): scala.Unit =
     warnMessages = warnMessages ++ Seq(message)
-  }
 
-  def warnMessageWaslogged(message: String): Boolean = {
+  def warnMessageWaslogged(message: String): Boolean =
     warnMessages.contains(message)
-  }
 
-  def infoMessageWasLogged(message: String): Boolean = {
+  def infoMessageWasLogged(message: String): Boolean =
     infoMessages.contains(message)
-  }
 
   def clearMessages(): Unit = {
     infoMessages = Seq()
     warnMessages = Seq()
   }
 }
-

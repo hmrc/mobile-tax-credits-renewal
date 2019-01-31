@@ -17,6 +17,8 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.{Matchers, WordSpecLike}
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.ConfidenceLevel.{L100, L200}
 import uk.gov.hmrc.auth.core.syntax.retrieved._
@@ -24,39 +26,37 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{Authorisation, Authority}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
-import uk.gov.hmrc.play.test.UnitSpec
 
-class AuthorisationSpec extends UnitSpec with AuthorisationStub with MockFactory {
-  val nino = "CS700100A"
+class AuthorisationSpec extends WordSpecLike with Matchers with FutureAwaits with DefaultAwaitTimeout with AuthorisationStub with MockFactory {
+  val nino          = "CS700100A"
   val incorrectNino = Nino("SC100700A")
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   implicit val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
-  def authorisation(mockAuthConnector: AuthConnector): Authorisation = {
+  def authorisation(mockAuthConnector: AuthConnector): Authorisation =
     new Authorisation {
-      override val confLevel: Int = 200
+      override val confLevel:     Int           = 200
       override def authConnector: AuthConnector = mockAuthConnector
     }
-  }
 
   "Authorisation grantAccess" should {
 
-    "successfully grant access when nino exists and confidence level is 200" in  {
+    "successfully grant access when nino exists and confidence level is 200" in {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       val authority: Authority = await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
       authority.nino.value shouldBe nino
     }
 
-    "error with unauthorised when account has low CL" in  {
+    "error with unauthorised when account has low CL" in {
       stubAuthorisationGrantAccess(Some(nino) and L100)
       intercept[AccountWithLowCL] {
         await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
       }
     }
 
-    "fail to return authority when no NINO exists" in  {
+    "fail to return authority when no NINO exists" in {
       stubAuthorisationGrantAccess(None and L200)
       intercept[NinoNotFoundOnAccount] {
         await(authorisation(mockAuthConnector).grantAccess(Nino(nino)))
@@ -68,7 +68,7 @@ class AuthorisationSpec extends UnitSpec with AuthorisationStub with MockFactory
       }
     }
 
-    "fail to return authority when auth NINO does not match request NINO" in  {
+    "fail to return authority when auth NINO does not match request NINO" in {
       stubAuthorisationGrantAccess(Some(nino) and L200)
       intercept[FailToMatchTaxIdOnAuth] {
         await(authorisation(mockAuthConnector).grantAccess(incorrectNino))

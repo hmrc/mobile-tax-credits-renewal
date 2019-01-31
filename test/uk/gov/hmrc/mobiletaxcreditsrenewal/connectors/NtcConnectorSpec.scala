@@ -21,21 +21,21 @@ import com.typesafe.config.Config
 import javax.inject.Inject
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{Matchers, WordSpecLike}
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json, Writes}
-import play.api.{Configuration, Environment, Play}
+import play.api.test.Helpers._
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.circuitbreaker.CircuitBreakerConfig
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
-import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 import scala.concurrent.Future
 
-class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with ScalaFutures with CircuitBreakerTest with MockFactory {
+class NtcConnectorSpec @Inject()(actor: ActorSystem) extends WordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -43,13 +43,13 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     implicit lazy val hc: HeaderCarrier = HeaderCarrier()
 
-    val nino = Nino("KM569110B")
-    val taxCreditNino = TaxCreditsNino(nino.value)
-    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
+    val nino             = Nino("KM569110B")
+    val taxCreditNino    = TaxCreditsNino(nino.value)
+    val incomeDetails    = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
+    val renewal          = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
     val renewalReference = RenewalReference("123456")
-    val tcrAuthToken = TcrAuthenticationToken("some-token")
-    val claimantDetails = ClaimantDetails(hasPartner = false, 1, "renewalForm", nino.value, None, availableForCOCAutomation = false, "some-app-id")
+    val tcrAuthToken     = TcrAuthenticationToken("some-token")
+    val claimantDetails  = ClaimantDetails(hasPartner = false, 1, "renewalForm", nino.value, None, availableForCOCAutomation = false, "some-app-id")
 
     val claimsJson: String =
       """{
@@ -121,16 +121,15 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
         |  ]
         |}""".stripMargin
 
-    val claims200Success: JsValue = Json.parse(claimsJson)
-    lazy val http200ClaimsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(claims200Success)))
-    lazy val http500Response: Future[Nothing] = Future.failed(Upstream5xxResponse("Error", 500, 500))
-    lazy val http400Response: Future[Nothing] = Future.failed(new BadRequestException("bad request"))
-    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
-    lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
-    lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
+    val claims200Success:                    JsValue                          = Json.parse(claimsJson)
+    lazy val http200ClaimsResponse:          Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(claims200Success)))
+    lazy val http500Response:                Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http400Response:                Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
+    lazy val http404Response:                Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
+    lazy val http204Response:                Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
+    lazy val http200AuthenticateResponse:    Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
     lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
-    lazy val response: Future[HttpResponse] = http400Response
-
+    lazy val response:                       Future[HttpResponse]             = http400Response
 
     val serviceUrl = "someUrl"
     val http: CoreGet with CorePost = new CoreGet with HttpGet with CorePost with HttpPost {
@@ -140,7 +139,8 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
       override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = response
 
-      override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse] = response
+      override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse] =
+        response
 
       override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
@@ -151,10 +151,8 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
       override protected def actorSystem: ActorSystem = actor
     }
 
-    class TestNtcConnector(http: CoreGet with CorePost,
-                           runModeConfiguration: Configuration,
-                           environment: Environment) extends NtcConnector(http, serviceUrl, runModeConfiguration, environment)
-      with ServicesConfig with ServicesCircuitBreaker {
+    class TestNtcConnector(http: CoreGet with CorePost, runModeConfiguration: Configuration, environment: Environment)
+        extends NtcConnector(http, serviceUrl, runModeConfiguration, environment, new RunMode(runModeConfiguration, environment.mode)) {
       override protected def circuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
     }
 
@@ -165,13 +163,13 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     "return None when 404 returned" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http404Response
-      val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
+      val result:                 Option[TcrAuthenticationToken]   = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       result shouldBe None
     }
 
     "return None when 400 returned" in new Setup {
-      override lazy val response: Future[Nothing] = http400Response
-      val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
+      override lazy val response: Future[Nothing]                = http400Response
+      val result:                 Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       result shouldBe None
     }
 
@@ -184,7 +182,7 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200AuthenticateResponse
-      val result: Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
+      val result:                 Option[TcrAuthenticationToken]   = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
 
       result.get shouldBe tcrAuthToken
     }
@@ -213,7 +211,7 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
-      val result: Claims = await(connector.claimantClaims(taxCreditNino))
+      val result:                 Claims                           = await(connector.claimantClaims(taxCreditNino))
 
       result shouldBe toJson(claims200Success).as[Claims]
     }
@@ -242,7 +240,7 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
-      val result: LegacyClaims = await(connector.legacyClaimantClaims(taxCreditNino))
+      val result:                 LegacyClaims                     = await(connector.legacyClaimantClaims(taxCreditNino))
 
       result shouldBe toJson(claims200Success).as[LegacyClaims]
     }
@@ -271,7 +269,7 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends UnitSpec with Scala
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimantDetailsResponse
-      val result: ClaimantDetails = await(connector.claimantDetails(taxCreditNino))
+      val result:                 ClaimantDetails                  = await(connector.claimantDetails(taxCreditNino))
 
       result shouldBe claimantDetails
     }

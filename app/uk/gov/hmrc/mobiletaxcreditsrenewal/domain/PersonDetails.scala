@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
-import org.joda.time.DateTime
+import java.time.LocalDateTime
+
 import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
 
@@ -25,45 +26,43 @@ object Person {
 }
 
 case class Person(
-                   firstName: Option[String],
-                   middleName: Option[String],
-                   lastName: Option[String],
-                   initials: Option[String],
-                   title: Option[String],
-                   honours: Option[String],
-                   sex: Option[String],
-                   dateOfBirth: Option[DateTime],
-                   nino: Option[Nino]
-                 ) {
+  firstName:   Option[String],
+  middleName:  Option[String],
+  lastName:    Option[String],
+  initials:    Option[String],
+  title:       Option[String],
+  honours:     Option[String],
+  sex:         Option[String],
+  dateOfBirth: Option[LocalDateTime],
+  nino:        Option[Nino]
+) {
 
   lazy val shortName: Option[String] = for (f <- firstName; l <- lastName) yield List(f, l).mkString(" ")
-  lazy val fullName: String = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
+  lazy val fullName:  String         = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
 }
-
 
 object Address {
   implicit val formats: OFormat[Address] = Json.format[Address]
 }
 
 case class Address(
-                    line1: Option[String],
-                    line2: Option[String],
-                    line3: Option[String],
-                    line4: Option[String],
-                    postcode: Option[String],
-                    startDate: Option[DateTime],
-                    `type`: Option[String]
-                  ) {
+  line1:     Option[String],
+  line2:     Option[String],
+  line3:     Option[String],
+  line4:     Option[String],
+  postcode:  Option[String],
+  startDate: Option[LocalDateTime],
+  `type`:    Option[String]
+) {
   lazy val lines: List[String] = List(line1, line2, line3, line4).flatten
 }
 
-
 case class PersonDetails(
-                          etag: String,
-                          person: Person,
-                          address: Option[Address],
-                          correspondenceAddress: Option[Address]
-                        )
+  etag:                  String,
+  person:                Person,
+  address:               Option[Address],
+  correspondenceAddress: Option[Address]
+)
 
 object PersonDetails {
   implicit val formats: OFormat[PersonDetails] = Json.format[PersonDetails]

@@ -30,14 +30,13 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
 
 import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-
-trait LegacyMobileTaxCreditsRenewalController extends BaseController with HeaderValidator {
+trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
 
   def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None): Action[AnyContent]
 
@@ -49,20 +48,25 @@ trait LegacyMobileTaxCreditsRenewalController extends BaseController with Header
 
   def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent]
 }
-
-
 @Singleton
 class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
-                                                             override val authConnector: AuthConnector,
-                                                             val logger: LoggerLike,
-                                                             val service: MobileTaxCreditsRenewalService,
-                                                             val taxCreditsControl: TaxCreditsControl,
-                                                             @Named("controllers.confidenceLevel") override val confLevel: Int) extends LegacyMobileTaxCreditsRenewalController with AccessControl {
+  override val authConnector:                                   AuthConnector,
+  val logger:                                                   LoggerLike,
+  val service:                                                  MobileTaxCreditsRenewalService,
+  val taxCreditsControl:                                        TaxCreditsControl,
+  @Named("controllers.confidenceLevel") override val confLevel: Int,
+  val controllerComponents:                                     ControllerComponents
+)(
+  implicit val executionContext: ExecutionContext
+) extends LegacyMobileTaxCreditsRenewalController
+    with AccessControl {
+
+  override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
   private val tcrAuthToken = "tcrAuthToken"
 
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
-  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] = {
+  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] =
     func.recover {
       case _: NotFoundException => notFound
 
@@ -74,73 +78,72 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
         Logger.error(s"Internal server error: ${e.getMessage}", e)
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
-  }
 
   override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None): Action[AnyContent] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-      implicit request =>
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
-        errorWrapper(
-          service.authenticateRenewal(nino, renewalReference).map {
-            case Some(authToken) => Ok(toJson(authToken))
-            case _ => notFound
-          }
-        )
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
+      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      errorWrapper(
+        service.authenticateRenewal(nino, renewalReference).map {
+          case Some(authToken) => Ok(toJson(authToken))
+          case _               => notFound
+        }
+      )
     }
 
   override def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None): Action[AnyContent] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-      implicit request =>
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
+      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      errorWrapper(validateTcrAuthHeader(claims) { implicit hc =>
+        def singleClaim: Future[Result] = addMainApplicantFlag(nino)
 
-        errorWrapper(validateTcrAuthHeader(claims) {
-          implicit hc =>
-            def singleClaim: Future[Result] = addMainApplicantFlag(nino)
+        def retrieveAllClaims: Future[Result] = service.legacyClaimantClaims(nino).map { claims =>
+          claims.references.fold(notFound) { found =>
+            if (found.isEmpty) notFound else Ok(toJson(claims))
+          }
+        }
 
-            def retrieveAllClaims: Future[Result] = service.legacyClaimantClaims(nino).map { claims =>
-              claims.references.fold(notFound) { found => if (found.isEmpty) notFound else Ok(toJson(claims)) }
-            }
-
-            claims.fold(singleClaim) { _ => retrieveAllClaims }
-        })
+        claims.fold(singleClaim) { _ =>
+          retrieveAllClaims
+        }
+      })
     }
 
-  def addMainApplicantFlag(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Result] = {
+  def addMainApplicantFlag(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Result] =
     service.claimantDetails(nino).map { claim =>
       val mainApplicantFlag: String = if (claim.mainApplicantNino == nino.value) "true" else "false"
       Ok(toJson(claim.copy(mainApplicantNino = mainApplicantFlag)))
     }
-  }
 
   override def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async {
-      implicit request =>
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
+      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        errorWrapper({
-          def fullClaimantDetails(claim: LegacyClaim): Future[LegacyClaim] = {
-            def getClaimantDetail(token: TcrAuthenticationToken, hc: HeaderCarrier): Future[LegacyClaim] = {
-              implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
+      errorWrapper({
+        def fullClaimantDetails(claim: LegacyClaim): Future[LegacyClaim] = {
+          def getClaimantDetail(token: TcrAuthenticationToken, hc: HeaderCarrier): Future[LegacyClaim] = {
+            implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
 
-              service.claimantDetails(nino).map { claimantDetails =>
-                claim.copy(
-                  household = claim.household.copy(),
-                  renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
-              }
+            service.claimantDetails(nino).map { claimantDetails =>
+              claim.copy(household = claim.household.copy(), renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
             }
+          }
 
-            service.authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference)).flatMap { maybeToken =>
+          service
+            .authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference))
+            .flatMap { maybeToken =>
               if (maybeToken.nonEmpty) getClaimantDetail(maybeToken.get, hc)
               else Future successful claim
-            }.recover {
+            }
+            .recover {
               case e: Exception =>
                 logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
                 claim
             }
-          }
+        }
 
-          val eventualClaims: Future[Seq[LegacyClaim]] = service.legacyClaimantClaims(nino).flatMap { claimantClaims =>
+        val eventualClaims: Future[Seq[LegacyClaim]] = service.legacyClaimantClaims(nino).flatMap {
+          claimantClaims =>
             val claims: Seq[LegacyClaim] = claimantClaims.references.getOrElse(Seq.empty[LegacyClaim])
 
             if (claims.isEmpty) logger.warn(s"Empty claims list for journeyId $journeyId")
@@ -153,31 +156,34 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
                 Future successful claim
               } else fullClaimantDetails(claim)
             }
-          }
+        }
 
-          eventualClaims.map { claimantDetails =>
-            Ok(toJson(LegacyClaims(if (claimantDetails.isEmpty) None else Some(claimantDetails))))
-          }
-        })
+        eventualClaims.map { claimantDetails =>
+          Ok(toJson(LegacyClaims(if (claimantDetails.isEmpty) None else Some(claimantDetails))))
+        }
+      })
     }
 
   override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(BodyParsers.parse.json) {
-      implicit request =>
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
+      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-        request.body.validate[TcrRenewal].fold(
+      request.body
+        .validate[TcrRenewal]
+        .fold(
           errors => {
             logger.warn("Received error with service submitRenewal: " + errors)
             Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
           },
           renewal => {
-            errorWrapper(validateTcrAuthHeader(None) {
-              implicit hc =>
-                service.submitRenewal(nino, renewal).map { _ =>
+            errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
+              service
+                .submitRenewal(nino, renewal)
+                .map { _ =>
                   logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
                   Ok
-                }.recover {
+                }
+                .recover {
                   case e: Exception =>
                     logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
                     throw e
@@ -188,27 +194,27 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
     }
 
   override def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent] =
-    validateAccept(acceptHeaderValidationRules).async {
-      implicit request =>
-        implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
-        errorWrapper(
-          Future {
-            taxCreditsControl.toTaxCreditsRenewalsState
-          }.map {
-            submissionState => Ok(Json.toJson(submissionState))
-          })
+    validateAccept(acceptHeaderValidationRules).async { implicit request =>
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
+      errorWrapper(Future {
+        taxCreditsControl.toTaxCreditsRenewalsState
+      }.map { submissionState =>
+        Ok(Json.toJson(submissionState))
+      })
     }
 
-  private def validateTcrAuthHeader(mode: Option[String])(func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] = {
+  private def validateTcrAuthHeader(mode: Option[String])(
+    func:                                 HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] =
     (request.headers.get(tcrAuthToken), mode) match {
-      case (None, Some(_)) => func(hc)
+      case (None, Some(_))     => func(hc)
       case (Some(token), None) => func(hc.copy(extraHeaders = Seq(tcrAuthToken -> token)))
       case _ =>
         val default: ErrorResponse = ErrorNoAuthToken
         val authTokenShouldNotBeSupplied = ErrorAuthTokenSupplied
-        val response = mode.fold(default) { _ => authTokenShouldNotBeSupplied }
+        val response = mode.fold(default) { _ =>
+          authTokenShouldNotBeSupplied
+        }
         logger.warn("Either tcrAuthToken must be supplied as header or 'claims' as query param.")
         Future.successful(Forbidden(toJson(response)))
     }
-  }
 }

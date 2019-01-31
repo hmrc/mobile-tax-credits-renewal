@@ -49,7 +49,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
 
-  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger, "ntc")
+  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger, "mobile-tax-credits-renewal")
 
   "Submit renewal" should {
     val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))

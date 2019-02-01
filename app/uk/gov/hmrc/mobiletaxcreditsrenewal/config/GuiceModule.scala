@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
-import com.google.inject.name.Named
+import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
-import com.google.inject.{AbstractModule, Provides}
-import play.api.Mode.Mode
+import javax.inject.Inject
 import play.api.{Configuration, Environment, Logger, LoggerLike}
 import uk.gov.hmrc.api.connector.{ApiServiceLocatorConnector, ServiceLocatorConnector}
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -28,15 +27,14 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{TaxCreditsControl, TaxCreditsSubmissionControlConfig}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.tasks.ServiceLocatorRegistrationTask
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
+import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.{AppName, ServicesConfig}
 
 import scala.collection.JavaConverters._
 
-class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
+class GuiceModule @Inject()(environment: Environment, configuration: Configuration) extends AbstractModule {
 
-  override protected lazy val mode: Mode = environment.mode
-  override protected lazy val runModeConfiguration: Configuration = configuration
+  val servicesConfig: ServicesConfig = new ServicesConfig(configuration, new RunMode(configuration, environment.mode))
 
   override def configure(): Unit = {
     bind(classOf[ServiceLocatorConnector]).to(classOf[ApiServiceLocatorConnector])
@@ -47,8 +45,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[ServiceLocatorRegistrationTask]).asEagerSingleton()
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
-    bind(classOf[ApiAccess]).toInstance(
-      ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala))
+    bind(classOf[ApiAccess]).toInstance(ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala))
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")
@@ -57,12 +54,8 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bindConfigString("submission.endViewRenewalsDate", "microservice.services.ntc.submission.endViewRenewalsDate")
     bind(classOf[LoggerLike]).toInstance(Logger)
 
-    bind(classOf[String]).annotatedWith(named("ntc")).toInstance(baseUrl("ntc"))
+    bind(classOf[String]).annotatedWith(named("ntc")).toInstance(servicesConfig.baseUrl("ntc"))
   }
-
-  @Provides
-  @Named("appName")
-  def appName: String = AppName(configuration).appName
 
   /**
     * Binds a configuration value using the `path` as the name for the binding.

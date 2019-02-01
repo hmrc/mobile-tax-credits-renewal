@@ -21,9 +21,9 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
   val barcodeReference = RenewalReference("200000000000013")
 
-  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").withHeaders(acceptJsonHeader)
+  protected val submissionStateEnabledRequest: WSRequest = wsUrl(s"/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader)
 
-  protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").withHeaders(acceptJsonHeader)
+  protected val renewalsRequest: WSRequest = wsUrl(s"/renewals/${nino1.value}").addHttpHeaders(acceptJsonHeader)
 
   protected def submissionStartDate: String = now.minusDays(1).toString
   protected def submissionEndDate: String = now.plusDays(1).toString
@@ -38,7 +38,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
    }
 
   def submitTaxCreditRenewal: WSResponse = {
-    def request(nino: Nino) = wsUrl(s"/declarations/${nino.value}").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    def request(nino: Nino) = wsUrl(s"/declarations/${nino.value}").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     grantAccess(nino1.value)
 
@@ -68,7 +68,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   }
 
   "GET /income/:nino/tax-credits/:renewalReference/auth" should {
-    val url = wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").withHeaders(acceptJsonHeader)
+    val url = wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").addHttpHeaders(acceptJsonHeader)
 
     "return a tcrAuthenticationToken" in {
       grantAccess(nino1.value)
@@ -91,7 +91,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   }
 
   "GET /income/:nino/tax-credits/claimant-details" should {
-    def request(nino:Nino) = wsUrl(s"/income/${nino.value}/tax-credits/claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    def request(nino:Nino) = wsUrl(s"/income/${nino.value}/tax-credits/claimant-details").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     "retrieve claimant details for main applicant" in {
       grantAccess(nino1.value)
@@ -126,7 +126,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource{
   "GET /income/:nino/tax-credits/full-claimant-details" should {
     val mainApplicantNino = Nino("CS700100A")
     val barcodeReference = RenewalReference("200000000000013")
-    val request = wsUrl(s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details").withHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    val request = wsUrl(s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
 
     "retrieve claimant claims for main applicant and set renewalFormType for a renewal where bar code ref is not '000000000000000'" in {
       grantAccess(mainApplicantNino.value)

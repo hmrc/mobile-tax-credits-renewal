@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.utils
 
-import uk.gov.hmrc.play.test.UnitSpec
+import org.scalatest.{Matchers, WordSpecLike}
 
-class ClaimsDateConverterSpec extends UnitSpec{
+class ClaimsDateConverterSpec extends WordSpecLike with Matchers {
   private val dateConverter = new ClaimsDateConverter
 
   "convert date format" should {

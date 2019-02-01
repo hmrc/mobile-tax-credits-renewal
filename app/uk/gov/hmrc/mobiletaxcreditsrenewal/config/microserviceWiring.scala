@@ -20,7 +20,8 @@ import akka.actor.ActorSystem
 import com.google.inject.Inject
 import com.typesafe.config.Config
 import javax.inject.Named
-import play.api.Play
+import play.api.Configuration
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -32,18 +33,22 @@ trait Hooks extends HttpHooks with HttpAuditing {
   val hooks = Seq(AuditingHook)
 }
 
-class WSHttpImpl @Inject()(@Named("appName") val appName: String, val auditConnector: AuditConnector) extends HttpClient with WSGet
-  with WSPut
-  with WSPost
-  with WSDelete
-  with WSPatch
-  with Hooks {
+class WSHttpImpl @Inject()(
+  val wsClient:                  WSClient,
+  @Named("appName") val appName: String,
+  val auditConnector:            AuditConnector,
+  config:                        Configuration,
+  val actorSystem:               ActorSystem)
+    extends HttpClient
+    with WSGet
+    with WSPut
+    with WSPost
+    with WSDelete
+    with WSPatch
+    with Hooks {
 
-
-  override protected def configuration: Option[Config] = Some(Play.current.configuration.underlying)
-
-  override protected def actorSystem: ActorSystem = Play.current.actorSystem
+  override protected def configuration: Option[Config] = Some(config.underlying)
 }
 
-class MicroserviceAudit @Inject()(@Named("appName") val applicationName: String,
-                                  val auditConnector: AuditConnector) extends Audit(applicationName, auditConnector)
+class MicroserviceAudit @Inject()(@Named("appName") val applicationName: String, val auditConnector: AuditConnector)
+    extends Audit(applicationName, auditConnector)

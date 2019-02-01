@@ -16,37 +16,47 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.support
 
-import org.scalatest.{Matchers, OptionValues}
+import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 import org.scalatestplus.play.WsScalaTestClient
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrAuthenticationToken.basicAuthString
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.language.postfixOps
 
-class BaseISpec extends UnitSpec with Matchers with OptionValues with WsScalaTestClient with GuiceOneServerPerSuite with WireMockSupport {
+class BaseISpec
+    extends WordSpecLike
+    with Matchers
+    with OptionValues
+    with FutureAwaits
+    with DefaultAwaitTimeout
+    with WsScalaTestClient
+    with GuiceOneServerPerSuite
+    with WireMockSupport {
   override implicit lazy val app: Application = appBuilder.build()
 
   protected val nino1 = Nino("AA000000A")
   protected val nino2 = Nino("AP412713B")
-  protected val acceptJsonHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
-  protected val renewalReference: RenewalReference = RenewalReference("renewalReference")
-  protected val tcrAuthenticationToken: String = basicAuthString(nino1.value, renewalReference.value)
-  protected val tcrAuthTokenHeader: (String, String) = tcrAuthToken -> tcrAuthenticationToken
+  protected val acceptJsonHeader:       (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
+  protected val renewalReference:       RenewalReference = RenewalReference("renewalReference")
+  protected val tcrAuthenticationToken: String           = basicAuthString(nino1.value, renewalReference.value)
+  protected val tcrAuthTokenHeader:     (String, String) = tcrAuthToken -> tcrAuthenticationToken
 
-  def config: Map[String, Any] = Map(
-    "auditing.enabled" -> false,
-    "microservice.services.service-locator.enabled" -> false,
-    "microservice.services.auth.port" -> wireMockPort,
-    "microservice.services.datastream.port" -> wireMockPort,
-    "microservice.services.ntc.port" -> wireMockPort,
-    "microservice.services.service-locator.port" -> wireMockPort)
+  def config: Map[String, Any] =
+    Map(
+      "auditing.enabled"                              -> false,
+      "microservice.services.service-locator.enabled" -> false,
+      "microservice.services.auth.port"               -> wireMockPort,
+      "microservice.services.datastream.port"         -> wireMockPort,
+      "microservice.services.ntc.port"                -> wireMockPort,
+      "microservice.services.service-locator.port"    -> wireMockPort
+    )
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder().configure(config)
 

@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
-import org.scalatest.Assertion
 import org.scalatest.concurrent.ScalaFutures
-import uk.gov.hmrc.play.test.UnitSpec
+import org.scalatest.{Assertion, Matchers, WordSpecLike}
 
 import scala.concurrent.Future
 
 trait CircuitBreakerTest {
 
-  self: UnitSpec with ScalaFutures =>
+  self: WordSpecLike with Matchers with ScalaFutures =>
 
   def executeCB(func: => Future[Any]): Assertion = {
     1 to 5 foreach { _ =>

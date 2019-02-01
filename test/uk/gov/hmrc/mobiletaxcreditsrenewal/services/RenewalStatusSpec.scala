@@ -17,12 +17,12 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.{Matchers, WordSpecLike}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Claim, Household, Renewal}
-import uk.gov.hmrc.play.test.UnitSpec
 
-class RenewalStatusSpec extends UnitSpec with MockFactory {
+class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
 
-  val renewalStatus: RenewalStatus  = new RenewalStatus {}
+  val renewalStatus: RenewalStatus = new RenewalStatus {}
 
   val household = Household("1010101", "1234", Applicant("NINO", "MR", "TOM", None, "SMITH"), None, None, None)
 
@@ -31,28 +31,28 @@ class RenewalStatusSpec extends UnitSpec with MockFactory {
   "Renewal status" should {
     "resolve to NOT_SUBMITTED" in {
       renewalStatus.resolveStatus(claim(Some("DISREGARD"))) shouldBe "NOT_SUBMITTED"
-      renewalStatus.resolveStatus(claim(Some("UNKNOWN"))) shouldBe "NOT_SUBMITTED"
+      renewalStatus.resolveStatus(claim(Some("UNKNOWN")))   shouldBe "NOT_SUBMITTED"
     }
 
     "resolve to SUBMITTED_AND_PROCESSING" in {
-      renewalStatus.resolveStatus(claim(Some("S17 LOGGED"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("SUPERCEDED"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("PARTIAL CAPTURE"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("AWAITING PROCESS"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("INHIBITED"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("AWAITING CHANGE OF CIRCUMSTANCES"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("S17 LOGGED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("SUPERCEDED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("PARTIAL CAPTURE")))                    shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("AWAITING PROCESS")))                   shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("INHIBITED")))                          shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("AWAITING CHANGE OF CIRCUMSTANCES")))   shouldBe "SUBMITTED_AND_PROCESSING"
       renewalStatus.resolveStatus(claim(Some("1 REPLY FROM 2 APPLICANT HOUSEHOLD"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("DUPLICATE"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.resolveStatus(claim(Some("DUPLICATE")))                          shouldBe "SUBMITTED_AND_PROCESSING"
     }
 
     "resolve to COMPLETE" in {
       renewalStatus.resolveStatus(claim(Some("REPLY USED FOR FINALISATION"))) shouldBe "COMPLETE"
-      renewalStatus.resolveStatus(claim(Some("SYSTEM FINALISED"))) shouldBe "COMPLETE"
+      renewalStatus.resolveStatus(claim(Some("SYSTEM FINALISED")))            shouldBe "COMPLETE"
     }
 
     "handle unknown status as NOT_SUBMITTED" in {
-      renewalStatus.resolveStatus(claim(None)) shouldBe "NOT_SUBMITTED"
-      renewalStatus.resolveStatus(claim(Some(""))) shouldBe "NOT_SUBMITTED"
+      renewalStatus.resolveStatus(claim(None))        shouldBe "NOT_SUBMITTED"
+      renewalStatus.resolveStatus(claim(Some("")))    shouldBe "NOT_SUBMITTED"
       renewalStatus.resolveStatus(claim(Some("foo"))) shouldBe "NOT_SUBMITTED"
     }
 

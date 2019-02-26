@@ -159,6 +159,24 @@ uses:
                     examples:
                       example-1:
                         value: !include examples/get-claiment-details-example-1.json
+        /full-claimant-details:
+          get:
+            displayName: Get full claiment details
+            description: This endpoint retrieves the full claiment details.
+            is: [headers.acceptHeader]
+            (annotations.scope): "read:native-apps-api-orchestration"
+            securedBy: [ sec.oauth_2_0: { scopes: [ "read:native-apps-api-orchestration" ] } ]
+            queryParameters:
+              journeyId:
+                type: string
+                required: false
+            responses:
+              200:
+                body:
+                  application/json:
+                    examples:
+                      example-1:
+                        value: !include examples/get-full-claiment-details-example-1.json
         /renewal:
           post:
             displayName: Submit renewal

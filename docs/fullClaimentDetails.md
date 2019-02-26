@@ -14,11 +14,6 @@ Return Full Claimant Details object
 
 *  **URL Params**
 
-  `claims=yes`
-
-   Supplying the claims query parameter will drive the service to return all claims associated from the supplied NINO.
-
-
    **Required:**
  
    `nino=[Nino]`

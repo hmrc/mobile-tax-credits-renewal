@@ -88,7 +88,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case _ =>
           val resource: String = findResource(s"/resources/claimantdetails/claimant-details.json")
             .getOrElse(throw new IllegalArgumentException("Resource not found!"))
-          Ok(toJson(resource))
+          Ok(toJson(Json.parse(resource).as[LegacyClaims]))
       })
     }
 

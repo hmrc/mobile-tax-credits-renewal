@@ -51,6 +51,7 @@ class GuiceModule @Inject()(environment: Environment, configuration: Configurati
     bind(classOf[LoggerLike]).toInstance(Logger)
 
     bind(classOf[String]).annotatedWith(named("ntc")).toInstance(servicesConfig.baseUrl("ntc"))
+    bind(classOf[String]).annotatedWith(named("tax-credits-broker")).toInstance(servicesConfig.baseUrl("tax-credits-broker"))
   }
 
   /**

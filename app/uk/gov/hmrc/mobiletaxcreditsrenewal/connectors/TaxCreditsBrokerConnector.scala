@@ -34,6 +34,9 @@ class TaxCreditsBrokerConnector @Inject()(
 
   def employedEarningsRti(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Option[EmployedEarningsRti]] = {
     http.GET[Option[EmployedEarningsRti]](s"$serviceUrl/tcs/${nino.value}/employed-earnings-rti") recover {
+      case e: NotFoundException =>
+        Logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
+        None
       case e: Exception =>
         Logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
         None

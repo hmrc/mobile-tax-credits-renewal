@@ -34,7 +34,7 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, LegacyPersonalIncomeServiceStub}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCreditsRenewalServiceStub}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -44,7 +44,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     with Matchers
     with MockFactory
     with AuthorisationStub
-    with LegacyPersonalIncomeServiceStub
+    with MobileTaxCreditsRenewalServiceStub
     with ClaimsJson {
   implicit val authConnector:     AuthConnector                  = mock[AuthConnector]
   implicit val mockControlConfig: TaxCreditsControl              = mock[TaxCreditsControl]
@@ -250,8 +250,8 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     }
   }
 
-  "full claimant details" should {
-    val applicant       = Applicant(nino.nino, "MR", "BOB", None, "ROBSON")
+  "fullClaimantDetails" should {
+    val applicant       = Applicant(nino.nino, "MR", "BOB", None, "ROBSON", None)
     val renewal         = LegacyRenewal(None, None, None, None, None, None)
     val renewalFormType = "renewalFormType"
 
@@ -262,6 +262,75 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(None, nino)
+      stubClaimantDetailsResponse(
+        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
+        nino)
+
+      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with employed earnings RTI populated for applicant1 and not applicant2" in {
+      val household            = Household(renewalReference.value, "applicationId", applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)), Some(applicant.copy(previousYearRtiEmployedEarnings = None)), None, None)
+      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), None)), nino)
+      stubClaimantDetailsResponse(
+        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
+        nino)
+
+      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with employed earnings RTI populated for applicant2 and not applicant1" in {
+      val household            = Household(renewalReference.value, "applicationId", applicant.copy(previousYearRtiEmployedEarnings = None), Some(applicant.copy(previousYearRtiEmployedEarnings = Some(22000.0))), None, None)
+      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(None, Some(22000.0))), nino)
+      stubClaimantDetailsResponse(
+        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
+        nino)
+
+      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with employed earnings RTI populated both applicant1 and applicant2" in {
+      val household            = Household(renewalReference.value, "applicationId", applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)), Some(applicant.copy(previousYearRtiEmployedEarnings = Some(22000.0))), None, None)
+      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), Some(22000.0))), nino)
+      stubClaimantDetailsResponse(
+        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
+        nino)
+
+      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with no employed earnings RTI for either applicant" in {
+      val household            = Household(renewalReference.value, "applicationId", applicant.copy(previousYearRtiEmployedEarnings = None), Some(applicant.copy(previousYearRtiEmployedEarnings = None)), None, None)
+      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(None, nino)
       stubClaimantDetailsResponse(
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino)

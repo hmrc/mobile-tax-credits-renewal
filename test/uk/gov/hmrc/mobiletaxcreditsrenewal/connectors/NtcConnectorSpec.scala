@@ -35,7 +35,7 @@ import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 import scala.concurrent.Future
 
-class NtcConnectorSpec @Inject()(actor: ActorSystem) extends WordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
+class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -148,7 +148,7 @@ class NtcConnectorSpec @Inject()(actor: ActorSystem) extends WordSpecLike with M
 
       override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
 
-      override protected def actorSystem: ActorSystem = actor
+      override protected def actorSystem: ActorSystem = ActorSystem()
     }
 
     class TestNtcConnector(http: CoreGet with CorePost, runModeConfiguration: Configuration, environment: Environment)

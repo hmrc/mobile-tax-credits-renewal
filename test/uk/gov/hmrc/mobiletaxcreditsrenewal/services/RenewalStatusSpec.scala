@@ -24,7 +24,7 @@ class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
 
   val renewalStatus: RenewalStatus = new RenewalStatus {}
 
-  val household = Household("1010101", "1234", Applicant("NINO", "MR", "TOM", None, "SMITH"), None, None, None)
+  val household = Household("1010101", "1234", Applicant("NINO", "MR", "TOM", None, "SMITH", None), None, None, None)
 
   def claim(renewalStatus: Option[String] = Some("SUPERCEDED")) = Claim(household, Renewal(None, None, renewalStatus, None, None))
 

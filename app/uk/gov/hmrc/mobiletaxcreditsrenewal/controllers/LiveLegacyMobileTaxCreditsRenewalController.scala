@@ -48,20 +48,22 @@ trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with
 
   def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent]
 }
+
 @Singleton
 class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
-  override val authConnector:                                   AuthConnector,
-  val logger:                                                   LoggerLike,
-  val service:                                                  MobileTaxCreditsRenewalService,
-  val taxCreditsControl:                                        TaxCreditsControl,
-  @Named("controllers.confidenceLevel") override val confLevel: Int,
-  val controllerComponents:                                     ControllerComponents
-)(
-  implicit val executionContext: ExecutionContext
-) extends LegacyMobileTaxCreditsRenewalController
-    with AccessControl {
+                                                             override val authConnector: AuthConnector,
+                                                             val logger: LoggerLike,
+                                                             val service: MobileTaxCreditsRenewalService,
+                                                             val taxCreditsControl: TaxCreditsControl,
+                                                             @Named("controllers.confidenceLevel") override val confLevel: Int,
+                                                             val controllerComponents: ControllerComponents
+                                                           )(
+                                                             implicit val executionContext: ExecutionContext
+                                                           ) extends LegacyMobileTaxCreditsRenewalController
+  with AccessControl {
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
+
   private val tcrAuthToken = "tcrAuthToken"
 
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
@@ -85,7 +87,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       errorWrapper(
         service.authenticateRenewal(nino, renewalReference).map {
           case Some(authToken) => Ok(toJson(authToken))
-          case _               => notFound
+          case _ => notFound
         }
       )
     }
@@ -124,8 +126,25 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
           def getClaimantDetail(token: TcrAuthenticationToken, hc: HeaderCarrier): Future[LegacyClaim] = {
             implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
 
-            service.claimantDetails(nino).map { claimantDetails =>
-              claim.copy(household = claim.household.copy(), renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+            service.claimantDetails(nino).flatMap { claimantDetails =>
+              service.employedEarningsRti(nino) map {
+                case Some(employedEarningsRti) => employedEarningsRti match {
+                  case EmployedEarningsRti(Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner)) => claim.copy(household = claim.household.copy(
+                    applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = Some(rtiEmployedEarnings)),
+                    applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = Some(rtiEmployedEarningsPartner)))),
+                    renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+                  case EmployedEarningsRti(_, Some(rtiEmployedEarningsPartner)) => claim.copy(household = claim.household.copy(
+                    applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = None),
+                    applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = Some(rtiEmployedEarningsPartner)))),
+                    renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+                  case EmployedEarningsRti(Some(rtiEmployedEarnings), _) => claim.copy(household = claim.household.copy(
+                    applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = Some(rtiEmployedEarnings)),
+                    applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = None))),
+                    renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+                  case _ => claim.copy(renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+                }
+                case _ => claim.copy(renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType)))
+              }
             }
           }
 
@@ -204,9 +223,9 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
     }
 
   private def validateTcrAuthHeader(mode: Option[String])(
-    func:                                 HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] =
+    func: HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] =
     (request.headers.get(tcrAuthToken), mode) match {
-      case (None, Some(_))     => func(hc)
+      case (None, Some(_)) => func(hc)
       case (Some(token), None) => func(hc.copy(extraHeaders = Seq(tcrAuthToken -> token)))
       case _ =>
         val default: ErrorResponse = ErrorNoAuthToken

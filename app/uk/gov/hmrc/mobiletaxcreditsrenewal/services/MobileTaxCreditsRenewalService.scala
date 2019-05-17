@@ -38,6 +38,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class MobileTaxCreditsRenewalService @Inject()(
   val ntcConnector:                      NtcConnector,
+  val taxCreditsBrokerConnector:         TaxCreditsBrokerConnector,
   val auditConnector:                    AuditConnector,
   val appNameConfiguration:              Configuration,
   val taxCreditsSubmissionControlConfig: TaxCreditsControl,
@@ -84,6 +85,12 @@ class MobileTaxCreditsRenewalService @Inject()(
     withAudit("claimantDetails", Map("nino" -> nino.value)) {
       ntcConnector.claimantDetails(TaxCreditsNino(nino.value))
     }
+
+  def employedEarningsRti(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Option[EmployedEarningsRti]] = {
+    withAudit("employedEarningsRti", Map("nino" -> nino.value)) {
+      taxCreditsBrokerConnector.employedEarningsRti(TaxCreditsNino(nino.value))
+    }
+  }
 
   def legacyClaimantClaims(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[LegacyClaims] =
     withAudit("claimantClaims", Map("nino" -> nino.value)) {

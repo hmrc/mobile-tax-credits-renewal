@@ -48,7 +48,8 @@ case class Applicant(nino: String,
                      title: String,
                      firstForename: String,
                      secondForename: Option[String],
-                     surname: String)
+                     surname: String,
+                     previousYearRtiEmployedEarnings: Option[Double])
 
 object Applicant {
   implicit val formats: Format[Applicant] = Json.format[Applicant]

@@ -26,9 +26,9 @@ import play.api.{Configuration, Logger, LoggerLike, MarkerContext}
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.NtcConnector
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, TaxCreditsBrokerConnector}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuditStub, NtcConnectorStub}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuditStub, NtcConnectorStub, TaxCreditsBrokerConnectorStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
@@ -36,20 +36,21 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with MockFactory with NtcConnectorStub with AuditStub with FileResource {
+class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with MockFactory with NtcConnectorStub with TaxCreditsBrokerConnectorStub with AuditStub with FileResource {
   implicit val hc:      HeaderCarrier = HeaderCarrier()
   implicit val request: Request[_]    = FakeRequest()
 
-  implicit val ntcConnector:      NtcConnector      = mock[NtcConnector]
-  implicit val auditConnector:    AuditConnector    = mock[AuditConnector]
-  implicit val taxCreditsControl: TaxCreditsControl = mock[TaxCreditsControl]
-  implicit val configuration:     Configuration     = mock[Configuration]
-  implicit val logger:            TestLoggerLike    = new TestLoggerLike()
+  implicit val ntcConnector:              NtcConnector      = mock[NtcConnector]
+  implicit val taxCreditsBrokerConnector: TaxCreditsBrokerConnector = mock[TaxCreditsBrokerConnector]
+  implicit val auditConnector:            AuditConnector    = mock[AuditConnector]
+  implicit val taxCreditsControl:         TaxCreditsControl = mock[TaxCreditsControl]
+  implicit val configuration:             Configuration     = mock[Configuration]
+  implicit val logger:                    TestLoggerLike    = new TestLoggerLike()
 
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
 
-  val service = new MobileTaxCreditsRenewalService(ntcConnector, auditConnector, configuration, taxCreditsControl, logger, "mobile-tax-credits-renewal")
+  val service = new MobileTaxCreditsRenewalService(ntcConnector, taxCreditsBrokerConnector, auditConnector, configuration, taxCreditsControl, logger, "mobile-tax-credits-renewal")
 
   "Submit renewal" should {
     val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
@@ -97,7 +98,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
       maybeDate:        Option[String],
       claimantDetails:  Option[ClaimantDetails] = None,
       renewalState:     Option[String] = Some("NOT_SUBMITTED")): Claim = {
-      val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname")
+      val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname", None)
       val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
       val foundRenewal   = Renewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate, claimantDetails)
       Claim(foundHouseHold, foundRenewal)
@@ -202,6 +203,22 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
     }
   }
 
+  "employedEarningsRti" should {
+
+    "get employed earnings RTI and audit the request" in {
+      val employedEarningsRti = Some(EmployedEarningsRti(Some(20000.0), Some(20000.0)))
+
+      stubEmployedEarningsRti(taxCreditsNino, employedEarningsRti)
+      (auditConnector
+        .sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future successful Success)
+
+      await(service.employedEarningsRti(nino)) shouldBe employedEarningsRti
+    }
+
+  }
+
   "legacyClaimantClaims" should {
     val ntcFormattedDate    = Some("2018-05-30")
     val mobileFormattedDate = Some("30/05/2018")
@@ -211,7 +228,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
     val awaitingBarcode     = RenewalReference("000000000000000")
 
     def claim(barcodeReference: RenewalReference, maybeDate: Option[String], renewalState: Option[String] = Some("NOT_SUBMITTED")): LegacyClaim = {
-      val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname")
+      val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname", None)
       val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
       val foundRenewal   = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
       LegacyClaim(foundHouseHold, foundRenewal)

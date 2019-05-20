@@ -37,30 +37,31 @@ Return Full Claimant Details object
 
 ```json
 {
-  "references": [
-    {
-      "household": {
-        "barcodeReference": "200000000000013",
-        "applicationID": "198765432134567",
-        "applicant1": {
-          "nino": "CS700100A",
-          "title": "MR",
-          "firstForename": "JOHN",
-          "secondForename": "",
-          "surname": "DENSMORE"
-        },
-        "householdEndReason": ""
-      },
-      "renewal": {
-        "awardStartDate": "12/10/2030",
-        "awardEndDate": "12/10/2010",
-        "renewalStatus": "NOT_SUBMITTED",
-        "renewalNoticeIssuedDate": "12/10/2030",
-        "renewalNoticeFirstSpecifiedDate": "12/10/2010",
-        "renewalFormType": "D"
-      }
-    }
-  ]
+    "references": [
+        {
+            "household": {
+                "barcodeReference": "200000000000013",
+                "applicationID": "198765432134567",
+                "applicant1": {
+                    "nino": "CS700100A",
+                    "title": "MR",
+                    "firstForename": "JOHN",
+                    "secondForename": "",
+                    "surname": "DENSMORE",
+                    "previousYearRtiEmployedEarnings": 25444.99
+                },
+                "householdEndReason": ""
+            },
+            "renewal": {
+                "awardStartDate": "06/04/2018",
+                "awardEndDate": "05/04/2019",
+                "renewalStatus": "NOT_SUBMITTED",
+                "renewalNoticeIssuedDate": "12/10/2030",
+                "renewalNoticeFirstSpecifiedDate": "12/10/2010",
+                "renewalFormType": "D"
+            }
+        }
+    ]
 }
 ```
 

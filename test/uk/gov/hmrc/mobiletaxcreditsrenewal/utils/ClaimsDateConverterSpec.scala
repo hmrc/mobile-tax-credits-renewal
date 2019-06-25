@@ -23,11 +23,11 @@ class ClaimsDateConverterSpec extends WordSpecLike with Matchers {
 
   "convert date format" should {
     "convert a string formatted yyyy-MM-dd to dd/MM/yyyy" in {
-      dateConverter.convertDateFormat("2018-01-02") shouldBe Some("02/01/2018")
+      dateConverter.convertDateFormat("2018-1-2") shouldBe Some("2/1/2018")
     }
 
     "convert a string formatted yyyyMMdd to dd/MM/yyyy" in {
-      dateConverter.convertDateFormat("20180102") shouldBe Some("02/01/2018")
+      dateConverter.convertDateFormat("20180102") shouldBe Some("2/1/2018")
     }
 
     "not convert a string with an invalid date format" in {

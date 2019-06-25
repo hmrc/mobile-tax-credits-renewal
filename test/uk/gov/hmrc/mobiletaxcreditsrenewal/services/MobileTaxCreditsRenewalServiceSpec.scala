@@ -83,7 +83,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
     def whenCurrentSubmissionStateIs(state: String): Unit =
       (taxCreditsControl.toTaxCreditsRenewalsState _).expects().returning(TaxCreditsRenewalsState(state))
 
-    val ntcFormattedDate    = Some("2018-5-30")
+    val ntcFormattedDate    = Some("2018-05-30")
     val mobileFormattedDate = Some("30/5/2018")
     val barcode1            = RenewalReference("barcode1")
     val barcode2            = RenewalReference("barcode2")
@@ -220,7 +220,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
   }
 
   "legacyClaimantClaims" should {
-    val ntcFormattedDate    = Some("2018-5-30")
+    val ntcFormattedDate    = Some("2018-05-30")
     val mobileFormattedDate = Some("30/5/2018")
     val barcode1            = RenewalReference("barcode1")
     val barcode2            = RenewalReference("barcode2")

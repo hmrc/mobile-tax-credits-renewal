@@ -22,11 +22,11 @@ class ClaimsDateConverterSpec extends WordSpecLike with Matchers {
   private val dateConverter = new ClaimsDateConverter
 
   "convert date format" should {
-    "convert a string formatted yyyy-MM-dd to dd/MM/yyyy" in {
+    "convert a string formatted yyyy-MM-dd to d/M/yyyy" in {
       dateConverter.convertDateFormat("2018-01-02") shouldBe Some("2/1/2018")
     }
 
-    "convert a string formatted yyyyMMdd to dd/MM/yyyy" in {
+    "convert a string formatted yyyyMMdd to d/M/yyyy" in {
       dateConverter.convertDateFormat("20180102") shouldBe Some("2/1/2018")
     }
 

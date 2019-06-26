@@ -29,7 +29,7 @@ class ClaimsDateConverter {
     def convert(result: Option[String], formatter: DateTimeFormatter): Option[String] = {
       result.orElse{
         Try {
-          Some(formatter.parseDateTime(date).toString("dd/MM/yyyy"))
+          Some(formatter.parseDateTime(date).toString("d/M/yyyy"))
         }.getOrElse {
           None
         }

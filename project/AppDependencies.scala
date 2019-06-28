@@ -5,9 +5,9 @@ private object AppDependencies {
   import play.sbt.PlayImport._
 
   private val bootstrap26Version       = "0.36.0"
-  private val domainVersion            = "5.3.0"
+  private val domainVersion            = "5.6.0-play-26"
   private val playHmrcApiVersion       = "3.4.0-play-26"
-  private val playUI                   = "7.31.0-play-26"
+  private val playUI                   = "7.40.0-play-26"
   private val circuitBreaker           = "3.3.0"
   private val wiremockVersion          = "2.21.0"
   private val mockitoVersion           = "2.11.0"

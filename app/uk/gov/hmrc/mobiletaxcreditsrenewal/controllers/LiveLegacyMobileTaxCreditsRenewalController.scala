@@ -173,7 +173,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
                 }
             }
           }
-
+          
           service
             .authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference))
             .flatMap { maybeToken =>

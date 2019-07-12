@@ -121,17 +121,8 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-      def swapRTIIfNeeded(optApplicantNino: Option[String], urlNino: Nino, rtiEmployedEarnings: Option[Double], rtiEmployedEarningsPartner: Option[Double]): Option[Double] = {
-        optApplicantNino match {
-          case Some(applicantNino) =>
-            if (applicantNino == urlNino.value) {
-              rtiEmployedEarnings
-            } else {
-              rtiEmployedEarningsPartner
-            }
-          case _ => None
-        }
-      }
+      def swapRTIIfNeeded(optApplicantNino: Option[String], urlNino: Nino, rtiEmployedEarnings: Option[Double], rtiEmployedEarningsPartner: Option[Double]): Option[Double] =
+        optApplicantNino.flatMap(applicantNino => if(applicantNino == urlNino.value) rtiEmployedEarnings else rtiEmployedEarningsPartner)
 
       errorWrapper({
         def fullClaimantDetails(claim: LegacyClaim): Future[LegacyClaim] = {
@@ -173,7 +164,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
                 }
             }
           }
-          
+
           service
             .authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference))
             .flatMap { maybeToken =>

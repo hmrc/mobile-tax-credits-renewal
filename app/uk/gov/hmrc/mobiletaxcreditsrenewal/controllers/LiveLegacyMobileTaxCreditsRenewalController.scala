@@ -121,7 +121,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
-      def swapRTIIfNeeded(optApplicantNino: Option[String], urlNino: Nino, rtiEmployedEarnings: Option[Double], rtiEmployedEarningsPartner: Option[Double]): Option[Double] =
+      def swapRtiIfNeeded(optApplicantNino: Option[String], urlNino: Nino, rtiEmployedEarnings: Option[Double], rtiEmployedEarningsPartner: Option[Double]): Option[Double] =
         optApplicantNino.flatMap(applicantNino => if(applicantNino == urlNino.value) rtiEmployedEarnings else rtiEmployedEarningsPartner)
 
       errorWrapper({
@@ -137,24 +137,24 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
                       case EmployedEarningsRti(Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner)) =>
                         claim.copy(
                           household = claim.household.copy(
-                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(Some(claim.household.applicant1.nino), nino ,Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner))),
-                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(claim.household.applicant2.map(_.nino), nino ,Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner))))
+                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(Some(claim.household.applicant1.nino), nino ,Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner))),
+                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(claim.household.applicant2.map(_.nino), nino ,Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner))))
                           ),
                           renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
                         )
                       case EmployedEarningsRti(_, Some(rtiEmployedEarningsPartner)) =>
                         claim.copy(
                           household = claim.household.copy(
-                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(Some(claim.household.applicant1.nino), nino , None, Some(rtiEmployedEarningsPartner))),
-                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(claim.household.applicant2.map(_.nino), nino , None, Some(rtiEmployedEarningsPartner))))
+                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(Some(claim.household.applicant1.nino), nino , None, Some(rtiEmployedEarningsPartner))),
+                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(claim.household.applicant2.map(_.nino), nino , None, Some(rtiEmployedEarningsPartner))))
                           ),
                           renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
                         )
                       case EmployedEarningsRti(Some(rtiEmployedEarnings), _) =>
                         claim.copy(
                           household = claim.household.copy(
-                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(Some(claim.household.applicant1.nino), nino ,Some(rtiEmployedEarnings), None)),
-                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRTIIfNeeded(claim.household.applicant2.map(_.nino), nino ,Some(rtiEmployedEarnings), None)))
+                            applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(Some(claim.household.applicant1.nino), nino ,Some(rtiEmployedEarnings), None)),
+                            applicant2 = claim.household.applicant2.map(_.copy(previousYearRtiEmployedEarnings = swapRtiIfNeeded(claim.household.applicant2.map(_.nino), nino ,Some(rtiEmployedEarnings), None)))
                           ),
                           renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
                         )

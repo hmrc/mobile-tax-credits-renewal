@@ -51,7 +51,7 @@ class MobileTaxCreditsRenewalService @Inject()(
 
   def renewals(
     nino:      Nino,
-    journeyId: Option[String] = None)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
+    journeyId: String)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
 
     def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
@@ -132,7 +132,7 @@ class MobileTaxCreditsRenewalService @Inject()(
       }
     }
 
-  private def claimsDetails(nino: Nino, journeyId: Option[String] = None)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Seq[Claim]] = {
+  private def claimsDetails(nino: Nino, journeyId: String)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Seq[Claim]] = {
     def fullClaimantDetails(claim: Claim): Future[Claim] = {
       def getClaimantDetail(token: TcrAuthenticationToken, hc: HeaderCarrier): Future[Claim] = {
         implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))

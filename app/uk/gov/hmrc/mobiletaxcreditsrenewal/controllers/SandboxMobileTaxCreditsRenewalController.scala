@@ -32,7 +32,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
 ) extends MobileTaxCreditsRenewalController
     with FileResource {
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+  override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       def returnRenewalsResponse(file: String): Result = {
         val resource: String = findResource(s"/resources/claimantdetails/$file")
@@ -53,7 +53,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
       )
     }
 
-  override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
       request.body
         .validate[TcrRenewal]

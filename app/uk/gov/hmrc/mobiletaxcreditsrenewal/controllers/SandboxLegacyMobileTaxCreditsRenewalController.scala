@@ -37,7 +37,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
     with FileResource {
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String]): Action[AnyContent] =
+  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Future.successful(Unauthorized)
@@ -57,7 +57,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
   private def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
     new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  override def claimantDetails(nino: Nino, journeyId: Option[String], claims: Option[String]): Action[AnyContent] =
+  override def claimantDetails(nino: Nino, journeyId: String, claims: Option[String]): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized
@@ -78,7 +78,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
       case _                         => throw new IllegalArgumentException("Failed to locate tcrAuthToken")
     }
 
-  override def fullClaimantDetails(nino: Nino, journeyId: Option[String]): Action[AnyContent] =
+  override def fullClaimantDetails(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized
@@ -92,7 +92,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
       })
     }
 
-  override def submitRenewal(nino: Nino, journeyId: Option[String]): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized
@@ -103,7 +103,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
       })
     }
 
-  override def taxCreditsSubmissionStateEnabled(journeyId: Option[String]): Action[AnyContent] =
+  override def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401")         => Unauthorized

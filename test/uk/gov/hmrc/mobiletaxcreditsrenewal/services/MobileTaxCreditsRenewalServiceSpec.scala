@@ -49,7 +49,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
 
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
-
+  val journeyId      = "journeyId"
   val service = new MobileTaxCreditsRenewalService(ntcConnector, taxCreditsBrokerConnector, auditConnector, configuration, taxCreditsControl, logger, "mobile-tax-credits-renewal")
 
   "Submit renewal" should {
@@ -136,7 +136,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
       stubClaimantDetailsFailure(taxCreditsNino)
       stubAuditClaims(nino, summary)
 
-      await(service.renewals(nino, None)) shouldBe summary
+      await(service.renewals(nino, journeyId)) shouldBe summary
     }
 
     "return no claims details when current renewal sate is closed" in {
@@ -145,7 +145,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
       whenCurrentSubmissionStateIs("closed")
       stubAuditClaims(nino, closedSummary)
 
-      await(service.renewals(nino, None)) shouldBe closedSummary
+      await(service.renewals(nino, journeyId)) shouldBe closedSummary
     }
 
     "return multiple claims when the current renewal state is open" in {
@@ -161,7 +161,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
 
       stubClaimantClaims(taxCreditsNino, Claims(None))
       stubAuditClaims(nino, summaryWithNoClaims)
-      await(service.renewals(nino, None)) shouldBe summaryWithNoClaims
+      await(service.renewals(nino, journeyId)) shouldBe summaryWithNoClaims
     }
 
     "handle empty claims found" in {
@@ -170,7 +170,7 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
       stubClaimantClaims(taxCreditsNino, Claims(Some(Seq.empty)))
       stubAuditClaims(nino, summaryWithNoClaims)
 
-      await(service.renewals(nino, None)) shouldBe summaryWithNoClaims
+      await(service.renewals(nino, journeyId)) shouldBe summaryWithNoClaims
     }
   }
 

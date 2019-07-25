@@ -62,31 +62,31 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
 
       def mockServiceCall(): Unit =
         (service
-          .renewals(_: Nino, _: Option[String])(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
-          .expects(nino, Some(journeyId), *, *, *)
+          .renewals(_: Nino, _: String)(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
+          .expects(nino, journeyId, *, *, *)
           .returning(Future successful renewals)
 
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockServiceCall()
 
-      val result: Future[Result] = controller.renewals(nino, Some(journeyId)).apply(fakeRequest)
+      val result: Future[Result] = controller.renewals(nino, journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe parse("""{"submissionsState":"closed"}""")
     }
 
     "return forbidden for a user with L100 confidence level" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L100)
-      status(controller.renewals(nino, Some(journeyId)).apply(fakeRequest)) shouldBe 403
+      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 403
     }
 
     "return forbidden when trying to access another users nino" in {
       stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(controller.renewals(nino, Some(journeyId)).apply(fakeRequest)) shouldBe 403
+      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 403
     }
 
     "return unauthoirsed for an unauthorised user" in {
       stubAuthorisationUnauthorised()
-      status(controller.renewals(nino, Some(journeyId)).apply(fakeRequest)) shouldBe 401
+      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 401
     }
   }
 
@@ -119,22 +119,22 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockServiceCall()
 
-      status(controller.submitRenewal(nino, Some(journeyId)).apply(submitRenewalRequest)) shouldBe 200
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
     }
 
     "return forbidden for a user with L100 confidence level" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L100)
-      status(controller.submitRenewal(nino, Some(journeyId)).apply(submitRenewalRequest)) shouldBe 403
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
     }
 
     "return forbidden when trying to access another users nino" in {
       stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(controller.submitRenewal(nino, Some(journeyId)).apply(submitRenewalRequest)) shouldBe 403
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
     }
 
     "return unauthoirsed for an unauthorised user" in {
       stubAuthorisationUnauthorised()
-      status(controller.submitRenewal(nino, Some(journeyId)).apply(submitRenewalRequest)) shouldBe 401
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 401
     }
   }
 }

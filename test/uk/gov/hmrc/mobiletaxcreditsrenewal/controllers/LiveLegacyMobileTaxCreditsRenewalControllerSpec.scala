@@ -98,21 +98,21 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubAuthRenewalResponse(Some(tcrAuthToken), nino, renewalReference)
 
-      val result = controller.getRenewalAuthentication(nino, renewalReference).apply(fakeRequest)
+      val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(tcrAuthToken)
     }
 
     "return 403 when the nino in the request does not match the authority nino" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      status(controller.getRenewalAuthentication(incorrectNino, renewalReference).apply(fakeRequest)) shouldBe 403
+      status(controller.getRenewalAuthentication(incorrectNino, renewalReference, journeyId).apply(fakeRequest)) shouldBe 403
     }
 
     "process the authentication successful when journeyId is supplied" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubAuthRenewalResponse(Some(tcrAuthToken), nino, renewalReference)
 
-      val result = controller.getRenewalAuthentication(nino, renewalReference, Some("some-unique-journey-id")).apply(fakeRequest)
+      val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(tcrAuthToken)
     }
@@ -124,13 +124,13 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         .expects(nino, renewalReference, *, *)
         .returns(notFoundException)
 
-      status(controller.getRenewalAuthentication(nino, renewalReference).apply(fakeRequest)) shouldBe 404
+      status(controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)) shouldBe 404
     }
 
     "return forbidden when authority record does not contain a NINO" in {
       stubAuthorisationGrantAccess(None and L200)
 
-      val result = controller.getRenewalAuthentication(nino, renewalReference, Some(journeyId)).apply(fakeRequest)
+      val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
@@ -138,13 +138,13 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return forbidden when authority record has a low CL" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L100)
 
-      val result = controller.getRenewalAuthentication(nino, renewalReference, Some(journeyId)).apply(fakeRequest)
+      val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
 
     "return status code 406 when the headers are invalid" in {
-      status(controller.getRenewalAuthentication(nino, renewalReference, Some(journeyId)).apply(requestInvalidHeaders)) shouldBe 406
+      status(controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(requestInvalidHeaders)) shouldBe 406
     }
   }
 
@@ -154,7 +154,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino).apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId).apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
 
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe toJson(claimantDetails.copy(mainApplicantNino = "true"))
@@ -166,7 +166,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe toJson(claimantDetails.copy(mainApplicantNino = "false"))
       header("Cache-Control", result) shouldBe None
@@ -177,7 +177,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantClaimsResponse(matchedClaims, nino)
 
-      val result = controller.claimantDetails(nino, None, Some("claims"))(fakeRequest)
+      val result = controller.claimantDetails(nino, journeyId, Some("claims"))(fakeRequest)
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe Json.parse(matchedClaimsJson)
       header("Cache-Control", result) shouldBe None
@@ -187,13 +187,13 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       (service.legacyClaimantClaims(_: Nino)(_: HeaderCarrier, _: ExecutionContext)).expects(nino, *, *).returns(notFoundException)
 
-      status(controller.claimantDetails(nino, None, Some("claims"))(fakeRequest)) shouldBe 404
+      status(controller.claimantDetails(nino, journeyId, Some("claims"))(fakeRequest)) shouldBe 404
     }
 
     "return 403 when no tcrAuthHeader is supplied to claimant details API" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      val result = controller.claimantDetails(nino, None, None)(fakeRequest)
+      val result = controller.claimantDetails(nino, journeyId, None)(fakeRequest)
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"No auth header supplied in http request"}""")
     }
@@ -201,7 +201,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return 403 when tcrAuthHeader is supplied to claims API" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      val result = controller.claimantDetails(nino, None, Some("claims"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId, Some("claims"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"Auth header is not required in the request"}""")
     }
@@ -209,7 +209,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return 403 when the nino in the request does not match the authority nino" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      status(controller.claimantDetails(incorrectNino)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, incorrectNino))) shouldBe 403
+      status(controller.claimantDetails(incorrectNino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, incorrectNino))) shouldBe 403
     }
 
     "return the claimant details successfully when journeyId is supplied" in {
@@ -217,7 +217,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino, Some("unique-journey-id"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(claimantDetails.copy(mainApplicantNino = "true"))
     }
@@ -225,7 +225,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return forbidden when authority record does not contain a NINO" in {
       stubAuthorisationGrantAccess(None and L200)
 
-      val result = controller.claimantDetails(nino)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
@@ -233,7 +233,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return forbidden when authority record has a low CL" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L50)
 
-      val result = controller.claimantDetails(nino)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
@@ -241,13 +241,13 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return 403 response when the tcr auth header is not supplied in the request" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      val result = controller.claimantDetails(nino)(fakeRequest)
+      val result = controller.claimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe toJson(ErrorNoAuthToken)
     }
 
     "return status code 406 when the Accept header is invalid" in {
-      status(controller.claimantDetails(nino)(requestInvalidHeaders)) shouldBe 406
+      status(controller.claimantDetails(nino, journeyId)(requestInvalidHeaders)) shouldBe 406
     }
   }
 
@@ -269,7 +269,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino)
 
-      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -293,7 +293,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino)
 
-      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -317,7 +317,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino)
 
-      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -341,7 +341,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino)
 
-      val result = controller.fullClaimantDetails(nino, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -365,7 +365,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino2)
 
-      val result = controller.fullClaimantDetails(nino2, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -389,7 +389,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino2)
 
-      val result = controller.fullClaimantDetails(nino2, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -413,7 +413,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino2)
 
-      val result = controller.fullClaimantDetails(nino2, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -437,7 +437,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
         nino2)
 
-      val result = controller.fullClaimantDetails(nino2, Some(journeyId))(fakeRequest)
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(LegacyClaims(Some(Seq(expectedClaimDetails))))
     }
@@ -473,12 +473,12 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         .expects(nino, renewal, *, *, *)
         .returns(Future.successful(200))
 
-      status(controller.submitRenewal(nino).apply(submitRenewalRequest)) shouldBe 200
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
     }
 
     "return 403 when the nino in the request does not match the authority nino" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      status(controller.submitRenewal(incorrectNino).apply(submitRenewalRequest)) shouldBe 403
+      status(controller.submitRenewal(incorrectNino, journeyId).apply(submitRenewalRequest)) shouldBe 403
     }
 
     "process returns a 200 successfully when journeyId is supplied" in {
@@ -488,38 +488,38 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         .expects(nino, renewal, *, *, *)
         .returns(Future.successful(200))
 
-      status(controller.submitRenewal(nino, Some("unique-journey-id")).apply(submitRenewalRequest)) shouldBe 200
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
     }
 
     "return 403 result when no tcr auth header has been supplied" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
       val invalidRequest: FakeRequest[JsValue] = FakeRequest().withBody(toJson(renewal)).withHeaders(acceptHeader)
-      status(controller.submitRenewal(nino).apply(invalidRequest)) shouldBe 403
+      status(controller.submitRenewal(nino, journeyId).apply(invalidRequest)) shouldBe 403
     }
 
     "return bad request when invalid json is submitted" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
       val badRequest: FakeRequest[JsObject] = FakeRequest().withBody(Json.obj()).withHeaders(acceptHeader, "tcrAuthToken" -> "some-auth-token")
-      status(controller.submitRenewal(nino).apply(badRequest)) shouldBe 400
+      status(controller.submitRenewal(nino, journeyId).apply(badRequest)) shouldBe 400
     }
 
     "return 403 result when authority record does not contain a NINO" in {
       stubAuthorisationGrantAccess(None and L200)
-      val result = controller.submitRenewal(nino).apply(submitRenewalRequest)
+      val result = controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
 
     "return forbidden when authority record has a low CL" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L50)
-      val result = controller.submitRenewal(nino).apply(submitRenewalRequest)
+      val result = controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)
       status(result) shouldBe 403
     }
 
     "return 406 result when the headers are invalid" in {
-      status(controller.submitRenewal(nino).apply(requestIncorrectNoHeader)) shouldBe 406
+      status(controller.submitRenewal(nino, journeyId).apply(requestIncorrectNoHeader)) shouldBe 406
     }
 
   }
@@ -528,7 +528,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return the current submission state" in {
       (mockControlConfig.toTaxCreditsRenewalsState _).expects().returning(TaxCreditsRenewalsState("open"))
 
-      val result = controller.taxCreditsSubmissionStateEnabled().apply(fakeRequest)
+      val result = controller.taxCreditsSubmissionStateEnabled(journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe Json.parse("""{"submissionsState":"open"}""")
     }

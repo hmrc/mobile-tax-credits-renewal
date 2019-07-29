@@ -37,9 +37,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
-  def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent]
+  def renewals(nino: Nino, journeyId: String): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue]
+  def submitRenewal(nino: Nino, journeyId: String): Action[JsValue]
 
 }
 @Singleton
@@ -69,7 +69,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def renewals(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+  override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
@@ -80,7 +80,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
       )
     }
 
-  override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 

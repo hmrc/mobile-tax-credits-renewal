@@ -38,15 +38,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
 
-  def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None): Action[AnyContent]
+  def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent]
 
-  def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None): Action[AnyContent]
+  def claimantDetails(nino: Nino, journeyId: String, claims: Option[String] = None): Action[AnyContent]
 
-  def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent]
+  def fullClaimantDetails(nino: Nino, journeyId: String): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue]
+  def submitRenewal(nino: Nino, journeyId: String): Action[JsValue]
 
-  def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent]
+  def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent]
 }
 
 @Singleton
@@ -81,7 +81,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: Option[String] = None): Action[AnyContent] =
+  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       errorWrapper(
@@ -92,7 +92,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       )
     }
 
-  override def claimantDetails(nino: Nino, journeyId: Option[String] = None, claims: Option[String] = None): Action[AnyContent] =
+  override def claimantDetails(nino: Nino, journeyId: String, claims: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
@@ -117,7 +117,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       Ok(toJson(claim.copy(mainApplicantNino = mainApplicantFlag)))
     }
 
-  override def fullClaimantDetails(nino: Nino, journeyId: Option[String] = None): Action[AnyContent] =
+  override def fullClaimantDetails(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
@@ -200,7 +200,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       })
     }
 
-  override def submitRenewal(nino: Nino, journeyId: Option[String] = None): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
@@ -229,7 +229,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
         )
     }
 
-  override def taxCreditsSubmissionStateEnabled(journeyId: Option[String] = None): Action[AnyContent] =
+  override def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       errorWrapper(Future {

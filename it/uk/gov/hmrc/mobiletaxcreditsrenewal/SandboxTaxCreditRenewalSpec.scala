@@ -19,6 +19,9 @@ class SandboxTaxCreditRenewalSpec extends BaseISpec {
     "return successfully" in {
       await(request(nino).get()).status shouldBe 200
     }
+    "return 400 if journeyId not supplied" in {
+      await(wsUrl(s"/renewals/${nino.value}").addHttpHeaders(acceptJsonHeader, mobileHeader).get()).status shouldBe 400
+    }
   }
 
   "POST /sandbox/declarations/:nino" should {
@@ -26,6 +29,9 @@ class SandboxTaxCreditRenewalSpec extends BaseISpec {
 
     "renew successfully" in {
       await(request(nino1).post(renewalJson)).status shouldBe 200
+    }
+    "return 400 if journeyId not supplied" in {
+      await(wsUrl(s"/declarations/${nino1}").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, mobileHeader).post(renewalJson)).status shouldBe 400
     }
   }
 }

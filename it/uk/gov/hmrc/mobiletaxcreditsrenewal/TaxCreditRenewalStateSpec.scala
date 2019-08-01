@@ -91,6 +91,15 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
       response.status shouldBe 404
     }
+
+    "return 400 when no journeyId is supplied" in {
+      grantAccess(nino1.value)
+      authenticationRenewalSuccessful(nino1, renewalReference, tcrAuthenticationToken)
+
+      val response = await(wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").addHttpHeaders(acceptJsonHeader).get())
+
+      response.status shouldBe 400
+    }
   }
 
   "GET /income/:nino/tax-credits/claimant-details" should {
@@ -123,6 +132,15 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       val response = await(request(nino1).get())
 
       response.status shouldBe 404
+    }
+
+    "return 400 when journeyId not supplied" in {
+      grantAccess(nino1.value)
+      claimantDetailsAreFoundFor(nino1, nino1, nino2, tcrAuthenticationToken)
+
+      val response = await(wsUrl(s"/income/${nino1.value}/tax-credits/claimant-details").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader).get())
+
+      response.status shouldBe 400
     }
   }
 
@@ -240,6 +258,15 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       applicant1.value.get("previousYearRtiEmployedEarnings") shouldBe None
     }
 
+    "return 400 if no journeyId is supplied" in {
+      grantAccess(mainApplicantNino.value)
+      claimantClaimsAreFound(mainApplicantNino, barcodeReference)
+      authenticationRenewalNotFound(mainApplicantNino, barcodeReference)
+
+      val response = await(wsUrl(s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader).get())
+      response.status shouldBe 400
+    }
+
   }
 }
 
@@ -278,6 +305,11 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "open"
     }
+    "return 400 when journeyId not supplied" in {
+      val response = await(wsUrl("/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader).get)
+      response.status shouldBe 400
+    }
+
   }
 }
 
@@ -295,6 +327,12 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(renewalsRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "closed"
+    }
+    "return 400 if journeyId not supplied " in {
+      grantAccess(nino1.value)
+
+      val response = await(wsUrl(s"/renewals/${nino1.value}").addHttpHeaders(acceptJsonHeader).get)
+      response.status shouldBe 400
     }
   }
 

@@ -115,6 +115,11 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
     }
 
+    "Return Bad Request when invalid form submitted" in {
+      val fakeRequest:               FakeRequest[JsValue] = FakeRequest().withBody(toJson(incomeDetails)).withHeaders(acceptHeader)
+      status(controller.submitRenewal(nino, journeyId).apply(fakeRequest)) shouldBe 400
+    }
+
     "return unauthorised when directed to do so using the SANDBOX-CONTROL header" in {
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
     }

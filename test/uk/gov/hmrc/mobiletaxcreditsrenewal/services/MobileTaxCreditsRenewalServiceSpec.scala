@@ -189,7 +189,6 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
   }
 
   "claimantDetails" should {
-
     "get claimant details and audit the request" in {
       val claimantDetails =
         ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
@@ -252,6 +251,35 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
     val expectedClaims: LegacyClaims = LegacyClaims(Some(expectedClaimsSeq))
 
     "get claimant claims and audit the request" in {
+      (ntcConnector
+        .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(taxCreditsNino, *, *)
+        .returning(Future successful foundClaims)
+      (auditConnector
+        .sendEvent(_: DataEvent)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(*, *, *)
+        .returning(Future successful Success)
+
+      await(service.legacyClaimantClaims(nino)) shouldBe expectedClaims
+    }
+
+    "Handle incorrect date format" in {
+      val claimWithAuthTokenAndClaimantDetails   = claim(barcode1, ntcFormattedDate)
+      val claimWithNoAuthToken                   = claim(barcode2, ntcFormattedDate)
+      val claimWithAuthTokenButNoClaimantDetails = claim(barcode3, ntcFormattedDate)
+      val claimAaitingBarcode                    = claim(awaitingBarcode, Some("XXXXXXXXX"))
+
+      val expectedClaimsSeq = Seq(
+        claim(barcode1, mobileFormattedDate),
+        claim(barcode2, mobileFormattedDate),
+        claim(barcode3, mobileFormattedDate),
+        claim(awaitingBarcode, None, Some("AWAITING_BARCODE"))
+      )
+
+      val expectedClaims: LegacyClaims = LegacyClaims(Some(expectedClaimsSeq))
+
+      val foundClaims: LegacyClaims =
+        LegacyClaims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
       (ntcConnector
         .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
         .expects(taxCreditsNino, *, *)

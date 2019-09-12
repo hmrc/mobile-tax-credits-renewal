@@ -108,7 +108,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
           }
         )
     }
-  // $COVERAGE-OFF$
+
   private def validateTcrAuthHeader(mode: Option[String])(
     func:                                 HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] =
     (request.headers.get(tcrAuthToken), mode) match {
@@ -126,5 +126,4 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
         logger.warn("Either tcrAuthToken must be supplied as header or 'claims' as query param.")
         Future.successful(Forbidden(toJson(response)))
     }
-  // $COVERAGE-ON$
 }

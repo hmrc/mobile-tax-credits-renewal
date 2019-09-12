@@ -186,7 +186,10 @@ class MobileTaxCreditsRenewalService @Inject()(
 
     def reformatDateAndLogErrors(maybeDateString: Option[String]): Option[String] =
       maybeDateString.flatMap { dateString =>
-        dateConverter.convertDateFormat(dateString)
+        dateConverter.convertDateFormat(dateString).orElse {
+          Logger.error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
+          None
+        }
       }
 
     ntcConnector.claimantClaims(TaxCreditsNino(nino.value)).map { claims =>

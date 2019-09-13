@@ -68,6 +68,16 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       response.status shouldBe 500
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
     }
+
+    "handle bad request" in {
+      def request(nino: Nino) = wsUrl(s"/declarations/${nino.value}?journeyId=journeyId").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+
+      grantAccess(nino1.value)
+
+      val renewalJson = toJson(incomeDetails)
+      val response = await(request(nino1).post(renewalJson))
+      response.status shouldBe 400
+    }
   }
 
   "GET /income/:nino/tax-credits/:renewalReference/auth" should {

@@ -4,14 +4,15 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone.UTC
 import play.api.libs.json.Json.{parse, toJson}
-import play.api.libs.json.{JsArray, JsObject}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.ws.{WSRequest, WSResponse}
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{IncomeDetails, RenewalData, RenewalReference, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{IncomeDetails, RenewalData, RenewalReference, Shuttering, TcrRenewal}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthStub.grantAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.TaxCreditsBrokerStub._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.ShutteringStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 import uk.gov.hmrc.time.DateTimeUtils
 
@@ -78,6 +79,18 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       val response = await(request(nino1).post(renewalJson))
       response.status shouldBe 400
     }
+
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = submitTaxCreditRenewal
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "GET /income/:nino/tax-credits/:renewalReference/auth" should {
@@ -109,6 +122,18 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       val response = await(wsUrl(s"/income/${nino1.value}/tax-credits/${renewalReference.value}/auth").addHttpHeaders(acceptJsonHeader).get())
 
       response.status shouldBe 400
+    }
+
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(url.get())
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 
@@ -151,6 +176,18 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       val response = await(wsUrl(s"/income/${nino1.value}/tax-credits/claimant-details").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader).get())
 
       response.status shouldBe 400
+    }
+
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(request(nino1).get())
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 
@@ -277,6 +314,18 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       response.status shouldBe 400
     }
 
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(mainApplicantNino.value)
+
+      val response = await(request.get())
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
+
   }
 }
 
@@ -299,6 +348,18 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
       val renewal = (claims(0) \ "renewal" \ "claimantDetails").as[JsObject]
       renewal.value("renewalFormType").as[String] shouldBe "D"
     }
+
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(renewalsRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "POST /income/:nino/tax-credits/renewal" should {
@@ -306,6 +367,18 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
       renewalIsSuccessful(nino1, renewal)
       submitTaxCreditRenewal
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
+    }
+
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = submitTaxCreditRenewal
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 
@@ -318,6 +391,17 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
     "return 400 when journeyId not supplied" in {
       val response = await(wsUrl("/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader).get)
       response.status shouldBe 400
+    }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(submissionStateEnabledRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
 
   }
@@ -344,6 +428,17 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(wsUrl(s"/renewals/${nino1.value}").addHttpHeaders(acceptJsonHeader).get)
       response.status shouldBe 400
     }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(renewalsRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "POST /income/:nino/tax-credits/renewal" should {
@@ -352,6 +447,17 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
       submitTaxCreditRenewal
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
     }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = submitTaxCreditRenewal
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "GET /income/tax-credits/submission/state/enabled" should {
@@ -359,6 +465,17 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "closed"
+    }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(submissionStateEnabledRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 }
@@ -388,6 +505,17 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       val renewal = (claims(0) \ "renewal" \ "claimantDetails").as[JsObject]
       renewal.value("renewalFormType").as[String] shouldBe "D"
     }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(renewalsRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "POST /income/:nino/tax-credits/renewal" should {
@@ -396,6 +524,17 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       submitTaxCreditRenewal
       verify(1, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
     }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = submitTaxCreditRenewal
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
+    }
   }
 
   "GET /income/tax-credits/submission/state/enabled" should {
@@ -403,6 +542,17 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
+    }
+    "return SHUTTERED when shuttered" in {
+      stubForShutteringEnabled
+      grantAccess(nino1.value)
+
+      val response = await(submissionStateEnabledRequest.get)
+      response.status shouldBe 521
+      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
+      shuttering.shuttered shouldBe true
+      shuttering.title     shouldBe Some("Shuttered")
+      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 }

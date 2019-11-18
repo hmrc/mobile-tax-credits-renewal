@@ -50,12 +50,12 @@ class BaseISpec
 
   def config: Map[String, Any] =
     Map(
-      "auditing.enabled"                                             -> false,
-      "microservice.services.auth.port"                              -> wireMockPort,
-      "microservice.services.datastream.port"                        -> wireMockPort,
-      "microservice.services.ntc.port"                               -> wireMockPort,
-      "microservice.services.tax-credits-broker.port"                -> wireMockPort
-
+      "auditing.enabled"                              -> false,
+      "microservice.services.auth.port"               -> wireMockPort,
+      "microservice.services.datastream.port"         -> wireMockPort,
+      "microservice.services.ntc.port"                -> wireMockPort,
+      "microservice.services.tax-credits-broker.port" -> wireMockPort,
+      "microservice.services.shuttering.port"         -> wireMockPort
     )
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder().configure(config)

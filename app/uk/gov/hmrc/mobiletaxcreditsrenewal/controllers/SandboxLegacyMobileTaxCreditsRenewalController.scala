@@ -36,6 +36,10 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
 ) extends LegacyMobileTaxCreditsRenewalController
     with FileResource {
 
+  private final val WebServerIsDown = new Status(521)
+  private val shuttered =
+    Json.toJson(Shuttering(shuttered = true, title = Some("Shuttered"), message = Some("Tax Credits Renewal is currently shuttered")))
+
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
   override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
@@ -44,6 +48,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("ERROR-403") => Future.successful(Forbidden)
         case Some("ERROR-404") => Future.successful(NotFound)
         case Some("ERROR-500") => Future.successful(InternalServerError)
+        case Some("SHUTTERED") => Future.successful(WebServerIsDown(shuttered))
         case _ =>
           Future.successful(Some(TcrAuthenticationToken(basicAuthString(encodedAuth(nino, renewalReference))))).map {
             case Some(authToken) => Ok(toJson(authToken))
@@ -64,6 +69,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("ERROR-403") => Forbidden
         case Some("ERROR-404") => NotFound
         case Some("ERROR-500") => InternalServerError
+        case Some("SHUTTERED") => WebServerIsDown(shuttered)
         case _ =>
           val tcrAuthToken = getTcrAuthHeader(request.headers.get(HeaderKeys.tcrAuthToken))
           val resource: String = findResource(s"/resources/claimantdetails/${nino.value}-${tcrAuthToken.extractRenewalReference.get}.json")
@@ -85,6 +91,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("ERROR-403") => Forbidden
         case Some("ERROR-404") => NotFound
         case Some("ERROR-500") => InternalServerError
+        case Some("SHUTTERED") => WebServerIsDown(shuttered)
         case _ =>
           val resource: String = findResource(s"/resources/claimantdetails/claimant-details.json")
             .getOrElse(throw new IllegalArgumentException("Resource not found!"))
@@ -99,6 +106,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("ERROR-403") => Forbidden
         case Some("ERROR-404") => NotFound
         case Some("ERROR-500") => InternalServerError
+        case Some("SHUTTERED") => WebServerIsDown(shuttered)
         case _                 => Ok
       })
     }
@@ -110,6 +118,7 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("ERROR-403")         => Forbidden
         case Some("ERROR-404")         => NotFound
         case Some("ERROR-500")         => InternalServerError
+        case Some("SHUTTERED")         => WebServerIsDown(shuttered)
         case Some("CLOSED")            => Ok(Json.toJson(TaxCreditsRenewalsState("closed")))
         case Some("CHECK-STATUS-ONLY") => Ok(Json.toJson(TaxCreditsRenewalsState("check_status_only")))
         case _                         => Ok(Json.toJson(TaxCreditsRenewalsState("open")))

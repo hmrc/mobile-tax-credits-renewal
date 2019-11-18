@@ -22,7 +22,7 @@ import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, Shuttering, TcrRenewal}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -31,6 +31,11 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
   implicit val executionContext:                                     ExecutionContext
 ) extends MobileTaxCreditsRenewalController
     with FileResource {
+
+  private final val WebServerIsDown = new Status(521)
+  private val shuttered =
+    Json.toJson(Shuttering(shuttered = true, title = Some("Shuttered"), message = Some("Tax Credits Renewal is currently shuttered")))
+
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
   override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
@@ -46,6 +51,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
           case Some("ERROR-403")                           => Forbidden
           case Some("ERROR-404")                           => NotFound
           case Some("ERROR-500")                           => InternalServerError
+          case Some("SHUTTERED")                           => WebServerIsDown(shuttered)
           case Some("RENEWALS-RESPONSE-CLOSED")            => returnRenewalsResponse("renewals-response-closed.json")
           case Some("RENEWALS-RESPONSE-CHECK-STATUS-ONLY") => returnRenewalsResponse("renewals-response-check-status-only.json")
           case _                                           => returnRenewalsResponse("renewals-response-open.json")
@@ -69,6 +75,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
                 case Some("ERROR-403") => Forbidden
                 case Some("ERROR-404") => NotFound
                 case Some("ERROR-500") => InternalServerError
+                case Some("SHUTTERED") => WebServerIsDown(shuttered)
                 case _                 => Ok
               }
             )

@@ -126,6 +126,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
           .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
     }
 
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(
+        controller
+          .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+    }
+
   }
 
   "claimantDetails" should {
@@ -165,6 +172,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
         controller
           .claimantDetails(nino, journeyId)
           .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+    }
+
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(
+        controller
+          .claimantDetails(nino, journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
     }
 
   }
@@ -208,6 +222,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
         controller
           .fullClaimantDetails(nino, journeyId)
           .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+    }
+
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(
+        controller
+          .fullClaimantDetails(nino, journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
     }
 
   }
@@ -267,6 +288,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
           .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
     }
 
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+    }
+
   }
 
   "taxCreditsSubmissionStateEnabled" should {
@@ -314,6 +342,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
           .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+    }
+
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(
+        controller
+          .taxCreditsSubmissionStateEnabled(journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
     }
   }
 

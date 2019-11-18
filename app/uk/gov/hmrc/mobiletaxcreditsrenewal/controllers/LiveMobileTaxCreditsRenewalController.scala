@@ -25,14 +25,14 @@ import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableException}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.AccessControl
+import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, ShutteredCheck}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
 
-import scala.collection.Seq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,13 +48,17 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
   val logger:                                                   LoggerLike,
   val service:                                                  MobileTaxCreditsRenewalService,
   @Named("controllers.confidenceLevel") override val confLevel: Int,
-  val controllerComponents:                                     ControllerComponents
+  val controllerComponents:                                     ControllerComponents,
+  shutteringConnector:                                          ShutteringConnector
 )(
   implicit val executionContext: ExecutionContext
 ) extends MobileTaxCreditsRenewalController
-    with AccessControl {
+    with AccessControl
+    with ShutteredCheck {
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
   def notFound:        Result                 = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
+
+  {}
 
   def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] =
     func.recover {
@@ -72,41 +76,47 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
   override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
-
-      errorWrapper(
-        service.renewals(nino, journeyId).map { renewals =>
-          Ok(toJson(renewals))
+      shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
+        withShuttering(shuttered) {
+          errorWrapper(
+            service.renewals(nino, journeyId).map { renewals =>
+              Ok(toJson(renewals))
+            }
+          )
         }
-      )
+      }
     }
 
   override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
-
-      request.body
-        .validate[TcrRenewal]
-        .fold(
-          errors => {
-            logger.warn("Received error with service submitRenewal: " + errors)
-            Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
-          },
-          renewal => {
-            errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
-              service
-                .submitRenewal(nino, renewal)
-                .map { _ =>
-                  logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
-                  Ok
-                }
-                .recover {
-                  case e: Exception =>
-                    logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
-                    throw e
-                }
-            })
-          }
-        )
+      shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
+        withShuttering(shuttered) {
+          request.body
+            .validate[TcrRenewal]
+            .fold(
+              errors => {
+                logger.warn("Received error with service submitRenewal: " + errors)
+                Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
+              },
+              renewal => {
+                errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
+                  service
+                    .submitRenewal(nino, renewal)
+                    .map { _ =>
+                      logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
+                      Ok
+                    }
+                    .recover {
+                      case e: Exception =>
+                        logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
+                        throw e
+                    }
+                })
+              }
+            )
+        }
+      }
     }
 
   private def validateTcrAuthHeader(mode: Option[String])(

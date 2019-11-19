@@ -94,6 +94,10 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     "return 406 if accept header not set" in {
       status(controller.renewals(nino, journeyId).apply(fakeRequestWithoutHeaders)) shouldBe 406
     }
+
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(controller.renewals(nino, journeyId).apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+    }
   }
 
   "submitDeclarations" should {
@@ -138,6 +142,10 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
 
     "return 406 if accept header not set" in {
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequestWithoutAcceptHeader)) shouldBe 406
+    }
+
+    "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
+      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
     }
   }
 }

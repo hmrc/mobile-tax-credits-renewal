@@ -52,6 +52,7 @@ class GuiceModule @Inject()(environment: Environment, configuration: Configurati
 
     bind(classOf[String]).annotatedWith(named("ntc")).toInstance(servicesConfig.baseUrl("ntc"))
     bind(classOf[String]).annotatedWith(named("tax-credits-broker")).toInstance(servicesConfig.baseUrl("tax-credits-broker"))
+    bind(classOf[String]).annotatedWith(named("shuttering")).toInstance(servicesConfig.baseUrl("shuttering"))
   }
 
   /**

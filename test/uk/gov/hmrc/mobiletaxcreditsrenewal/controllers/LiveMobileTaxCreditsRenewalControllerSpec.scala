@@ -31,16 +31,18 @@ import uk.gov.hmrc.auth.core.ConfidenceLevel._
 import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, ShutteringMock}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matchers with MockFactory with AuthorisationStub {
+class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matchers with MockFactory with AuthorisationStub with ShutteringMock {
   implicit val authConnector: AuthConnector = mock[AuthConnector]
   private val service = mock[MobileTaxCreditsRenewalService]
+  implicit val shutteringConnector: ShutteringConnector = mock[ShutteringConnector]
 
   private val logger = new LoggerLike {
     override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
@@ -49,7 +51,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
   private val nino      = Nino("CS700100A")
   private val journeyId = "journeyId"
 
-  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level, stubControllerComponents())
+  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level, stubControllerComponents(), shutteringConnector)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
@@ -68,6 +70,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
 
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockServiceCall()
+      mockShutteringResponse(false)
 
       val result: Future[Result] = controller.renewals(nino, journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
@@ -118,6 +121,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
     "submit a valid form for an authorised user with the right nino and a L200 confidence level when renewals are open" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockServiceCall()
+      mockShutteringResponse(false)
 
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
     }

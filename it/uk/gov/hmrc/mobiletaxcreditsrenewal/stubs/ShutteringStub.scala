@@ -7,7 +7,7 @@ object ShutteringStub {
 
   def stubForShutteringDisabled: StubMapping = {
     stubFor(
-      get(urlPathEqualTo(s"/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
+      get(urlPathEqualTo("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -22,7 +22,7 @@ object ShutteringStub {
 
   def stubForShutteringEnabled: StubMapping = {
     stubFor(
-      get(urlPathEqualTo(s"/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
+      get(urlPathEqualTo("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
         .willReturn(
           aResponse()
             .withStatus(200)

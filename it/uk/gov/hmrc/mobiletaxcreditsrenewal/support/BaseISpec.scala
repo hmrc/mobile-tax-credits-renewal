@@ -55,7 +55,7 @@ class BaseISpec
       "microservice.services.datastream.port"         -> wireMockPort,
       "microservice.services.ntc.port"                -> wireMockPort,
       "microservice.services.tax-credits-broker.port" -> wireMockPort,
-      "microservice.services.shuttering.port"         -> wireMockPort
+      "microservice.services.mobile-shuttering.port"  -> wireMockPort
     )
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder().configure(config)

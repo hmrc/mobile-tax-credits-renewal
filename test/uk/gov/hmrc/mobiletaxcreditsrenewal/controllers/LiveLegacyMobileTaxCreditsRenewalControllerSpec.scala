@@ -606,23 +606,11 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
 
   "taxCreditsSubmissionStateEnabled" should {
     "return the current submission state" in {
-      mockShutteringResponse(false)
       (mockControlConfig.toTaxCreditsRenewalsState _).expects().returning(TaxCreditsRenewalsState("open"))
 
       val result = controller.taxCreditsSubmissionStateEnabled(journeyId).apply(fakeRequest)
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe Json.parse("""{"submissionsState":"open"}""")
-    }
-
-    "return 521 when shuttered" in {
-      mockShutteringResponse(true)
-
-      val result = controller.taxCreditsSubmissionStateEnabled(journeyId).apply(fakeRequest)
-      status(result)        shouldBe 521
-      val jsonBody = contentAsJson(result)
-      (jsonBody \ "shuttered").as[Boolean] shouldBe true
-      (jsonBody \ "title").as[String]      shouldBe "Shuttered"
-      (jsonBody \ "message").as[String]    shouldBe "Tax Credits Renewal is currently not available"
     }
   }
 

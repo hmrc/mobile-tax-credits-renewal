@@ -26,7 +26,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ShutteringConnector @Inject()(http: CoreGet, @Named("shuttering") serviceUrl: String) {
+class ShutteringConnector @Inject()(http: CoreGet, @Named("mobile-shuttering") serviceUrl: String) {
 
   def getShutteringStatus(
     journeyId: String

@@ -249,15 +249,11 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
   override def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
-      shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
-        withShuttering(shuttered) {
-          errorWrapper(Future {
-            taxCreditsControl.toTaxCreditsRenewalsState
-          }.map { submissionState =>
-            Ok(Json.toJson(submissionState))
-          })
-        }
-      }
+      errorWrapper(Future {
+        taxCreditsControl.toTaxCreditsRenewalsState
+      }.map { submissionState =>
+        Ok(Json.toJson(submissionState))
+      })
     }
 
   private def validateTcrAuthHeader(mode: Option[String])(

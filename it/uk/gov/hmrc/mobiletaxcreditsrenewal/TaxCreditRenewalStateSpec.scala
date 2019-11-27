@@ -392,17 +392,6 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(wsUrl("/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader).get)
       response.status shouldBe 400
     }
-    "return SHUTTERED when shuttered" in {
-      stubForShutteringEnabled
-      grantAccess(nino1.value)
-
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 521
-      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
-      shuttering.shuttered shouldBe true
-      shuttering.title     shouldBe Some("Shuttered")
-      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
-    }
 
   }
 }
@@ -465,17 +454,6 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "closed"
-    }
-    "return SHUTTERED when shuttered" in {
-      stubForShutteringEnabled
-      grantAccess(nino1.value)
-
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 521
-      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
-      shuttering.shuttered shouldBe true
-      shuttering.title     shouldBe Some("Shuttered")
-      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 }
@@ -542,17 +520,6 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
       val response = await(submissionStateEnabledRequest.get)
       response.status shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
-    }
-    "return SHUTTERED when shuttered" in {
-      stubForShutteringEnabled
-      grantAccess(nino1.value)
-
-      val response = await(submissionStateEnabledRequest.get)
-      response.status shouldBe 521
-      val shuttering: Shuttering = Json.parse(response.body).as[Shuttering]
-      shuttering.shuttered shouldBe true
-      shuttering.title     shouldBe Some("Shuttered")
-      shuttering.message   shouldBe Some("Tax Credits Renewal is currently not available")
     }
   }
 }

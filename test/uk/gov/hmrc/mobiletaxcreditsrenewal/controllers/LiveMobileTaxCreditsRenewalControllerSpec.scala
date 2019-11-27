@@ -136,7 +136,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
     }
 
-    "return unauthoirsed for an unauthorised user" in {
+    "return unauthorised for an unauthorised user" in {
       stubAuthorisationUnauthorised()
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 401
     }

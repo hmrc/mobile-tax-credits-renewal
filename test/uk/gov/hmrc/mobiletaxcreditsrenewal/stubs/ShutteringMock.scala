@@ -21,13 +21,14 @@ import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 
 import scala.concurrent.{ExecutionContext, Future}
 
 trait ShutteringMock extends MockFactory {
 
-  val shutteredResponse    = Shuttering(shuttered = true, Some("Shuttered"), Some("Tax Credits Renewal is currently not available"))
-  val notShutteredResponse = Shuttering.shutteringDisabled
+  private val shutteredResponse    = Shuttering(shuttered = true, Some("Shuttered"), Some("Tax Credits Renewal is currently not available"))
+  private val notShutteredResponse = Shuttering.shutteringDisabled
 
   def mockShutteringResponse(
     shuttered: Boolean
@@ -36,7 +37,7 @@ trait ShutteringMock extends MockFactory {
   ): CallHandler[Future[Shuttering]] = {
     val response = if (shuttered) shutteredResponse else notShutteredResponse
     (shutteringConnector
-      .getShutteringStatus(_: String)(_: HeaderCarrier, _: ExecutionContext))
+      .getShutteringStatus(_: JourneyId)(_: HeaderCarrier, _: ExecutionContext))
       .expects(*, *, *)
       .returning(Future successful response)
   }

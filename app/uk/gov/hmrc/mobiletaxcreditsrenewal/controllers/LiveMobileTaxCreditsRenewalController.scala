@@ -29,6 +29,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, ShutteredCheck}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
@@ -37,9 +38,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
-  def renewals(nino: Nino, journeyId: String): Action[AnyContent]
+  def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: String): Action[JsValue]
+  def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue]
 
 }
 @Singleton
@@ -73,7 +74,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
+  override def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -87,7 +88,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
       }
     }
 
-  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>

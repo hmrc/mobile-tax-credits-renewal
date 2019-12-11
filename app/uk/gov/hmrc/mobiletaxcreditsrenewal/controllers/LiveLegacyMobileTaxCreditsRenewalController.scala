@@ -28,6 +28,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableExc
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, ShutteredCheck}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
@@ -39,15 +40,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
 
-  def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent]
+  def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: JourneyId): Action[AnyContent]
 
-  def claimantDetails(nino: Nino, journeyId: String, claims: Option[String] = None): Action[AnyContent]
+  def claimantDetails(nino: Nino, journeyId: JourneyId, claims: Option[String] = None): Action[AnyContent]
 
-  def fullClaimantDetails(nino: Nino, journeyId: String): Action[AnyContent]
+  def fullClaimantDetails(nino: Nino, journeyId: JourneyId): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: String): Action[JsValue]
+  def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue]
 
-  def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent]
+  def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent]
 }
 
 @Singleton
@@ -84,7 +85,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: String): Action[AnyContent] =
+  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: JourneyId): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -99,7 +100,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       }
     }
 
-  override def claimantDetails(nino: Nino, journeyId: String, claims: Option[String] = None): Action[AnyContent] =
+  override def claimantDetails(nino: Nino, journeyId: JourneyId, claims: Option[String] = None): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -127,7 +128,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       Ok(toJson(claim.copy(mainApplicantNino = mainApplicantFlag)))
     }
 
-  override def fullClaimantDetails(nino: Nino, journeyId: String): Action[AnyContent] =
+  override def fullClaimantDetails(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -214,7 +215,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       }
     }
 
-  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -246,7 +247,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject()(
       }
     }
 
-  override def taxCreditsSubmissionStateEnabled(journeyId: String): Action[AnyContent] =
+  override def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       errorWrapper(Future {

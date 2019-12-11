@@ -22,6 +22,7 @@ import play.api.Logger
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.{CoreGet, HeaderCarrier, Upstream5xxResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ShutteringConnector @Inject()(http: CoreGet, @Named("mobile-shuttering") serviceUrl: String) {
 
   def getShutteringStatus(
-    journeyId: String
+    journeyId: JourneyId
   )(
     implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext

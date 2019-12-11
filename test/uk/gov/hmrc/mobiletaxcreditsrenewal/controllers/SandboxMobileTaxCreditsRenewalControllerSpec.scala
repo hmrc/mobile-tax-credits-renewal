@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
+import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import org.slf4j.Logger
@@ -29,6 +30,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -38,8 +40,8 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     override val logger: Logger = getLogger("SandboxMobileTaxCreditsRenewalController")
   }
 
-  private val nino      = Nino("CS700100A")
-  private val journeyId = "journeyId"
+  private val nino = Nino("CS700100A")
+  private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
   private val controller = new SandboxMobileTaxCreditsRenewalController(logger, stubControllerComponents())
 
@@ -120,7 +122,7 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     }
 
     "Return Bad Request when invalid form submitted" in {
-      val fakeRequest:               FakeRequest[JsValue] = FakeRequest().withBody(toJson(incomeDetails)).withHeaders(acceptHeader)
+      val fakeRequest: FakeRequest[JsValue] = FakeRequest().withBody(toJson(incomeDetails)).withHeaders(acceptHeader)
       status(controller.submitRenewal(nino, journeyId).apply(fakeRequest)) shouldBe 400
     }
 

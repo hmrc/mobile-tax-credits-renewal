@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
+import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import org.slf4j.Logger
@@ -33,6 +34,7 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, ShutteringMock}
 
@@ -49,7 +51,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
   }
 
   private val nino      = Nino("CS700100A")
-  private val journeyId = "journeyId"
+  private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
   private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level, stubControllerComponents(), shutteringConnector)
 
@@ -64,7 +66,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
 
       def mockServiceCall(): Unit =
         (service
-          .renewals(_: Nino, _: String)(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
+          .renewals(_: Nino, _: JourneyId)(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
           .expects(nino, journeyId, *, *, *)
           .returning(Future successful renewals)
 

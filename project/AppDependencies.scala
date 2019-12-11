@@ -10,8 +10,8 @@ private object AppDependencies {
   private val playUI                   = "7.40.0-play-26"
   private val circuitBreaker           = "3.3.0"
   private val wiremockVersion          = "2.21.0"
-  private val mockitoVersion           = "2.11.0"
   private val scalatestplusPlayVersion = "3.1.2"
+  private val refinedVersion           = "0.9.4"
 
   val compile = Seq(
     ws,
@@ -19,7 +19,8 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-hmrc-api"            % playHmrcApiVersion,
     "uk.gov.hmrc" %% "domain"                   % domainVersion,
     "uk.gov.hmrc" %% "reactive-circuit-breaker" % circuitBreaker,
-    "uk.gov.hmrc" %% "play-ui"                  % playUI
+    "uk.gov.hmrc" %% "play-ui"                  % playUI,
+    "eu.timepit"  %% "refined"                  % refinedVersion
   )
 
   trait TestDependencies {

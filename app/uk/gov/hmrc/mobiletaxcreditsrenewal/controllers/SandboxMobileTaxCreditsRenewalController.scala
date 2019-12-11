@@ -22,6 +22,7 @@ import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, Shuttering, TcrRenewal}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -37,7 +38,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
     Json.toJson(Shuttering(shuttered = true, title = Some("Shuttered"), message = Some("Tax Credits Renewal is currently shuttered")))
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override def renewals(nino: Nino, journeyId: String): Action[AnyContent] =
+  override def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       def returnRenewalsResponse(file: String): Result = {
         val resource: String = findResource(s"/resources/claimantdetails/$file")
@@ -59,7 +60,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
       )
     }
 
-  override def submitRenewal(nino: Nino, journeyId: String): Action[JsValue] =
+  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
       request.body
         .validate[TcrRenewal]

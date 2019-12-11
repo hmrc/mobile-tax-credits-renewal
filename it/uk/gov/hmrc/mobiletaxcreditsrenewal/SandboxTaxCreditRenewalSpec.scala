@@ -14,7 +14,7 @@ class SandboxTaxCreditRenewalSpec extends BaseISpec {
   val renewalJson = toJson(renewal)
 
   "GET /sandbox/renewals/:nino " should {
-    def request(nino: Nino): WSRequest = wsUrl(s"/renewals/${nino.value}?journeyId=journeyId").addHttpHeaders(acceptJsonHeader, mobileHeader)
+    def request(nino: Nino): WSRequest = wsUrl(s"/renewals/${nino.value}?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f").addHttpHeaders(acceptJsonHeader, mobileHeader)
 
     "return successfully" in {
       await(request(nino).get()).status shouldBe 200
@@ -25,7 +25,7 @@ class SandboxTaxCreditRenewalSpec extends BaseISpec {
   }
 
   "POST /sandbox/declarations/:nino" should {
-    def request(nino: Nino): WSRequest = wsUrl(s"/declarations/${nino.value}?journeyId=journeyId").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, mobileHeader)
+    def request(nino: Nino): WSRequest = wsUrl(s"/declarations/${nino.value}?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f").addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, mobileHeader)
 
     "renew successfully" in {
       await(request(nino1).post(renewalJson)).status shouldBe 200

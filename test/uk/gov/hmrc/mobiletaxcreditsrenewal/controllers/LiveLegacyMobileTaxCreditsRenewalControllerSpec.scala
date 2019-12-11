@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
+import eu.timepit.refined.auto._
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
@@ -34,6 +35,7 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCreditsRenewalServiceStub, ShutteringMock}
 
@@ -60,8 +62,8 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
   private val nino          = Nino("CS700100A")
   private val nino2         = Nino("CS700101A")
   private val incorrectNino = Nino("SC100700A")
-  private val journeyId     = "journeyId"
-  private val tcrAuthToken  = TcrAuthenticationToken("some-auth-token")
+  private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
+  private val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
   private val notFoundException: Future[Nothing] = Future failed new NotFoundException("cant find it")
   private val forbidden:         JsValue         = parse("""{"code":"FORBIDDEN","message":"Forbidden"}""")
 
@@ -165,7 +167,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       mockShutteringResponse(true)
 
       val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
-      status(result)        shouldBe 521
+      status(result) shouldBe 521
       val jsonBody = contentAsJson(result)
       (jsonBody \ "shuttered").as[Boolean] shouldBe true
       (jsonBody \ "title").as[String]      shouldBe "Shuttered"
@@ -288,7 +290,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       mockShutteringResponse(true)
 
       val result = controller.claimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 521
+      status(result) shouldBe 521
       val jsonBody = contentAsJson(result)
       (jsonBody \ "shuttered").as[Boolean] shouldBe true
       (jsonBody \ "title").as[String]      shouldBe "Shuttered"
@@ -500,7 +502,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       mockShutteringResponse(true)
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 521
+      status(result) shouldBe 521
       val jsonBody = contentAsJson(result)
       (jsonBody \ "shuttered").as[Boolean] shouldBe true
       (jsonBody \ "title").as[String]      shouldBe "Shuttered"
@@ -595,7 +597,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       mockShutteringResponse(true)
 
-      val result = controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)
+      val result   = controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)
       val jsonBody = contentAsJson(result)
       (jsonBody \ "shuttered").as[Boolean] shouldBe true
       (jsonBody \ "title").as[String]      shouldBe "Shuttered"

@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
+import eu.timepit.refined.auto._
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
@@ -23,21 +24,18 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import play.api.LoggerLike
 import play.api.libs.json.Json.{parse, toJson}
-import play.api.libs.json.{JsObject, JsValue, Json}
-import play.api.mvc.{AnyContentAsEmpty, Request}
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.ConfidenceLevel._
-import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCreditsRenewalServiceStub}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
 
 class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
     extends WordSpecLike
@@ -56,8 +54,8 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
 
   private val nino          = Nino("CS700100A")
   private val incorrectNino = Nino("SC100700A")
-  private val journeyId     = "journeyId"
-  private val forbidden:         JsValue         = parse("""{"code":"FORBIDDEN","message":"Forbidden"}""")
+  private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
+  private val forbidden: JsValue   = parse("""{"code":"FORBIDDEN","message":"Forbidden"}""")
 
   private val controller =
     new SandboxLegacyMobileTaxCreditsRenewalController(stubControllerComponents())
@@ -187,7 +185,13 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
 
     "return details with the renewalFormType set" in {
       val expectedClaimDetails = LegacyClaim(
-        Household(renewalReference.value, "198765432134567", Applicant(nino.nino, "MR", "JOHN", Some(""), "DENSMORE", Some(19500.00)), None, None, Some("")),
+        Household(
+          renewalReference.value,
+          "198765432134567",
+          Applicant(nino.nino, "MR", "JOHN", Some(""), "DENSMORE", Some(19500.00)),
+          None,
+          None,
+          Some("")),
         LegacyRenewal(Some("12/10/2030"), Some("12/10/2010"), Some("NOT_SUBMITTED"), Some("12/10/2030"), Some("12/10/2010"), Some("D"))
       )
 

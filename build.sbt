@@ -11,7 +11,12 @@ lazy val microservice = Project(appName, file("."))
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
   .settings(publishingSettings: _*)
-  .settings(routesImport ++= Seq("uk.gov.hmrc.domain._", "uk.gov.hmrc.mobiletaxcreditsrenewal.binders.Binders._"))
+  .settings(routesImport ++= Seq(
+    "uk.gov.hmrc.domain._",
+    "uk.gov.hmrc.mobiletaxcreditsrenewal.binders.Binders._",
+    "uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types._",
+    "uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes._"
+  ))
   .settings(
     majorVersion := 0,
     playDefaultPort := 8245,
@@ -21,7 +26,7 @@ lazy val microservice = Project(appName, file("."))
     evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     resolvers += Resolver.jcenterRepo,
     unmanagedResourceDirectories in Compile += baseDirectory.value / "resources",
-    unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest) (base => Seq(base / "it")).value,
+    unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest)(base => Seq(base / "it")).value,
     testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
     coverageMinimum := 85,
     coverageFailOnMinimum := true,
@@ -30,7 +35,6 @@ lazy val microservice = Project(appName, file("."))
   )
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]): Seq[Group] =
-  tests map {
-    test => Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
+  tests map { test =>
+    Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
   }
-

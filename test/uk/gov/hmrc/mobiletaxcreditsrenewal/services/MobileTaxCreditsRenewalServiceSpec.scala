@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
+import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import org.slf4j
@@ -28,6 +29,7 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, TaxCreditsBrokerConnector}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuditStub, NtcConnectorStub, TaxCreditsBrokerConnectorStub}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
@@ -36,21 +38,35 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with MockFactory with NtcConnectorStub with TaxCreditsBrokerConnectorStub with AuditStub with FileResource {
+class MobileTaxCreditsRenewalServiceSpec
+    extends WordSpecLike
+    with Matchers
+    with MockFactory
+    with NtcConnectorStub
+    with TaxCreditsBrokerConnectorStub
+    with AuditStub
+    with FileResource {
   implicit val hc:      HeaderCarrier = HeaderCarrier()
   implicit val request: Request[_]    = FakeRequest()
 
-  implicit val ntcConnector:              NtcConnector      = mock[NtcConnector]
+  implicit val ntcConnector:              NtcConnector              = mock[NtcConnector]
   implicit val taxCreditsBrokerConnector: TaxCreditsBrokerConnector = mock[TaxCreditsBrokerConnector]
-  implicit val auditConnector:            AuditConnector    = mock[AuditConnector]
-  implicit val taxCreditsControl:         TaxCreditsControl = mock[TaxCreditsControl]
-  implicit val configuration:             Configuration     = mock[Configuration]
-  implicit val logger:                    TestLoggerLike    = new TestLoggerLike()
+  implicit val auditConnector:            AuditConnector            = mock[AuditConnector]
+  implicit val taxCreditsControl:         TaxCreditsControl         = mock[TaxCreditsControl]
+  implicit val configuration:             Configuration             = mock[Configuration]
+  implicit val logger:                    TestLoggerLike            = new TestLoggerLike()
 
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
-  val journeyId      = "journeyId"
-  val service = new MobileTaxCreditsRenewalService(ntcConnector, taxCreditsBrokerConnector, auditConnector, configuration, taxCreditsControl, logger, "mobile-tax-credits-renewal")
+  val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
+  val service = new MobileTaxCreditsRenewalService(
+    ntcConnector,
+    taxCreditsBrokerConnector,
+    auditConnector,
+    configuration,
+    taxCreditsControl,
+    logger,
+    "mobile-tax-credits-renewal")
 
   "Submit renewal" should {
     val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
@@ -279,7 +295,8 @@ class MobileTaxCreditsRenewalServiceSpec extends WordSpecLike with Matchers with
       val expectedClaims: LegacyClaims = LegacyClaims(Some(expectedClaimsSeq))
 
       val foundClaims: LegacyClaims =
-        LegacyClaims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
+        LegacyClaims(
+          Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
       (ntcConnector
         .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
         .expects(taxCreditsNino, *, *)

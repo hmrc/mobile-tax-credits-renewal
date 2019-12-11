@@ -26,6 +26,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -51,7 +52,7 @@ class MobileTaxCreditsRenewalService @Inject()(
 
   def renewals(
     nino:      Nino,
-    journeyId: String)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
+    journeyId: JourneyId)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext, request: Request[_]): Future[RenewalsSummary] = {
     val currentState: TaxCreditsRenewalsState = taxCreditsSubmissionControlConfig.toTaxCreditsRenewalsState
 
     def auditAndReturnRenewalsData(maybeClaims: Option[Seq[Claim]]): RenewalsSummary = {
@@ -86,11 +87,10 @@ class MobileTaxCreditsRenewalService @Inject()(
       ntcConnector.claimantDetails(TaxCreditsNino(nino.value))
     }
 
-  def employedEarningsRti(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Option[EmployedEarningsRti]] = {
+  def employedEarningsRti(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Option[EmployedEarningsRti]] =
     withAudit("employedEarningsRti", Map("nino" -> nino.value)) {
       taxCreditsBrokerConnector.employedEarningsRti(TaxCreditsNino(nino.value))
     }
-  }
 
   def legacyClaimantClaims(nino: Nino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[LegacyClaims] =
     withAudit("claimantClaims", Map("nino" -> nino.value)) {
@@ -132,7 +132,7 @@ class MobileTaxCreditsRenewalService @Inject()(
       }
     }
 
-  private def claimsDetails(nino: Nino, journeyId: String)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Seq[Claim]] = {
+  private def claimsDetails(nino: Nino, journeyId: JourneyId)(implicit hc: HeaderCarrier, ex: ExecutionContext): Future[Seq[Claim]] = {
     def fullClaimantDetails(claim: Claim): Future[Claim] = {
       def getClaimantDetail(token: TcrAuthenticationToken, hc: HeaderCarrier): Future[Claim] = {
         implicit val hcWithToken: HeaderCarrier = hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))

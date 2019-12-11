@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
+import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
@@ -33,21 +34,21 @@ class ShutteringConnectorSpec extends MockFactory with WordSpecLike with Matcher
   def mockShutteringGet[T](f: Future[T]) =
     (mockCoreGet
       .GET(_: String)(_: HttpReads[T], _: HeaderCarrier, _: ExecutionContext))
-      .expects("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=journeyId", *, *, *)
+      .expects("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f", *, *, *)
       .returning(f)
 
   "getShutteredStatus" should {
     "Assume unshuttered for InternalServerException response" in {
       mockShutteringGet(Future.successful(new InternalServerException("")))
 
-      val result: Shuttering = await(connector.getShutteringStatus("journeyId"))
+      val result: Shuttering = await(connector.getShutteringStatus("87144372-6bda-4cc9-87db-1d52fd96498f"))
       result shouldBe Shuttering.shutteringDisabled
     }
 
     "Assume unshuttered for BadGatewayException response" in {
       mockShutteringGet(Future.successful(new BadGatewayException("")))
 
-      val result: Shuttering = await(connector.getShutteringStatus("journeyId"))
+      val result: Shuttering = await(connector.getShutteringStatus("87144372-6bda-4cc9-87db-1d52fd96498f"))
       result shouldBe Shuttering.shutteringDisabled
     }
   }

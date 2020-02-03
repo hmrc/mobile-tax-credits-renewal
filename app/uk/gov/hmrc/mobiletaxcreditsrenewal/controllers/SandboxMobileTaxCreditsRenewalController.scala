@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,28 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, Shuttering, 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike, val controllerComponents: ControllerComponents)(
-  implicit val executionContext:                                     ExecutionContext
-) extends MobileTaxCreditsRenewalController
+class SandboxMobileTaxCreditsRenewalController @Inject() (
+  val logger:                    LoggerLike,
+  val controllerComponents:      ControllerComponents
+)(implicit val executionContext: ExecutionContext)
+    extends MobileTaxCreditsRenewalController
     with FileResource {
 
   private final val WebServerIsDown = new Status(521)
+
   private val shuttered =
-    Json.toJson(Shuttering(shuttered = true, title = Some("Shuttered"), message = Some("Tax Credits Renewal is currently shuttered")))
+    Json.toJson(
+      Shuttering(shuttered = true,
+                 title     = Some("Shuttered"),
+                 message   = Some("Tax Credits Renewal is currently shuttered"))
+    )
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
+
+  override def renewals(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       def returnRenewalsResponse(file: String): Result = {
         val resource: String = findResource(s"/resources/claimantdetails/$file")
@@ -48,19 +59,23 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
 
       Future successful (
         request.headers.get("SANDBOX-CONTROL") match {
-          case Some("ERROR-401")                           => Unauthorized
-          case Some("ERROR-403")                           => Forbidden
-          case Some("ERROR-404")                           => NotFound
-          case Some("ERROR-500")                           => InternalServerError
-          case Some("SHUTTERED")                           => WebServerIsDown(shuttered)
-          case Some("RENEWALS-RESPONSE-CLOSED")            => returnRenewalsResponse("renewals-response-closed.json")
-          case Some("RENEWALS-RESPONSE-CHECK-STATUS-ONLY") => returnRenewalsResponse("renewals-response-check-status-only.json")
-          case _                                           => returnRenewalsResponse("renewals-response-open.json")
+          case Some("ERROR-401")                => Unauthorized
+          case Some("ERROR-403")                => Forbidden
+          case Some("ERROR-404")                => NotFound
+          case Some("ERROR-500")                => InternalServerError
+          case Some("SHUTTERED")                => WebServerIsDown(shuttered)
+          case Some("RENEWALS-RESPONSE-CLOSED") => returnRenewalsResponse("renewals-response-closed.json")
+          case Some("RENEWALS-RESPONSE-CHECK-STATUS-ONLY") =>
+            returnRenewalsResponse("renewals-response-check-status-only.json")
+          case _ => returnRenewalsResponse("renewals-response-open.json")
         }
       )
     }
 
-  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
+  override def submitRenewal(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
       request.body
         .validate[TcrRenewal]
@@ -69,7 +84,7 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
             logger.warn("Received error with service submitRenewal: " + errors)
             Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
           },
-          renewal => {
+          renewal =>
             Future successful (
               request.headers.get("SANDBOX-CONTROL") match {
                 case Some("ERROR-401") => Unauthorized
@@ -80,7 +95,6 @@ class SandboxMobileTaxCreditsRenewalController @Inject()(val logger: LoggerLike,
                 case _                 => Ok
               }
             )
-          }
         )
     }
 }

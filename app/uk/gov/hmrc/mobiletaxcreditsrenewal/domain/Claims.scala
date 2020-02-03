@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,17 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
 import play.api.libs.json.{Format, Json}
 
-
-case class Claim(household: Household, renewal: Renewal)
+case class Claim(
+  household: Household,
+  renewal:   Renewal)
 
 object Claim {
   implicit val formats: Format[Claim] = Json.format[Claim]
 }
 
-case class LegacyClaim(household: Household, renewal: LegacyRenewal)
+case class LegacyClaim(
+  household: Household,
+  renewal:   LegacyRenewal)
 
 object LegacyClaim {
   implicit val formats: Format[LegacyClaim] = Json.format[LegacyClaim]
@@ -43,52 +46,57 @@ object LegacyClaims {
   implicit val formats: Format[LegacyClaims] = Json.format[LegacyClaims]
 }
 
-
-case class Applicant(nino: String,
-                     title: String,
-                     firstForename: String,
-                     secondForename: Option[String],
-                     surname: String,
-                     previousYearRtiEmployedEarnings: Option[Double])
+case class Applicant(
+  nino:                            String,
+  title:                           String,
+  firstForename:                   String,
+  secondForename:                  Option[String],
+  surname:                         String,
+  previousYearRtiEmployedEarnings: Option[Double])
 
 object Applicant {
   implicit val formats: Format[Applicant] = Json.format[Applicant]
 }
 
-case class Household(barcodeReference: String,
-                     applicationID: String,
-                     applicant1: Applicant,
-                     applicant2: Option[Applicant],
-                     householdCeasedDate: Option[String],
-                     householdEndReason: Option[String])
+case class Household(
+  barcodeReference:    String,
+  applicationID:       String,
+  applicant1:          Applicant,
+  applicant2:          Option[Applicant],
+  householdCeasedDate: Option[String],
+  householdEndReason:  Option[String])
 
 object Household {
   implicit val formats: Format[Household] = Json.format[Household]
 }
 
-case class Renewal(awardStartDate: Option[String],
-                   awardEndDate: Option[String],
-                   renewalStatus: Option[String],
-                   renewalNoticeIssuedDate: Option[String],
-                   renewalNoticeFirstSpecifiedDate: Option[String],
-                   claimantDetails: Option[ClaimantDetails] = None)
+case class Renewal(
+  awardStartDate:                  Option[String],
+  awardEndDate:                    Option[String],
+  renewalStatus:                   Option[String],
+  renewalNoticeIssuedDate:         Option[String],
+  renewalNoticeFirstSpecifiedDate: Option[String],
+  claimantDetails:                 Option[ClaimantDetails] = None)
 
 object Renewal {
   implicit val formats: Format[Renewal] = Json.format[Renewal]
 }
 
-case class LegacyRenewal(awardStartDate: Option[String],
-                   awardEndDate: Option[String],
-                   renewalStatus: Option[String],
-                   renewalNoticeIssuedDate: Option[String],
-                   renewalNoticeFirstSpecifiedDate: Option[String],
-                   renewalFormType: Option[String] = None)
+case class LegacyRenewal(
+  awardStartDate:                  Option[String],
+  awardEndDate:                    Option[String],
+  renewalStatus:                   Option[String],
+  renewalNoticeIssuedDate:         Option[String],
+  renewalNoticeFirstSpecifiedDate: Option[String],
+  renewalFormType:                 Option[String] = None)
 
 object LegacyRenewal {
   implicit val formats: Format[LegacyRenewal] = Json.format[LegacyRenewal]
 }
 
-case class RenewalsSummary(submissionsState: String, claims: Option[Seq[Claim]])
+case class RenewalsSummary(
+  submissionsState: String,
+  claims:           Option[Seq[Claim]])
 
 object RenewalsSummary {
   implicit val formats: Format[RenewalsSummary] = Json.format[RenewalsSummary]

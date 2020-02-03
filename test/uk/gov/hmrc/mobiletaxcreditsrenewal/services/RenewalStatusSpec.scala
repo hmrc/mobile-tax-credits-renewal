@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
 
   val household = Household("1010101", "1234", Applicant("NINO", "MR", "TOM", None, "SMITH", None), None, None, None)
 
-  def claim(renewalStatus: Option[String] = Some("SUPERCEDED")) = Claim(household, Renewal(None, None, renewalStatus, None, None))
+  def claim(renewalStatus: Option[String] = Some("SUPERCEDED")) =
+    Claim(household, Renewal(None, None, renewalStatus, None, None))
 
   "Renewal status" should {
     "resolve to NOT_SUBMITTED" in {

@@ -20,40 +20,48 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 
 object AuthStub {
 
-  def grantAccess(nino: String, confidenceLevel: Int = 200): Unit = {
-    stubFor(post(urlEqualTo("/auth/authorise"))
-      .atPriority(0)
-      .withRequestBody(equalToJson(
-        s"""
-           |{
-           |  "authorise": [
-           |    {
-           |      "enrolment": "HMRC-NI",
-           |      "identifiers": [
-           |        {
-           |          "key": "NINO",
-           |          "value": "$nino"
-           |        }
-           |      ],
-           |      "state": "Activated"
-           |    }
-           |  ],
-           |  "retrieve": [
-           |    "nino",
-           |    "confidenceLevel"
-           |  ]
-           |}
+  def grantAccess(
+    nino:            String,
+    confidenceLevel: Int = 200
+  ): Unit =
+    stubFor(
+      post(urlEqualTo("/auth/authorise"))
+        .atPriority(0)
+        .withRequestBody(
+          equalToJson(
+            s"""
+               |{
+               |  "authorise": [
+               |    {
+               |      "enrolment": "HMRC-NI",
+               |      "identifiers": [
+               |        {
+               |          "key": "NINO",
+               |          "value": "$nino"
+               |        }
+               |      ],
+               |      "state": "Activated"
+               |    }
+               |  ],
+               |  "retrieve": [
+               |    "nino",
+               |    "confidenceLevel"
+               |  ]
+               |}
           """.stripMargin,
-        true,
-        false))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(
-          s"""
-             |{
-             |  "nino": "$nino",
-             |  "confidenceLevel": 200
-             |}
-          """.stripMargin)))
-  }
+            true,
+            false
+          )
+        )
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withBody(s"""
+                         |{
+                         |  "nino": "$nino",
+                         |  "confidenceLevel": 200
+                         |}
+          """.stripMargin)
+        )
+    )
 }

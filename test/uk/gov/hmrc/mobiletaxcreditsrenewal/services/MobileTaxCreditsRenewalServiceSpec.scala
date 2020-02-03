@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,25 +59,25 @@ class MobileTaxCreditsRenewalServiceSpec
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)
   val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
-  val service = new MobileTaxCreditsRenewalService(
-    ntcConnector,
-    taxCreditsBrokerConnector,
-    auditConnector,
-    configuration,
-    taxCreditsControl,
-    logger,
-    "mobile-tax-credits-renewal")
+
+  val service = new MobileTaxCreditsRenewalService(ntcConnector,
+                                                   taxCreditsBrokerConnector,
+                                                   auditConnector,
+                                                   configuration,
+                                                   taxCreditsControl,
+                                                   logger,
+                                                   "mobile-tax-credits-renewal")
 
   "Submit renewal" should {
-    val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val certainBenefits = CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
-    val otherIncome     = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(
-      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-      None,
-      Some(otherIncome),
-      Some(otherIncome),
-      hasChangeOfCircs = false)
+    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
+    val certainBenefits =
+      CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
+    val otherIncome = OtherIncome(Some(100), Some(false))
+    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+                             None,
+                             Some(otherIncome),
+                             Some(otherIncome),
+                             hasChangeOfCircs = false)
 
     "audit succeess" in {
       stubSubmitRenewals(taxCreditsNino, 200)
@@ -105,7 +105,8 @@ class MobileTaxCreditsRenewalServiceSpec
     val barcode2            = RenewalReference("barcode2")
     val barcode3            = RenewalReference("barcode3")
     val awaitingBarcode     = RenewalReference("000000000000000")
-    val claimantDetails     = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+    val claimantDetails =
+      ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
     val token               = TcrAuthenticationToken("tcrAuthToken")
     val summaryWithNoClaims = RenewalsSummary("open", Some(Seq.empty))
 
@@ -113,10 +114,12 @@ class MobileTaxCreditsRenewalServiceSpec
       barcodeReference: RenewalReference,
       maybeDate:        Option[String],
       claimantDetails:  Option[ClaimantDetails] = None,
-      renewalState:     Option[String] = Some("NOT_SUBMITTED")): Claim = {
+      renewalState:     Option[String] = Some("NOT_SUBMITTED")
+    ): Claim = {
       val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname", None)
-      val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
-      val foundRenewal   = Renewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate, claimantDetails)
+      val foundHouseHold =
+        Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
+      val foundRenewal = Renewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate, claimantDetails)
       Claim(foundHouseHold, foundRenewal)
     }
 
@@ -129,7 +132,14 @@ class MobileTaxCreditsRenewalServiceSpec
       val claimAaitingBarcode                    = claim(awaitingBarcode, ntcFormattedDate)
 
       val foundClaims: Claims =
-        Claims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
+        Claims(
+          Some(
+            Seq(claimWithAuthTokenAndClaimantDetails,
+                claimWithNoAuthToken,
+                claimWithAuthTokenButNoClaimantDetails,
+                claimAaitingBarcode)
+          )
+        )
 
       val expectedClaimsSeq = Seq(
         claim(barcode1, mobileFormattedDate, Some(claimantDetails)),
@@ -242,10 +252,15 @@ class MobileTaxCreditsRenewalServiceSpec
     val barcode3            = RenewalReference("barcode3")
     val awaitingBarcode     = RenewalReference("000000000000000")
 
-    def claim(barcodeReference: RenewalReference, maybeDate: Option[String], renewalState: Option[String] = Some("NOT_SUBMITTED")): LegacyClaim = {
+    def claim(
+      barcodeReference: RenewalReference,
+      maybeDate:        Option[String],
+      renewalState:     Option[String] = Some("NOT_SUBMITTED")
+    ): LegacyClaim = {
       val applicant: Applicant = Applicant(nino.nino, "title", "firstForename", None, "surname", None)
-      val foundHouseHold = Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
-      val foundRenewal   = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
+      val foundHouseHold =
+        Household(barcodeReference.value, "applicationId", applicant, None, maybeDate, Some("householdEndReason"))
+      val foundRenewal = LegacyRenewal(maybeDate, maybeDate, renewalState, maybeDate, maybeDate)
       LegacyClaim(foundHouseHold, foundRenewal)
     }
 
@@ -255,7 +270,14 @@ class MobileTaxCreditsRenewalServiceSpec
     val claimAaitingBarcode                    = claim(awaitingBarcode, ntcFormattedDate)
 
     val foundClaims: LegacyClaims =
-      LegacyClaims(Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
+      LegacyClaims(
+        Some(
+          Seq(claimWithAuthTokenAndClaimantDetails,
+              claimWithNoAuthToken,
+              claimWithAuthTokenButNoClaimantDetails,
+              claimAaitingBarcode)
+        )
+      )
 
     val expectedClaimsSeq = Seq(
       claim(barcode1, mobileFormattedDate),
@@ -296,7 +318,13 @@ class MobileTaxCreditsRenewalServiceSpec
 
       val foundClaims: LegacyClaims =
         LegacyClaims(
-          Some(Seq(claimWithAuthTokenAndClaimantDetails, claimWithNoAuthToken, claimWithAuthTokenButNoClaimantDetails, claimAaitingBarcode)))
+          Some(
+            Seq(claimWithAuthTokenAndClaimantDetails,
+                claimWithNoAuthToken,
+                claimWithAuthTokenButNoClaimantDetails,
+                claimAaitingBarcode)
+          )
+        )
       (ntcConnector
         .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
         .expects(taxCreditsNino, *, *)

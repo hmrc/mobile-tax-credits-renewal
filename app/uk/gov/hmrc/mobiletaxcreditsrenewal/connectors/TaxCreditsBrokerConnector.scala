@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,17 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class TaxCreditsBrokerConnector @Inject()(
-                                           http: CoreGet,
-                                           @Named("tax-credits-broker") serviceUrl: String
-                                         ) {
+class TaxCreditsBrokerConnector @Inject() (
+  http:                                    CoreGet,
+  @Named("tax-credits-broker") serviceUrl: String) {
 
   val externalServiceName = "tax-credits-broker"
 
-  def employedEarningsRti(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Option[EmployedEarningsRti]] = {
+  def employedEarningsRti(
+    nino:                   TaxCreditsNino
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[Option[EmployedEarningsRti]] =
     http.GET[Option[EmployedEarningsRti]](s"$serviceUrl/tcs/${nino.value}/employed-earnings-rti") recover {
       case e: NotFoundException =>
         Logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
@@ -41,6 +44,5 @@ class TaxCreditsBrokerConnector @Inject()(
         Logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
         None
     }
-  }
 
 }

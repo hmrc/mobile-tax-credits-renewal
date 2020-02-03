@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ trait AccountAccessControl extends Results with Authorisation {
 
   lazy val requiresAuth: Boolean = true
 
-  def invokeAuthBlock[A](request: Request[A], block: (Request[A]) => Future[Result], taxId: Option[Nino]): Future[Result] = {
+  def invokeAuthBlock[A](
+    request: Request[A],
+    block:   (Request[A]) => Future[Result],
+    taxId:   Option[Nino]
+  ): Future[Result] = {
     implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
 
     grantAccess(taxId.getOrElse(Nino("")))
@@ -68,9 +72,16 @@ trait AccessControl extends AccountAccessControl {
   def executionContext: ExecutionContext
   def parser:           BodyParser[AnyContent]
 
-  def validateAcceptWithAuth(rules: Option[String] ⇒ Boolean, taxId: Option[Nino]): ActionBuilder[Request, AnyContent] =
+  def validateAcceptWithAuth(
+    rules: Option[String] ⇒ Boolean,
+    taxId: Option[Nino]
+  ): ActionBuilder[Request, AnyContent] =
     new ActionBuilder[Request, AnyContent] {
-      def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]): Future[Result] =
+
+      def invokeBlock[A](
+        request: Request[A],
+        block:   (Request[A]) => Future[Result]
+      ): Future[Result] =
         if (rules(request.headers.get("Accept"))) {
           invokeAuthBlock(request, block, taxId)
         } else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson(ErrorAcceptHeaderInvalid)))

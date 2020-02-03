@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
+import uk.gov.hmrc.http.{GetHttpTransport, _}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with MockFactory {
 
@@ -39,7 +39,7 @@ class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with Scal
 
     implicit lazy val hc: HeaderCarrier = HeaderCarrier()
 
-    val nino = Nino("KM569110B")
+    val nino          = Nino("KM569110B")
     val taxCreditNino = TaxCreditsNino(nino.value)
 
     val employedEarningsRtiJson: String =
@@ -49,25 +49,32 @@ class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with Scal
         |}""".stripMargin
 
     val employedEarningsRti200Success: JsValue = Json.parse(employedEarningsRtiJson)
-    lazy val http200EmployedEarningsRtiResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(employedEarningsRti200Success)))
-    lazy val http500Response: Future[Nothing] = Future.failed(Upstream5xxResponse("Error", 500, 500))
-    lazy val http400Response: Future[Nothing] = Future.failed(new BadRequestException("bad request"))
+
+    lazy val http200EmployedEarningsRtiResponse: Future[AnyRef with HttpResponse] =
+      Future.successful(HttpResponse(200, Some(employedEarningsRti200Success)))
+    lazy val http500Response: Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
     lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
-    lazy val response: Future[HttpResponse] = http200EmployedEarningsRtiResponse
+    lazy val response:        Future[HttpResponse]             = http200EmployedEarningsRtiResponse
 
     val serviceUrl = "someUrl"
-    val http: CoreGet = new CoreGet with HttpGet {
+
+    val http: CoreGet = new CoreGet with HttpGet with GetHttpTransport {
       override val hooks: Seq[HttpHook] = NoneRequired
 
       override def configuration: Option[Config] = None
 
-      override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = response
+      override def doGet(
+        url:         String,
+        headers:     Seq[(String, String)] = Seq.empty
+      )(implicit hc: HeaderCarrier,
+        ec:          ExecutionContext
+      ): Future[HttpResponse] = response
 
       override protected def actorSystem: ActorSystem = ActorSystem()
     }
 
-    class TestTaxCreditsBrokerConnector(http: CoreGet)
-      extends TaxCreditsBrokerConnector(http, serviceUrl)
+    class TestTaxCreditsBrokerConnector(http: CoreGet) extends TaxCreditsBrokerConnector(http, serviceUrl)
 
     val connector = new TestTaxCreditsBrokerConnector(http)
   }
@@ -76,28 +83,28 @@ class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with Scal
 
     "return a valid EmployedEarningsRti object when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200EmployedEarningsRtiResponse
-      val result: Option[EmployedEarningsRti] = await(connector.employedEarningsRti(taxCreditNino))
+      val result:                 Option[EmployedEarningsRti]      = await(connector.employedEarningsRti(taxCreditNino))
 
       result shouldBe Some(toJson(employedEarningsRti200Success).as[EmployedEarningsRti])
     }
 
     "return None when a 400 response is received" in new Setup {
-      override lazy val response: Future[Nothing] = http400Response
-      val result: Option[EmployedEarningsRti] = await(connector.employedEarningsRti(taxCreditNino))
+      override lazy val response: Future[Nothing]             = http400Response
+      val result:                 Option[EmployedEarningsRti] = await(connector.employedEarningsRti(taxCreditNino))
 
       result shouldBe None
     }
 
     "return None when a 404 response is received" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http404Response
-      val result: Option[EmployedEarningsRti] = await(connector.employedEarningsRti(taxCreditNino))
+      val result:                 Option[EmployedEarningsRti]      = await(connector.employedEarningsRti(taxCreditNino))
 
       result shouldBe None
     }
 
     "return None when a 500 response is received" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http500Response
-      val result: Option[EmployedEarningsRti] = await(connector.employedEarningsRti(taxCreditNino))
+      val result:                 Option[EmployedEarningsRti]      = await(connector.employedEarningsRti(taxCreditNino))
 
       result shouldBe None
     }

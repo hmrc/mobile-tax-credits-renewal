@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,13 @@ package object domain {
     * instances in the package they will be picked up in preference to the defaults.
     */
   implicit val localDateTimeWrites: Writes[LocalDateTime] = new Writes[LocalDateTime] {
+
     override def writes(o: LocalDateTime): JsValue =
       JsNumber(o.toInstant(ZoneOffset.UTC).toEpochMilli)
   }
 
   implicit val LocalDateTimeFormat: Format[LocalDateTime] = new Format[LocalDateTime] {
+
     override def writes(o: LocalDateTime): JsValue =
       localDateTimeWrites.writes(o)
 
@@ -42,11 +44,13 @@ package object domain {
   }
 
   implicit val localDateWrites: Writes[LocalDate] = new Writes[LocalDate] {
+
     override def writes(o: LocalDate): JsValue =
       JsNumber(o.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli)
   }
 
   implicit val LocalDateFormat: Format[LocalDate] = new Format[LocalDate] {
+
     override def writes(o: LocalDate): JsValue =
       localDateWrites.writes(o)
 

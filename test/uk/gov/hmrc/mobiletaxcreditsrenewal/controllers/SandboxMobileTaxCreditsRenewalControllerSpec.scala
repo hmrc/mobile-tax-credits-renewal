@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matchers with MockFactory with FileResource {
+class SandboxMobileTaxCreditsRenewalControllerSpec
+    extends WordSpecLike
+    with Matchers
+    with MockFactory
+    with FileResource {
+
   private val logger = new LoggerLike {
     override val logger: Logger = getLogger("SandboxMobileTaxCreditsRenewalController")
   }
@@ -63,7 +68,9 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
       val expectedValue = parse(findResource("/resources/claimantdetails/renewals-response-closed.json").get)
 
       val response: Future[Result] =
-        controller.renewals(nino, journeyId).apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "RENEWALS-RESPONSE-CLOSED"))
+        controller
+          .renewals(nino, journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "RENEWALS-RESPONSE-CLOSED"))
       status(response)        shouldBe 200
       contentAsJson(response) shouldBe expectedValue
     }
@@ -72,7 +79,9 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
       val expectedValue = parse(findResource("/resources/claimantdetails/renewals-response-check-status-only.json").get)
 
       val response: Future[Result] =
-        controller.renewals(nino, journeyId).apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "RENEWALS-RESPONSE-CHECK-STATUS-ONLY"))
+        controller
+          .renewals(nino, journeyId)
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "RENEWALS-RESPONSE-CHECK-STATUS-ONLY"))
       status(response)        shouldBe 200
       contentAsJson(response) shouldBe expectedValue
     }
@@ -107,12 +116,11 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     val certainBenefits =
       CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
     val otherIncome = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(
-      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-      None,
-      Some(otherIncome),
-      Some(otherIncome),
-      hasChangeOfCircs = false)
+    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+                             None,
+                             Some(otherIncome),
+                             Some(otherIncome),
+                             hasChangeOfCircs = false)
 
     val submitRenewalRequest:                    FakeRequest[JsValue] = FakeRequest().withBody(toJson(renewal)).withHeaders(acceptHeader)
     val submitRenewalRequestWithoutAcceptHeader: FakeRequest[JsValue] = FakeRequest().withBody(toJson(renewal))
@@ -127,19 +135,35 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     }
 
     "return unauthorised when directed to do so using the SANDBOX-CONTROL header" in {
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))
+      ) shouldBe 404
     }
 
     "return internal server error when directed to do so using the SANDBOX-CONTROL header" in {
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))
+      ) shouldBe 500
     }
 
     "return 406 if accept header not set" in {
@@ -147,7 +171,11 @@ class SandboxMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Mat
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+      status(
+        controller
+          .submitRenewal(nino, journeyId)
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
   }
 }

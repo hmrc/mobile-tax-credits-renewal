@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,54 +28,82 @@ import uk.gov.hmrc.play.bootstrap.config.RunMode
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class NtcConnector @Inject()(
+class NtcConnector @Inject() (
   http:                     CoreGet with CorePost,
   @Named("ntc") serviceUrl: String,
   val runModeConfiguration: Configuration,
   environment:              Environment,
-  runMode:                  RunMode
-) extends ServicesCircuitBreaker("ntc", runModeConfiguration, runMode) {
+  runMode:                  RunMode)
+    extends ServicesCircuitBreaker("ntc", runModeConfiguration, runMode) {
 
   val externalServiceName = "ntc"
 
-  def authenticateRenewal(nino: TaxCreditsNino, renewalReference: RenewalReference)(
-    implicit headerCarrier:     HeaderCarrier,
-    ex:                         ExecutionContext): Future[Option[TcrAuthenticationToken]] = {
+  def authenticateRenewal(
+    nino:                   TaxCreditsNino,
+    renewalReference:       RenewalReference
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[Option[TcrAuthenticationToken]] = {
 
-    def logResult(status: Int, message: String): Unit =
+    def logResult(
+      status:  Int,
+      message: String
+    ): Unit =
       Logger.info(s"Response from tcs auth service $status and message $message.")
 
-    withCircuitBreaker(http.GET[Option[TcrAuthenticationToken]](s"$serviceUrl/tcs/${nino.value}/${renewalReference.value}/auth").recover {
-      case _: NotFoundException =>
-        logResult(404, "Not found")
-        None
+    withCircuitBreaker(
+      http
+        .GET[Option[TcrAuthenticationToken]](s"$serviceUrl/tcs/${nino.value}/${renewalReference.value}/auth")
+        .recover {
+          case _: NotFoundException =>
+            logResult(404, "Not found")
+            None
 
-      case _: BadRequestException =>
-        logResult(400, "BadRequest")
-        None
-    })
+          case _: BadRequestException =>
+            logResult(400, "BadRequest")
+            None
+        }
+    )
   }
 
-  def claimantDetails(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[ClaimantDetails] =
+  def claimantDetails(
+    nino:                   TaxCreditsNino
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[ClaimantDetails] =
     withCircuitBreaker(http.GET[ClaimantDetails](s"$serviceUrl/tcs/${nino.value}/claimant-details"))
 
-  def claimantClaims(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Claims] =
+  def claimantClaims(
+    nino:                   TaxCreditsNino
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[Claims] =
     withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
-  def legacyClaimantClaims(nino: TaxCreditsNino)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[LegacyClaims] =
+  def legacyClaimantClaims(
+    nino:                   TaxCreditsNino
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[LegacyClaims] =
     withCircuitBreaker(http.GET[LegacyClaims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
-  def submitRenewal(nino: TaxCreditsNino, renewalData: TcrRenewal)(implicit headerCarrier: HeaderCarrier, ex: ExecutionContext): Future[Int] = {
+  def submitRenewal(
+    nino:                   TaxCreditsNino,
+    renewalData:            TcrRenewal
+  )(implicit headerCarrier: HeaderCarrier,
+    ex:                     ExecutionContext
+  ): Future[Int] = {
     val uri = s"$serviceUrl/tcs/${nino.taxCreditsNino}/renewal"
     withCircuitBreaker(
       http
         .POST[TcrRenewal, HttpResponse](uri, renewalData, Seq())
-        .map(response => {
+        .map { response =>
           response.status match {
             case x if x >= 200 && x < 300 => x
             case _                        => throw new RuntimeException("Unsupported response code: " + response.status)
           }
-        }))
+        }
+    )
   }
 
 }

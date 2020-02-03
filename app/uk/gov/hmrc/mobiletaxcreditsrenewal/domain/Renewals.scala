@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,17 @@ import uk.gov.hmrc.http.BadRequestException
 
 import scala.util.Try
 
-
-case class LoginModel(nino: Nino, renewalReference: RenewalReference)
+case class LoginModel(
+  nino:             Nino,
+  renewalReference: RenewalReference)
 
 case class RenewalReference(value: String) {
   def stripSpaces = RenewalReference(value.replaceAll(" ", ""))
 }
 
 case class TcrAuthenticationToken(tcrAuthToken: String) {
-  def extractNino : Option[String] = extractBasicAuth(tcrAuthToken).map(_._1)
-  def extractRenewalReference : Option[String] = extractBasicAuth(tcrAuthToken).map(_._2)
+  def extractNino:             Option[String] = extractBasicAuth(tcrAuthToken).map(_._1)
+  def extractRenewalReference: Option[String] = extractBasicAuth(tcrAuthToken).map(_._2)
 
   private def extractBasicAuth(auth: String): Option[(String, String)] = {
     val BasicAuthPattern = "Basic (.*)".r
@@ -51,16 +52,23 @@ case class TcrAuthenticationToken(tcrAuthToken: String) {
 object TcrAuthenticationToken {
   implicit val formats: OFormat[TcrAuthenticationToken] = Json.format[TcrAuthenticationToken]
 
-  def basicAuthString(nino:String, renewalReference:String): String = "Basic " + encodedAuth(nino, renewalReference)
+  def basicAuthString(
+    nino:             String,
+    renewalReference: String
+  ): String = "Basic " + encodedAuth(nino, renewalReference)
 
-  def encodedAuth(nino:String, renewalReference:String): String = new String(encodeBase64(s"$nino:$renewalReference".getBytes))
+  def encodedAuth(
+    nino:             String,
+    renewalReference: String
+  ): String = new String(encodeBase64(s"$nino:$renewalReference".getBytes))
 
 }
 
 object TcrAuthCheck {
+
   def unapply(token: String): Option[TcrAuthenticationToken] = {
     val tcrToken = TcrAuthenticationToken(token)
-    if (tcrToken.extractNino.isDefined&&tcrToken.extractRenewalReference.isDefined) {
+    if (tcrToken.extractNino.isDefined && tcrToken.extractRenewalReference.isDefined) {
       Some(tcrToken)
     } else {
       None
@@ -68,97 +76,128 @@ object TcrAuthCheck {
   }
 }
 
-case class ClaimantDetails(hasPartner: Boolean,
-                           claimantNumber: Int,
-                           renewalFormType: String,
-                           mainApplicantNino: String,
-                           usersPartnerNino: Option[String],
-                           availableForCOCAutomation: Boolean,
-                           applicationId: String)
+case class ClaimantDetails(
+  hasPartner:                Boolean,
+  claimantNumber:            Int,
+  renewalFormType:           String,
+  mainApplicantNino:         String,
+  usersPartnerNino:          Option[String],
+  availableForCOCAutomation: Boolean,
+  applicationId:             String)
 
 object ClaimantDetails {
   implicit val formats: OFormat[ClaimantDetails] = Json.format[ClaimantDetails]
 }
 
-case class SelfEmployedIncome(selfEmployedIncome: Option[Int], isSelfEmployedIncomeEst: Option[Boolean])
+case class SelfEmployedIncome(
+  selfEmployedIncome:      Option[Int],
+  isSelfEmployedIncomeEst: Option[Boolean])
+
 object SelfEmployedIncome {
   implicit val formats: OFormat[SelfEmployedIncome] = Json.format[SelfEmployedIncome]
 }
 
-case class OtherIncome(otherHouseholdIncome: Option[Int], isOtherHouseholdIncomeEst: Option[Boolean])
+case class OtherIncome(
+  otherHouseholdIncome:      Option[Int],
+  isOtherHouseholdIncomeEst: Option[Boolean])
 
 object OtherIncome {
   implicit val formats: OFormat[OtherIncome] = Json.format[OtherIncome]
 
-  def fromStrings(otherHouseholdIncome:Option[Int], isOtherHouseholdIncomeEst:Boolean): OtherIncome = {
-    val incomeEst= if (otherHouseholdIncome.isDefined) Some(isOtherHouseholdIncomeEst) else None
+  def fromStrings(
+    otherHouseholdIncome:      Option[Int],
+    isOtherHouseholdIncomeEst: Boolean
+  ): OtherIncome = {
+    val incomeEst = if (otherHouseholdIncome.isDefined) Some(isOtherHouseholdIncomeEst) else None
     OtherIncome(otherHouseholdIncome, incomeEst)
   }
 
-  def toStrings(otherIncome:OtherIncome) = Some((otherIncome.otherHouseholdIncome,
-    otherIncome.isOtherHouseholdIncomeEst.getOrElse(false)))
+  def toStrings(otherIncome: OtherIncome) =
+    Some((otherIncome.otherHouseholdIncome, otherIncome.isOtherHouseholdIncomeEst.getOrElse(false)))
 }
 
-case class IncomeDetails(taxableBenefits: Option[Int],
-                         earnings: Option[Int],
-                         companyBenefits: Option[Int],
-                         seProfits: Option[Int],
-                         seProfitsEstimated:Option[Boolean]) {
-  def total(): Int = {
+case class IncomeDetails(
+  taxableBenefits:    Option[Int],
+  earnings:           Option[Int],
+  companyBenefits:    Option[Int],
+  seProfits:          Option[Int],
+  seProfitsEstimated: Option[Boolean]) {
+
+  def total(): Int =
     Array(taxableBenefits, earnings, companyBenefits, seProfits).flatten.sum
-  }
 }
 
 object IncomeDetails {
 
   implicit val formats: OFormat[IncomeDetails] = Json.format[IncomeDetails]
 
-  def fromStrings(taxableBenefits:Option[Int], earnings:Option[Int], companyBenefits:Option[Int],seProfits:Option[Int],seProfitsEstimated:Boolean) :IncomeDetails = {
-    val seProfitsEst=if(seProfits.isDefined) Some(seProfitsEstimated) else None
+  def fromStrings(
+    taxableBenefits:    Option[Int],
+    earnings:           Option[Int],
+    companyBenefits:    Option[Int],
+    seProfits:          Option[Int],
+    seProfitsEstimated: Boolean
+  ): IncomeDetails = {
+    val seProfitsEst = if (seProfits.isDefined) Some(seProfitsEstimated) else None
     IncomeDetails(taxableBenefits, earnings, companyBenefits, seProfits, seProfitsEst)
   }
 
-  def toStrings(income:IncomeDetails): Some[(Option[Int], Option[Int], Option[Int], Option[Int], Boolean)] = {
-    Some((income.taxableBenefits, income.earnings, income.companyBenefits, income.seProfits, income.seProfitsEstimated.getOrElse(false)))
-  }
+  def toStrings(income: IncomeDetails): Some[(Option[Int], Option[Int], Option[Int], Option[Int], Boolean)] =
+    Some(
+      (income.taxableBenefits,
+       income.earnings,
+       income.companyBenefits,
+       income.seProfits,
+       income.seProfitsEstimated.getOrElse(false))
+    )
 
 }
 
-case class CertainBenefits(receivedBenefits: Boolean, incomeSupport: Boolean, jsa: Boolean, esa: Boolean, pensionCredit: Boolean)
+case class CertainBenefits(
+  receivedBenefits: Boolean,
+  incomeSupport:    Boolean,
+  jsa:              Boolean,
+  esa:              Boolean,
+  pensionCredit:    Boolean)
 
 object CertainBenefits {
   implicit val formats: OFormat[CertainBenefits] = Json.format[CertainBenefits]
 }
 
-case class RenewalData(incomeDetails: Option[IncomeDetails],
-                       incomeDetailsPY1: Option[IncomeDetails],
-                       certainBenefits: Option[CertainBenefits])
+case class RenewalData(
+  incomeDetails:    Option[IncomeDetails],
+  incomeDetailsPY1: Option[IncomeDetails],
+  certainBenefits:  Option[CertainBenefits])
 
 object RenewalData {
   implicit val formats: OFormat[RenewalData] = Json.format[RenewalData]
 }
 
-case class TcrRenewal(renewalData: RenewalData, applicant2Data: Option[RenewalData],
-                      otherIncome:Option[OtherIncome],otherIncomePY1:Option[OtherIncome], hasChangeOfCircs:Boolean) extends Auditable {
+case class TcrRenewal(
+  renewalData:      RenewalData,
+  applicant2Data:   Option[RenewalData],
+  otherIncome:      Option[OtherIncome],
+  otherIncomePY1:   Option[OtherIncome],
+  hasChangeOfCircs: Boolean)
+    extends Auditable {
   override val txmAuditType = "renewal"
 
   def applicant2: String = applicant2Data match {
     case Some(data) =>
       s"Applicant 2 Income Details=${data.incomeDetails.getOrElse("")}, " +
-        s"Applicant 2 Income Details PY1=${data.incomeDetailsPY1.getOrElse("")}, " +
-        s"Applicant 2 Certain Benefits=${data.certainBenefits.getOrElse("")}, "
+      s"Applicant 2 Income Details PY1=${data.incomeDetailsPY1.getOrElse("")}, " +
+      s"Applicant 2 Certain Benefits=${data.certainBenefits.getOrElse("")}, "
     case None => ""
   }
 
-  override def readableFormat: String = {
+  override def readableFormat: String =
     s"Applicant 1 Income Details=${renewalData.incomeDetails.getOrElse("")}, " +
-      s"Applicant 1 Income Details PY1=${renewalData.incomeDetailsPY1.getOrElse("")}, " +
-      s"Applicant 1 Certain Benefits=${renewalData.certainBenefits.getOrElse("")}, " +
-      applicant2 +
-      s"Other Income=${otherIncome.getOrElse("")}, " +
-      s"Other Income PY1=${otherIncomePY1.getOrElse("")}, " +
-      s"Has Change Of Circs=$hasChangeOfCircs"
-  }
+    s"Applicant 1 Income Details PY1=${renewalData.incomeDetailsPY1.getOrElse("")}, " +
+    s"Applicant 1 Certain Benefits=${renewalData.certainBenefits.getOrElse("")}, " +
+    applicant2 +
+    s"Other Income=${otherIncome.getOrElse("")}, " +
+    s"Other Income PY1=${otherIncomePY1.getOrElse("")}, " +
+    s"Has Change Of Circs=$hasChangeOfCircs"
 }
 
 object TcrRenewal {
@@ -171,7 +210,8 @@ case class ChangeOfCircs(changeOfCircs: Boolean)
 
 object ChangeOfCircs {
 
-  def fromStrings(change: Option[Boolean]) = ChangeOfCircs(change.getOrElse(throw new BadRequestException("User did not answer coc question")))
+  def fromStrings(change: Option[Boolean]) =
+    ChangeOfCircs(change.getOrElse(throw new BadRequestException("User did not answer coc question")))
   def toStrings(change: ChangeOfCircs) = Option(Option(change.changeOfCircs))
 
   implicit val formats: OFormat[ChangeOfCircs] = Json.format[ChangeOfCircs]

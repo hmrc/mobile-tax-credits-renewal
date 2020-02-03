@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types
 
-import eu.timepit.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.string.MatchesRegex
+import eu.timepit.refined._
 
 object ModelTypes {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action
 
-import uk.gov.hmrc.auth.core.retrieve.Retrievals._
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals._
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, EnrolmentIdentifier}
 import uk.gov.hmrc.domain.Nino
@@ -33,10 +33,10 @@ trait Authorisation extends AuthorisedFunctions {
   val confLevel: Int
 
   lazy val ninoNotFoundOnAccount = new NinoNotFoundOnAccount
-  lazy val failedToMatchNino = new FailToMatchTaxIdOnAuth
-  lazy val lowConfidenceLevel = new AccountWithLowCL
+  lazy val failedToMatchNino     = new FailToMatchTaxIdOnAuth
+  lazy val lowConfidenceLevel    = new AccountWithLowCL
 
-  def grantAccess(requestedNino: Nino)(implicit hc: HeaderCarrier): Future[Authority] = {
+  def grantAccess(requestedNino: Nino)(implicit hc: HeaderCarrier): Future[Authority] =
     authorised(Enrolment("HMRC-NI", Seq(EnrolmentIdentifier("NINO", requestedNino.value)), "Activated", None))
       .retrieve(nino and confidenceLevel) {
         case Some(foundNino) ~ foundConfidenceLevel =>
@@ -47,5 +47,4 @@ trait Authorisation extends AuthorisedFunctions {
         case None ~ _ =>
           throw ninoNotFoundOnAccount
       }
-  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,26 +34,32 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalServi
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
-  def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent]
 
-  def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue]
+  def renewals(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[AnyContent]
+
+  def submitRenewal(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[JsValue]
 
 }
+
 @Singleton
-class LiveMobileTaxCreditsRenewalController @Inject()(
+class LiveMobileTaxCreditsRenewalController @Inject() (
   override val authConnector:                                   AuthConnector,
   val logger:                                                   LoggerLike,
   val service:                                                  MobileTaxCreditsRenewalService,
   @Named("controllers.confidenceLevel") override val confLevel: Int,
   val controllerComponents:                                     ControllerComponents,
   shutteringConnector:                                          ShutteringConnector
-)(
-  implicit val executionContext: ExecutionContext
-) extends MobileTaxCreditsRenewalController
+)(implicit val executionContext:                                ExecutionContext)
+    extends MobileTaxCreditsRenewalController
     with AccessControl
     with ShutteredCheck {
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
@@ -61,7 +67,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
 
   {}
 
-  def errorWrapper(func: => Future[mvc.Result])(implicit hc: HeaderCarrier): Future[Result] =
+  def errorWrapper(func: => Future[mvc.Result]): Future[Result] =
     func.recover {
       case _: NotFoundException => notFound
 
@@ -74,7 +80,10 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def renewals(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
+  override def renewals(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
       implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
@@ -88,40 +97,49 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
       }
     }
 
-  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) { implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
-      shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
-        withShuttering(shuttered) {
-          request.body
-            .validate[TcrRenewal]
-            .fold(
-              errors => {
-                logger.warn("Received error with service submitRenewal: " + errors)
-                Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
-              },
-              renewal => {
-                errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
-                  service
-                    .submitRenewal(nino, renewal)
-                    .map { _ =>
-                      logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
-                      Ok
-                    }
-                    .recover {
-                      case e: Exception =>
-                        logger.warn(s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId")
-                        throw e
-                    }
-                })
-              }
-            )
+  override def submitRenewal(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[JsValue] =
+    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) {
+      implicit request =>
+        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+        shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
+          withShuttering(shuttered) {
+            request.body
+              .validate[TcrRenewal]
+              .fold(
+                errors => {
+                  logger.warn("Received error with service submitRenewal: " + errors)
+                  Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
+                },
+                renewal =>
+                  errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
+                    service
+                      .submitRenewal(nino, renewal)
+                      .map { _ =>
+                        logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
+                        Ok
+                      }
+                      .recover {
+                        case e: Exception =>
+                          logger.warn(
+                            s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId"
+                          )
+                          throw e
+                      }
+                  })
+              )
+          }
         }
-      }
     }
 
-  private def validateTcrAuthHeader(mode: Option[String])(
-    func:                                 HeaderCarrier => Future[mvc.Result])(implicit request: Request[_], hc: HeaderCarrier): Future[Result] =
+  private def validateTcrAuthHeader(
+    mode:             Option[String]
+  )(func:             HeaderCarrier => Future[mvc.Result]
+  )(implicit request: Request[_],
+    hc:               HeaderCarrier
+  ): Future[Result] =
     (request.headers.get(tcrAuthToken), mode) match {
 
       case (None, Some(_)) => func(hc)

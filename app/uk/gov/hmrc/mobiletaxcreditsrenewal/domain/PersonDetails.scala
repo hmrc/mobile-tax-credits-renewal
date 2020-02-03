@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,13 @@ case class Person(
   honours:     Option[String],
   sex:         Option[String],
   dateOfBirth: Option[LocalDateTime],
-  nino:        Option[Nino]
-) {
+  nino:        Option[Nino]) {
 
-  lazy val shortName: Option[String] = for (f <- firstName; l <- lastName) yield List(f, l).mkString(" ")
-  lazy val fullName:  String         = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
+  lazy val shortName: Option[String] = for {
+    f <- firstName
+    l <- lastName
+  } yield List(f, l).mkString(" ")
+  lazy val fullName: String = List(title, firstName, middleName, lastName, honours).flatten.mkString(" ")
 }
 
 object Address {
@@ -52,8 +54,7 @@ case class Address(
   line4:     Option[String],
   postcode:  Option[String],
   startDate: Option[LocalDateTime],
-  `type`:    Option[String]
-) {
+  `type`:    Option[String]) {
   lazy val lines: List[String] = List(line1, line2, line3, line4).flatten
 }
 
@@ -61,8 +62,7 @@ case class PersonDetails(
   etag:                  String,
   person:                Person,
   address:               Option[Address],
-  correspondenceAddress: Option[Address]
-)
+  correspondenceAddress: Option[Address])
 
 object PersonDetails {
   implicit val formats: OFormat[PersonDetails] = Json.format[PersonDetails]

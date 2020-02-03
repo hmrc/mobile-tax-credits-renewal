@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,14 +68,13 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
   private val forbidden:         JsValue         = parse("""{"code":"FORBIDDEN","message":"Forbidden"}""")
 
   private val controller =
-    new LiveLegacyMobileTaxCreditsRenewalController(
-      authConnector,
-      logger,
-      service,
-      mockControlConfig,
-      L200.level,
-      stubControllerComponents(),
-      shutteringConnector)
+    new LiveLegacyMobileTaxCreditsRenewalController(authConnector,
+                                                    logger,
+                                                    service,
+                                                    mockControlConfig,
+                                                    L200.level,
+                                                    stubControllerComponents(),
+                                                    shutteringConnector)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
@@ -89,6 +88,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       acceptHeader,
       "Authorization" -> "Some Header"
     )
+
   lazy val requestInvalidHeaders: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
     .withSession(
       "AuthToken" -> "Some Header"
@@ -99,10 +99,16 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
 
   def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
-  def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
+  def encodedAuth(
+    nino:                Nino,
+    tcrRenewalReference: RenewalReference
+  ): String =
     new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino): FakeRequest[AnyContentAsEmpty.type] =
+  def emptyRequestWithAcceptHeaderAndAuthHeader(
+    renewalsRef: RenewalReference,
+    nino:        Nino
+  ): FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   "getRenewalAuthentication" should {
@@ -178,11 +184,14 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
   "claimantDetails" should {
     "return claimant details successfully" in {
       mockShutteringResponse(false)
-      val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+      val claimantDetails =
+        ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino, journeyId).apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller
+        .claimantDetails(nino, journeyId)
+        .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
 
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe toJson(claimantDetails.copy(mainApplicantNino = "true"))
@@ -191,11 +200,18 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
 
     "return claimant details successfully when NINO does not match mainApplicantNino" in {
       mockShutteringResponse(false)
-      val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id")
+      val claimantDetails = ClaimantDetails(hasPartner = false,
+                                            1,
+                                            "r",
+                                            incorrectNino.value,
+                                            None,
+                                            availableForCOCAutomation = false,
+                                            "some-app-id")
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result =
+        controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe toJson(claimantDetails.copy(mainApplicantNino = "false"))
       header("Cache-Control", result) shouldBe None
@@ -216,7 +232,10 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return 404 when no claims matched the supplied nino" in {
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      (service.legacyClaimantClaims(_: Nino)(_: HeaderCarrier, _: ExecutionContext)).expects(nino, *, *).returns(notFoundException)
+      (service
+        .legacyClaimantClaims(_: Nino)(_: HeaderCarrier, _: ExecutionContext))
+        .expects(nino, *, *)
+        .returns(notFoundException)
 
       status(controller.claimantDetails(nino, journeyId, Some("claims"))(fakeRequest)) shouldBe 404
     }
@@ -226,32 +245,44 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
       val result = controller.claimantDetails(nino, journeyId, None)(fakeRequest)
-      status(result)        shouldBe 403
-      contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"No auth header supplied in http request"}""")
+      status(result) shouldBe 403
+      contentAsJson(result) shouldBe Json.parse(
+        """{"code":"NTC_RENEWAL_AUTH_ERROR","message":"No auth header supplied in http request"}"""
+      )
     }
 
     "return 403 when tcrAuthHeader is supplied to claims API" in {
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      val result = controller.claimantDetails(nino, journeyId, Some("claims"))(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
-      status(result)        shouldBe 403
-      contentAsJson(result) shouldBe Json.parse("""{"code":"NTC_RENEWAL_AUTH_ERROR","message":"Auth header is not required in the request"}""")
+      val result = controller.claimantDetails(nino, journeyId, Some("claims"))(
+        emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+      )
+      status(result) shouldBe 403
+      contentAsJson(result) shouldBe Json.parse(
+        """{"code":"NTC_RENEWAL_AUTH_ERROR","message":"Auth header is not required in the request"}"""
+      )
     }
 
     "return 403 when the nino in the request does not match the authority nino" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      status(controller.claimantDetails(incorrectNino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, incorrectNino))) shouldBe 403
+      status(
+        controller.claimantDetails(incorrectNino, journeyId)(
+          emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, incorrectNino)
+        )
+      ) shouldBe 403
     }
 
     "return the claimant details successfully when journeyId is supplied" in {
       mockShutteringResponse(false)
-      val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+      val claimantDetails =
+        ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubClaimantDetailsResponse(claimantDetails, nino)
 
-      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result =
+        controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe toJson(claimantDetails.copy(mainApplicantNino = "true"))
     }
@@ -259,7 +290,8 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return forbidden when authority record does not contain a NINO" in {
       stubAuthorisationGrantAccess(None and L200)
 
-      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result =
+        controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
@@ -267,7 +299,8 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     "return forbidden when authority record has a low CL" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L50)
 
-      val result = controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result =
+        controller.claimantDetails(nino, journeyId)(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
       status(result)        shouldBe 403
       contentAsJson(result) shouldBe forbidden
     }
@@ -305,17 +338,23 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     val renewalFormType = "renewalFormType"
 
     "return details with the renewalFormType set" in {
-      val household            = Household(renewalReference.value, "applicationId", applicant, None, None, None)
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val household = Household(renewalReference.value, "applicationId", applicant, None, None, None)
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
       stubEmployedEarningsRti(None, nino)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -331,16 +370,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), None)), nino)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -356,16 +401,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(None, Some(22000.0))), nino)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -381,16 +432,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), Some(22000.0))), nino)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -406,16 +463,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino2)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(None, Some(20000.0))), nino2)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
 
       val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -431,16 +494,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino2)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(22000.0), None)), nino2)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
 
       val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -456,16 +525,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino2)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
       stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(22000.0), Some(20000.0))), nino2)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
 
       val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -481,16 +556,22 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
         None,
         None
       )
-      val expectedClaimDetails = LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
+      val expectedClaimDetails =
+        LegacyClaim(household, LegacyRenewal(None, None, None, None, None, Some(renewalFormType)))
 
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
       stubServiceClaimantClaims(LegacyClaims(Some(Seq(LegacyClaim(household, renewal)))), nino2)
       stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
       stubEmployedEarningsRti(None, nino2)
-      stubClaimantDetailsResponse(
-        ClaimantDetails(hasPartner = false, 1, renewalFormType, incorrectNino.value, None, availableForCOCAutomation = false, "some-app-id"),
-        nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
 
       val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
       status(result)        shouldBe 200
@@ -511,15 +592,15 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
   }
 
   "submitRenewal" should {
-    val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val certainBenefits = CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
-    val otherIncome     = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(
-      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-      None,
-      Some(otherIncome),
-      Some(otherIncome),
-      hasChangeOfCircs = false)
+    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
+    val certainBenefits =
+      CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
+    val otherIncome = OtherIncome(Some(100), Some(false))
+    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+                             None,
+                             Some(otherIncome),
+                             Some(otherIncome),
+                             hasChangeOfCircs = false)
     val submitRenewalRequest: FakeRequest[JsValue] = FakeRequest()
       .withBody(toJson(renewal))
       .withHeaders(
@@ -572,7 +653,8 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
       mockShutteringResponse(false)
       stubAuthorisationGrantAccess(Some(nino.nino) and L200)
 
-      val badRequest: FakeRequest[JsObject] = FakeRequest().withBody(Json.obj()).withHeaders(acceptHeader, "tcrAuthToken" -> "some-auth-token")
+      val badRequest: FakeRequest[JsObject] =
+        FakeRequest().withBody(Json.obj()).withHeaders(acceptHeader, "tcrAuthToken" -> "some-auth-token")
       status(controller.submitRenewal(nino, journeyId).apply(badRequest)) shouldBe 400
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       acceptHeader,
       "Authorization" -> "Some Header"
     )
+
   lazy val requestInvalidHeaders: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
     .withSession(
       "AuthToken" -> "Some Header"
@@ -82,10 +83,16 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
 
   def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
-  def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
+  def encodedAuth(
+    nino:                Nino,
+    tcrRenewalReference: RenewalReference
+  ): String =
     new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  def emptyRequestWithAcceptHeaderAndAuthHeader(renewalsRef: RenewalReference, nino: Nino): FakeRequest[AnyContentAsEmpty.type] =
+  def emptyRequestWithAcceptHeaderAndAuthHeader(
+    renewalsRef: RenewalReference,
+    nino:        Nino
+  ): FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   "getRenewalAuthentication" should {
@@ -100,44 +107,52 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       status(
         controller
           .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))
+      ) shouldBe 404
     }
 
     "return internal sever error when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))
+      ) shouldBe 500
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .getRenewalAuthentication(incorrectNino, renewalReference, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
 
   }
 
   "claimantDetails" should {
     "return claimant details successfully" in {
-      val claimantDetails = ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
+      val claimantDetails =
+        ClaimantDetails(hasPartner = false, 1, "r", nino.nino, None, availableForCOCAutomation = false, "some-app-id")
 
-      val result = controller.claimantDetails(nino, journeyId).apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
+      val result = controller
+        .claimantDetails(nino, journeyId)
+        .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino))
 
       status(result)                  shouldBe 200
       contentAsJson(result)           shouldBe toJson(claimantDetails.copy(mainApplicantNino = "false"))
@@ -148,35 +163,52 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       status(
         controller
           .claimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-401")
+          )
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .claimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-403")
+          )
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .claimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-404")
+          )
+      ) shouldBe 404
     }
 
     "return internal sever error when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .claimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-500")
+          )
+      ) shouldBe 500
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .claimantDetails(nino, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
 
   }
@@ -185,14 +217,18 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
 
     "return details with the renewalFormType set" in {
       val expectedClaimDetails = LegacyClaim(
-        Household(
-          renewalReference.value,
-          "198765432134567",
-          Applicant(nino.nino, "MR", "JOHN", Some(""), "DENSMORE", Some(19500.00)),
-          None,
-          None,
-          Some("")),
-        LegacyRenewal(Some("12/10/2030"), Some("12/10/2010"), Some("NOT_SUBMITTED"), Some("12/10/2030"), Some("12/10/2010"), Some("D"))
+        Household(renewalReference.value,
+                  "198765432134567",
+                  Applicant(nino.nino, "MR", "JOHN", Some(""), "DENSMORE", Some(19500.00)),
+                  None,
+                  None,
+                  Some("")),
+        LegacyRenewal(Some("12/10/2030"),
+                      Some("12/10/2010"),
+                      Some("NOT_SUBMITTED"),
+                      Some("12/10/2030"),
+                      Some("12/10/2010"),
+                      Some("D"))
       )
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
@@ -204,49 +240,66 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       status(
         controller
           .fullClaimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-401")
+          )
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .fullClaimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-403")
+          )
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .fullClaimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-404")
+          )
+      ) shouldBe 404
     }
 
     "return internal sever error when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .fullClaimantDetails(nino, journeyId)
-          .apply(emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino).withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+          .apply(
+            emptyRequestWithAcceptHeaderAndAuthHeader(renewalReference, nino)
+              .withHeaders("SANDBOX-CONTROL" -> "ERROR-500")
+          )
+      ) shouldBe 500
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .fullClaimantDetails(nino, journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
 
   }
 
   "submitRenewal" should {
-    val incomeDetails   = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val certainBenefits = CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
-    val otherIncome     = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(
-      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-      None,
-      Some(otherIncome),
-      Some(otherIncome),
-      hasChangeOfCircs = false)
+    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
+    val certainBenefits =
+      CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
+    val otherIncome = OtherIncome(Some(100), Some(false))
+    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+                             None,
+                             Some(otherIncome),
+                             Some(otherIncome),
+                             hasChangeOfCircs = false)
     val submitRenewalRequest: FakeRequest[JsValue] = FakeRequest()
       .withBody(toJson(renewal))
       .withHeaders(
@@ -268,35 +321,40 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       status(
         controller
           .submitRenewal(nino, journeyId)
-          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .submitRenewal(nino, journeyId)
-          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .submitRenewal(nino, journeyId)
-          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))
+      ) shouldBe 404
     }
 
     "return internal sever error when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .submitRenewal(nino, journeyId)
-          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))
+      ) shouldBe 500
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .submitRenewal(nino, journeyId)
-          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+          .apply(submitRenewalRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
 
   }
@@ -309,13 +367,17 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
     }
 
     "return an closed submission state when directed to do so using the SANDBOX-CONTROL header" in {
-      val result = controller.taxCreditsSubmissionStateEnabled(journeyId).apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "CLOSED"))
+      val result = controller
+        .taxCreditsSubmissionStateEnabled(journeyId)
+        .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "CLOSED"))
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe Json.parse("""{"submissionsState":"closed"}""")
     }
 
     "return an check_status_only submission state when directed to do so using the SANDBOX-CONTROL header" in {
-      val result = controller.taxCreditsSubmissionStateEnabled(journeyId).apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "CHECK-STATUS-ONLY"))
+      val result = controller
+        .taxCreditsSubmissionStateEnabled(journeyId)
+        .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "CHECK-STATUS-ONLY"))
       status(result)        shouldBe 200
       contentAsJson(result) shouldBe Json.parse("""{"submissionsState":"check_status_only"}""")
     }
@@ -324,35 +386,40 @@ class SandboxLegacyMobileTaxCreditsRenewalControllerSpec
       status(
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))) shouldBe 401
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-401"))
+      ) shouldBe 401
     }
 
     "return forbidden when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))) shouldBe 403
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-403"))
+      ) shouldBe 403
     }
 
     "return not found when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))) shouldBe 404
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-404"))
+      ) shouldBe 404
     }
 
     "return internal sever error when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))) shouldBe 500
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "ERROR-500"))
+      ) shouldBe 500
     }
 
     "return shuttered when directed to do so using the SANDBOX-CONTROL header" in {
       status(
         controller
           .taxCreditsSubmissionStateEnabled(journeyId)
-          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))) shouldBe 521
+          .apply(fakeRequest.withHeaders("SANDBOX-CONTROL" -> "SHUTTERED"))
+      ) shouldBe 521
     }
   }
 

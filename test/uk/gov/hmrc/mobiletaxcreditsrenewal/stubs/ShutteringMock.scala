@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,13 +27,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ShutteringMock extends MockFactory {
 
-  private val shutteredResponse    = Shuttering(shuttered = true, Some("Shuttered"), Some("Tax Credits Renewal is currently not available"))
+  private val shutteredResponse =
+    Shuttering(shuttered = true, Some("Shuttered"), Some("Tax Credits Renewal is currently not available"))
   private val notShutteredResponse = Shuttering.shutteringDisabled
 
   def mockShutteringResponse(
-    shuttered: Boolean
-  )(
-    implicit shutteringConnector: ShutteringConnector
+    shuttered:                    Boolean
+  )(implicit shutteringConnector: ShutteringConnector
   ): CallHandler[Future[Shuttering]] = {
     val response = if (shuttered) shutteredResponse else notShutteredResponse
     (shutteringConnector

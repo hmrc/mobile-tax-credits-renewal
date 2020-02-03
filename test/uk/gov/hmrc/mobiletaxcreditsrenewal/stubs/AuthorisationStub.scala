@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,15 @@ trait AuthorisationStub extends MockFactory {
 
   type GrantAccess = Option[String] ~ ConfidenceLevel
 
-  def stubAuthorisationGrantAccess(response: GrantAccess)(implicit authConnector: AuthConnector): Unit = {
-    (authConnector.authorise(_: Predicate, _: Retrieval[GrantAccess])(_:HeaderCarrier, _: ExecutionContext)).
-      expects(*,*,*,*).returning(Future successful response)
-  }
+  def stubAuthorisationGrantAccess(response: GrantAccess)(implicit authConnector: AuthConnector): Unit =
+    (authConnector
+      .authorise(_: Predicate, _: Retrieval[GrantAccess])(_: HeaderCarrier, _: ExecutionContext))
+      .expects(*, *, *, *)
+      .returning(Future successful response)
 
-  def stubAuthorisationUnauthorised()(implicit authConnector: AuthConnector): Unit = {
-    (authConnector.authorise(_: Predicate, _: Retrieval[GrantAccess])(_ :HeaderCarrier, _: ExecutionContext)).
-      expects(*,*,*,*).returning(Future failed Upstream4xxResponse("401", 401, 401))
-  }
+  def stubAuthorisationUnauthorised()(implicit authConnector: AuthConnector): Unit =
+    (authConnector
+      .authorise(_: Predicate, _: Retrieval[GrantAccess])(_: HeaderCarrier, _: ExecutionContext))
+      .expects(*, *, *, *)
+      .returning(Future failed Upstream4xxResponse("401", 401, 401))
 }

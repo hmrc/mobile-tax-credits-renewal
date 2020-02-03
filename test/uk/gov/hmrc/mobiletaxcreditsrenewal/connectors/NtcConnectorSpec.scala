@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import javax.inject.Inject
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpecLike}
@@ -33,7 +32,7 @@ import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
 
@@ -49,7 +48,14 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
     val renewal          = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
     val renewalReference = RenewalReference("123456")
     val tcrAuthToken     = TcrAuthenticationToken("some-token")
-    val claimantDetails  = ClaimantDetails(hasPartner = false, 1, "renewalForm", nino.value, None, availableForCOCAutomation = false, "some-app-id")
+
+    val claimantDetails = ClaimantDetails(hasPartner = false,
+                                          1,
+                                          "renewalForm",
+                                          nino.value,
+                                          None,
+                                          availableForCOCAutomation = false,
+                                          "some-app-id")
 
     val claimsJson: String =
       """{
@@ -121,38 +127,81 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
         |  ]
         |}""".stripMargin
 
-    val claims200Success:                    JsValue                          = Json.parse(claimsJson)
-    lazy val http200ClaimsResponse:          Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(claims200Success)))
-    lazy val http500Response:                Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
-    lazy val http400Response:                Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
-    lazy val http404Response:                Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
-    lazy val http204Response:                Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
-    lazy val http200AuthenticateResponse:    Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
-    lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
-    lazy val response:                       Future[HttpResponse]             = http400Response
+    val claims200Success: JsValue = Json.parse(claimsJson)
+
+    lazy val http200ClaimsResponse: Future[AnyRef with HttpResponse] =
+      Future.successful(HttpResponse(200, Some(claims200Success)))
+    lazy val http500Response: Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
+    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
+    lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
+
+    lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] =
+      Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
+
+    lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] =
+      Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
+    lazy val response: Future[HttpResponse] = http400Response
 
     val serviceUrl = "someUrl"
-    val http: CoreGet with CorePost = new CoreGet with HttpGet with CorePost with HttpPost {
+
+    val http: CoreGet with CorePost = new CoreGet with HttpGet with CorePost with HttpPost with GetHttpTransport {
       override val hooks: Seq[HttpHook] = NoneRequired
 
       override def configuration: Option[Config] = None
 
-      override def doGet(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = response
+      override def doGet(
+        url:         String,
+        headers:     Seq[(String, String)] = Seq.empty
+      )(implicit hc: HeaderCarrier,
+        ec:          ExecutionContext
+      ): Future[HttpResponse] = response
 
-      override def doPost[A](url: String, body: A, headers: Seq[(String, String)])(implicit wts: Writes[A], hc: HeaderCarrier): Future[HttpResponse] =
+      override def doPost[A](
+        url:          String,
+        body:         A,
+        headers:      Seq[(String, String)]
+      )(implicit wts: Writes[A],
+        hc:           HeaderCarrier,
+        ec:           ExecutionContext
+      ): Future[HttpResponse] =
         response
 
-      override def doPostString(url: String, body: String, headers: Seq[(String, String)])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+      override def doPostString(
+        url:         String,
+        body:        String,
+        headers:     Seq[(String, String)]
+      )(implicit hc: HeaderCarrier,
+        ec:          ExecutionContext
+      ): Future[HttpResponse] = ???
 
-      override def doFormPost(url: String, body: Map[String, Seq[String]])(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+      override def doFormPost(
+        url:         String,
+        body:        Map[String, Seq[String]],
+        headers:     Seq[(String, String)] = Seq.empty
+      )(implicit hc: HeaderCarrier,
+        ec:          ExecutionContext
+      ): Future[HttpResponse] = ???
 
-      override def doEmptyPost[A](url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = ???
+      override def doEmptyPost[A](
+        url:         String,
+        headers:     Seq[(String, String)] = Seq.empty
+      )(implicit hc: HeaderCarrier,
+        ec:          ExecutionContext
+      ): Future[HttpResponse] = ???
 
       override protected def actorSystem: ActorSystem = ActorSystem()
     }
 
-    class TestNtcConnector(http: CoreGet with CorePost, runModeConfiguration: Configuration, environment: Environment)
-        extends NtcConnector(http, serviceUrl, runModeConfiguration, environment, new RunMode(runModeConfiguration, environment.mode)) {
+    class TestNtcConnector(
+      http:                 CoreGet with CorePost,
+      runModeConfiguration: Configuration,
+      environment:          Environment)
+        extends NtcConnector(http,
+                             serviceUrl,
+                             runModeConfiguration,
+                             environment,
+                             new RunMode(runModeConfiguration, environment.mode)) {
       override protected def circuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
     }
 

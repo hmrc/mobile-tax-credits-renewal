@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,23 @@ import org.joda.time.format.DateTimeFormatter
 import scala.util.Try
 
 class ClaimsDateConverter {
+
   private val formatters: Seq[DateTimeFormatter] =
     Seq(DateTimeFormat.forPattern("yyyy-MM-dd"), DateTimeFormat.forPattern("yyyyMMdd"))
 
   def convertDateFormat(date: String): Option[String] = {
-    def convert(result: Option[String], formatter: DateTimeFormatter): Option[String] = {
-      result.orElse{
+    def convert(
+      result:    Option[String],
+      formatter: DateTimeFormatter
+    ): Option[String] =
+      result.orElse {
         Try {
           Some(formatter.parseDateTime(date).toString("d/M/yyyy"))
         }.getOrElse {
           None
         }
       }
-    }
 
-    formatters.foldLeft(None:Option[String])(convert)
+    formatters.foldLeft(None: Option[String])(convert)
   }
 }

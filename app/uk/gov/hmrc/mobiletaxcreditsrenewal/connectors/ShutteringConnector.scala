@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,17 +27,22 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ShutteringConnector @Inject()(http: CoreGet, @Named("mobile-shuttering") serviceUrl: String) {
+class ShutteringConnector @Inject() (
+  http:                                   CoreGet,
+  @Named("mobile-shuttering") serviceUrl: String) {
 
   def getShutteringStatus(
-    journeyId: JourneyId
-  )(
-    implicit headerCarrier: HeaderCarrier,
+    journeyId:              JourneyId
+  )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[Shuttering] =
-    http.GET[JsValue](s"$serviceUrl/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=$journeyId").map { json =>
-      (json).as[Shuttering]
-    } recover {
+    http
+      .GET[JsValue](
+        s"$serviceUrl/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=$journeyId"
+      )
+      .map { json =>
+        (json).as[Shuttering]
+      } recover {
       case e: Upstream5xxResponse => {
         Logger.warn(s"Internal Server Error received from mobile-shuttering:\n $e \nAssuming unshuttered.")
         Shuttering.shutteringDisabled

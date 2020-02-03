@@ -5,7 +5,7 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
 object ShutteringStub {
 
-  def stubForShutteringDisabled: StubMapping = {
+  def stubForShutteringDisabled: StubMapping =
     stubFor(
       get(urlPathEqualTo("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
         .willReturn(
@@ -17,10 +17,11 @@ object ShutteringStub {
                          |  "title":     "",
                          |  "message":    ""
                          |}
-          """.stripMargin)))
-  }
+          """.stripMargin)
+        )
+    )
 
-  def stubForShutteringEnabled: StubMapping = {
+  def stubForShutteringEnabled: StubMapping =
     stubFor(
       get(urlPathEqualTo("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status"))
         .willReturn(
@@ -32,7 +33,8 @@ object ShutteringStub {
                          |  "title":     "Shuttered",
                          |  "message":   "Tax Credits Renewal is currently not available"
                          |}
-          """.stripMargin)))
-  }
+          """.stripMargin)
+        )
+    )
 
 }

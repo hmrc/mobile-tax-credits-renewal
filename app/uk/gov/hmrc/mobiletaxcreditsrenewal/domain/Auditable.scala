@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,38 +17,38 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
 trait Auditable {
-    def txmAuditType: String
-    def readableFormat : String
+  def txmAuditType:   String
+  def readableFormat: String
 
-
-  def dataForAudit(tagOverrides : Map[String,String] = auditableTagNameOverrides): Map[String, String] =  {
-
-    this.getClass.getDeclaredFields.filterNot(f => excludedAuditFields.contains(f.getName)).map {
-      field =>
+  def dataForAudit(tagOverrides: Map[String, String] = auditableTagNameOverrides): Map[String, String] =
+    this.getClass.getDeclaredFields
+      .filterNot(f => excludedAuditFields.contains(f.getName))
+      .map { field =>
         field.setAccessible(true)
-        getAuditableFieldName(field.getName, tagOverrides) ->  fieldValueMapper(field.get(this))
-    }.toMap
-  }
+        getAuditableFieldName(field.getName, tagOverrides) -> fieldValueMapper(field.get(this))
+      }
+      .toMap
 
-  private def getAuditableFieldName(fieldName : String, tagOverrides : Map[String,String]) : String = {
+  private def getAuditableFieldName(
+    fieldName:    String,
+    tagOverrides: Map[String, String]
+  ): String =
     tagOverrides.getOrElse(fieldName, fieldName)
-  }
 
-  def fieldValueMapper(fieldValue : Object) : String = {
+  def fieldValueMapper(fieldValue: Object): String =
     fieldValue match {
       case Some(a) => a.toString
-      case None => ""
-      case a => a.toString
+      case None    => ""
+      case a       => a.toString
     }
-  }
 
-  def auditableTagNameOverrides : Map[String,String]  = Map()
+  def auditableTagNameOverrides: Map[String, String] = Map()
 
-  val excludedAuditFields = List("auditableTagNameOverrides", "excludedAuditFields","txmAuditType")
+  val excludedAuditFields = List("auditableTagNameOverrides", "excludedAuditFields", "txmAuditType")
 }
 
 case class ExplicitTypeOfChange(txmAuditType: String) extends Auditable {
-  override def readableFormat: String = {
+
+  override def readableFormat: String =
     s"Type of Change=$txmAuditType"
-  }
 }

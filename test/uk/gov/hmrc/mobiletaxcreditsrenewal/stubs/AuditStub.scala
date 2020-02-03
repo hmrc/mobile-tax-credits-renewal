@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,35 +30,49 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import scala.concurrent.{ExecutionContext, Future}
 
 trait AuditStub extends MockFactory {
-  def dataEventWith(auditSource: String,
-                    auditType: String,
-                    transactionName: String,
-                    detail: JsValue): MatcherBase = {
-    argThat((dataEvent: ExtendedDataEvent) => {
+
+  def dataEventWith(
+    auditSource:     String,
+    auditType:       String,
+    transactionName: String,
+    detail:          JsValue
+  ): MatcherBase =
+    argThat { (dataEvent: ExtendedDataEvent) =>
       dataEvent.auditSource.equals(auditSource) &&
-        dataEvent.auditType.equals(auditType) &&
-        dataEvent.tags("transactionName").equals(transactionName) &&
-        dataEvent.tags.get("path").isDefined &&
-        dataEvent.tags.get("clientIP").isDefined &&
-        dataEvent.tags.get("clientPort").isDefined &&
-        dataEvent.tags.get("X-Request-ID").isDefined &&
-        dataEvent.tags.get("X-Session-ID").isDefined &&
-        dataEvent.tags.get("Unexpected").isEmpty &&
-        dataEvent.detail.equals(detail)
-    })
-  }
+      dataEvent.auditType.equals(auditType) &&
+      dataEvent.tags("transactionName").equals(transactionName) &&
+      dataEvent.tags.get("path").isDefined &&
+      dataEvent.tags.get("clientIP").isDefined &&
+      dataEvent.tags.get("clientPort").isDefined &&
+      dataEvent.tags.get("X-Request-ID").isDefined &&
+      dataEvent.tags.get("X-Session-ID").isDefined &&
+      dataEvent.tags.get("Unexpected").isEmpty &&
+      dataEvent.detail.equals(detail)
+    }
 
-  def stubAudit(auditType: String, transactionName: String, details: JsValue)(implicit auditConnector: AuditConnector): Unit = {
-    (auditConnector.sendExtendedEvent(_: ExtendedDataEvent)(_: HeaderCarrier, _: ExecutionContext)).expects(
-      dataEventWith("mobile-tax-credits-renewal", auditType, transactionName, details), *, * ).returning(Future successful Success)
-  }
+  def stubAudit(
+    auditType:               String,
+    transactionName:         String,
+    details:                 JsValue
+  )(implicit auditConnector: AuditConnector
+  ): Unit =
+    (auditConnector
+      .sendExtendedEvent(_: ExtendedDataEvent)(_: HeaderCarrier, _: ExecutionContext))
+      .expects(dataEventWith("mobile-tax-credits-renewal", auditType, transactionName, details), *, *)
+      .returning(Future successful Success)
 
-  def stubAuditSubmitRenewal(nino: Nino, renewal: TcrRenewal)(implicit auditConnector: AuditConnector): Unit = {
-    stubAudit("SubmitDeclaration", "submit-tax-credit-renewal",  obj("nino" -> nino.value, "declaration" -> renewal))
-  }
+  def stubAuditSubmitRenewal(
+    nino:                    Nino,
+    renewal:                 TcrRenewal
+  )(implicit auditConnector: AuditConnector
+  ): Unit =
+    stubAudit("SubmitDeclaration", "submit-tax-credit-renewal", obj("nino" -> nino.value, "declaration" -> renewal))
 
-  def stubAuditClaims(nino: Nino, renewalsSummary: RenewalsSummary)(implicit auditConnector: AuditConnector): Unit = {
+  def stubAuditClaims(
+    nino:                    Nino,
+    renewalsSummary:         RenewalsSummary
+  )(implicit auditConnector: AuditConnector
+  ): Unit =
     stubAudit("Renewals", "retrieve-tax-credit-renewal", toJson(renewalsSummary))
-  }
 
 }

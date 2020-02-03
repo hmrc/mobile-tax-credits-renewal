@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,12 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 import play.api.libs.json.{Json, OFormat}
 
 case class Shuttering(
-                       shuttered: Boolean,
-                       title:     Option[String] = None,
-                       message:   Option[String] = None
-                     )
+  shuttered: Boolean,
+  title:     Option[String] = None,
+  message:   Option[String] = None)
 
 case object Shuttering {
   implicit val format: OFormat[Shuttering] = Json.format[Shuttering]
 
   def shutteringDisabled = this.apply(false)
 }
-

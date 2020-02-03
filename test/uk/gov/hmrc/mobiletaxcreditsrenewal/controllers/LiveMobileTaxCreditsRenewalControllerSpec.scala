@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, ShutteringM
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matchers with MockFactory with AuthorisationStub with ShutteringMock {
+class LiveMobileTaxCreditsRenewalControllerSpec
+    extends WordSpecLike
+    with Matchers
+    with MockFactory
+    with AuthorisationStub
+    with ShutteringMock {
   implicit val authConnector: AuthConnector = mock[AuthConnector]
   private val service = mock[MobileTaxCreditsRenewalService]
   implicit val shutteringConnector: ShutteringConnector = mock[ShutteringConnector]
@@ -50,16 +55,23 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
     override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
   }
 
-  private val nino      = Nino("CS700100A")
+  private val nino = Nino("CS700100A")
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
-  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector, logger, service, L200.level, stubControllerComponents(), shutteringConnector)
+  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector,
+                                                                     logger,
+                                                                     service,
+                                                                     L200.level,
+                                                                     stubControllerComponents(),
+                                                                     shutteringConnector)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
   "renewals" should {
     lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
-      FakeRequest().withSession("AuthToken" -> "Some Header").withHeaders(acceptHeader, "Authorization" -> "Some Header")
+      FakeRequest()
+        .withSession("AuthToken" -> "Some Header")
+        .withHeaders(acceptHeader, "Authorization" -> "Some Header")
 
     "return the renewals summary from the service for an authorised user with the right nino and a L200 confidence level" in {
       val renewals = RenewalsSummary("closed", None)
@@ -100,12 +112,11 @@ class LiveMobileTaxCreditsRenewalControllerSpec extends WordSpecLike with Matche
     val certainBenefits =
       CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
     val otherIncome = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(
-      RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-      None,
-      Some(otherIncome),
-      Some(otherIncome),
-      hasChangeOfCircs = false)
+    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
+                             None,
+                             Some(otherIncome),
+                             Some(otherIncome),
+                             hasChangeOfCircs = false)
 
     val submitRenewalRequest: FakeRequest[JsValue] = FakeRequest()
       .withBody(toJson(renewal))

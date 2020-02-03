@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ShutteringConnectorSpec extends MockFactory with WordSpecLike with Matchers with FutureAwaits with DefaultAwaitTimeout {
+class ShutteringConnectorSpec
+    extends MockFactory
+    with WordSpecLike
+    with Matchers
+    with FutureAwaits
+    with DefaultAwaitTimeout {
   val mockCoreGet: CoreGet             = mock[CoreGet]
   val connector:   ShutteringConnector = new ShutteringConnector(mockCoreGet, "")
   implicit val hc: HeaderCarrier       = HeaderCarrier()
@@ -34,7 +39,12 @@ class ShutteringConnectorSpec extends MockFactory with WordSpecLike with Matcher
   def mockShutteringGet[T](f: Future[T]) =
     (mockCoreGet
       .GET(_: String)(_: HttpReads[T], _: HeaderCarrier, _: ExecutionContext))
-      .expects("/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f", *, *, *)
+      .expects(
+        "/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f",
+        *,
+        *,
+        *
+      )
       .returning(f)
 
   "getShutteredStatus" should {

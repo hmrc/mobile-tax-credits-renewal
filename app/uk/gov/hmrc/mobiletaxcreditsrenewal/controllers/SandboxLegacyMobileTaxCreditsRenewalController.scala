@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,23 +26,31 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
-  val controllerComponents: ControllerComponents
-)(
-  implicit val executionContext: ExecutionContext
-) extends LegacyMobileTaxCreditsRenewalController
+class SandboxLegacyMobileTaxCreditsRenewalController @Inject() (
+  val controllerComponents:      ControllerComponents
+)(implicit val executionContext: ExecutionContext)
+    extends LegacyMobileTaxCreditsRenewalController
     with FileResource {
 
   private final val WebServerIsDown = new Status(521)
+
   private val shuttered =
-    Json.toJson(Shuttering(shuttered = true, title = Some("Shuttered"), message = Some("Tax Credits Renewal is currently shuttered")))
+    Json.toJson(
+      Shuttering(shuttered = true,
+                 title     = Some("Shuttered"),
+                 message   = Some("Tax Credits Renewal is currently shuttered"))
+    )
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override def getRenewalAuthentication(nino: Nino, renewalReference: RenewalReference, journeyId: JourneyId): Action[AnyContent] =
+
+  override def getRenewalAuthentication(
+    nino:             Nino,
+    renewalReference: RenewalReference,
+    journeyId:        JourneyId
+  ): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Future.successful(Unauthorized)
@@ -60,10 +68,17 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
 
   private def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
 
-  private def encodedAuth(nino: Nino, tcrRenewalReference: RenewalReference): String =
+  private def encodedAuth(
+    nino:                Nino,
+    tcrRenewalReference: RenewalReference
+  ): String =
     new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
 
-  override def claimantDetails(nino: Nino, journeyId: JourneyId, claims: Option[String]): Action[AnyContent] =
+  override def claimantDetails(
+    nino:      Nino,
+    journeyId: JourneyId,
+    claims:    Option[String]
+  ): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized
@@ -73,8 +88,9 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
         case Some("SHUTTERED") => WebServerIsDown(shuttered)
         case _ =>
           val tcrAuthToken = getTcrAuthHeader(request.headers.get(HeaderKeys.tcrAuthToken))
-          val resource: String = findResource(s"/resources/claimantdetails/${nino.value}-${tcrAuthToken.extractRenewalReference.get}.json")
-            .getOrElse(throw new IllegalArgumentException("Resource not found!"))
+          val resource: String =
+            findResource(s"/resources/claimantdetails/${nino.value}-${tcrAuthToken.extractRenewalReference.get}.json")
+              .getOrElse(throw new IllegalArgumentException("Resource not found!"))
           Ok(Json.toJson(Json.parse(resource).as[ClaimantDetails]))
       })
     }
@@ -85,7 +101,10 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
       case _                         => throw new IllegalArgumentException("Failed to locate tcrAuthToken")
     }
 
-  override def fullClaimantDetails(nino: Nino, journeyId: JourneyId): Action[AnyContent] =
+  override def fullClaimantDetails(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized
@@ -100,7 +119,10 @@ class SandboxLegacyMobileTaxCreditsRenewalController @Inject()(
       })
     }
 
-  override def submitRenewal(nino: Nino, journeyId: JourneyId): Action[JsValue] =
+  override def submitRenewal(
+    nino:      Nino,
+    journeyId: JourneyId
+  ): Action[JsValue] =
     validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
       Future.successful(request.headers.get("SANDBOX-CONTROL") match {
         case Some("ERROR-401") => Unauthorized

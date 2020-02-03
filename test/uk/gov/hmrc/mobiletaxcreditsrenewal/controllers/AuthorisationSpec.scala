@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,13 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{Authorisation, Authority}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
 
-class AuthorisationSpec extends WordSpecLike with Matchers with FutureAwaits with DefaultAwaitTimeout with AuthorisationStub with MockFactory {
+class AuthorisationSpec
+    extends WordSpecLike
+    with Matchers
+    with FutureAwaits
+    with DefaultAwaitTimeout
+    with AuthorisationStub
+    with MockFactory {
   val nino          = "CS700100A"
   val incorrectNino = Nino("SC100700A")
 

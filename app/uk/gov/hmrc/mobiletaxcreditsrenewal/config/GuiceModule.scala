@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,10 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.collection.JavaConverters._
 
-class GuiceModule @Inject()(environment: Environment, configuration: Configuration) extends AbstractModule {
+class GuiceModule @Inject() (
+  environment:   Environment,
+  configuration: Configuration)
+    extends AbstractModule {
 
   val servicesConfig: ServicesConfig = new ServicesConfig(configuration, new RunMode(configuration, environment.mode))
 
@@ -41,7 +44,9 @@ class GuiceModule @Inject()(environment: Environment, configuration: Configurati
     bind(classOf[HttpClient]).to(classOf[WSHttpImpl])
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
-    bind(classOf[ApiAccess]).toInstance(ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala))
+    bind(classOf[ApiAccess]).toInstance(
+      ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala)
+    )
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")
@@ -51,8 +56,12 @@ class GuiceModule @Inject()(environment: Environment, configuration: Configurati
     bind(classOf[LoggerLike]).toInstance(Logger)
 
     bind(classOf[String]).annotatedWith(named("ntc")).toInstance(servicesConfig.baseUrl("ntc"))
-    bind(classOf[String]).annotatedWith(named("tax-credits-broker")).toInstance(servicesConfig.baseUrl("tax-credits-broker"))
-    bind(classOf[String]).annotatedWith(named("mobile-shuttering")).toInstance(servicesConfig.baseUrl("mobile-shuttering"))
+    bind(classOf[String])
+      .annotatedWith(named("tax-credits-broker"))
+      .toInstance(servicesConfig.baseUrl("tax-credits-broker"))
+    bind(classOf[String])
+      .annotatedWith(named("mobile-shuttering"))
+      .toInstance(servicesConfig.baseUrl("mobile-shuttering"))
   }
 
   /**
@@ -62,6 +71,9 @@ class GuiceModule @Inject()(environment: Environment, configuration: Configurati
   private def bindConfigInt(path: String): Unit =
     bindConstant().annotatedWith(named(path)).to(configuration.underlying.getInt(path))
 
-  private def bindConfigString(name: String, path: String): Unit =
+  private def bindConfigString(
+    name: String,
+    path: String
+  ): Unit =
     bindConstant().annotatedWith(named(name)).to(configuration.underlying.getString(path))
 }

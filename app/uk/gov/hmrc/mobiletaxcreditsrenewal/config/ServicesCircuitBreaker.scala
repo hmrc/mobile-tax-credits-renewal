@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,11 @@ import uk.gov.hmrc.circuitbreaker.{CircuitBreakerConfig, UsingCircuitBreaker}
 import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 
-class ServicesCircuitBreaker(externalServiceName: String, configuration: Configuration, runMode: RunMode) extends UsingCircuitBreaker {
+class ServicesCircuitBreaker(
+  externalServiceName: String,
+  configuration:       Configuration,
+  runMode:             RunMode)
+    extends UsingCircuitBreaker {
 
   protected lazy val rootServices = "microservice.services"
   protected lazy val services     = s"${runMode.env}.microservice.services"
@@ -33,10 +37,13 @@ class ServicesCircuitBreaker(externalServiceName: String, configuration: Configu
       .getOrElse(throw new IllegalArgumentException(s"Configuration for service $serviceName not found"))
 
   protected def circuitBreakerConfig = CircuitBreakerConfig(
-    serviceName                       = externalServiceName,
-    numberOfCallsToTriggerStateChange = config(externalServiceName).getOptional[Int]("circuitBreaker.numberOfCallsToTriggerStateChange"),
-    unavailablePeriodDuration         = config(externalServiceName).getOptional[Int]("circuitBreaker.unavailablePeriodDurationInSeconds") map (_ * 1000),
-    unstablePeriodDuration            = config(externalServiceName).getOptional[Int]("circuitBreaker.unstablePeriodDurationInSeconds") map (_ * 1000)
+    serviceName = externalServiceName,
+    numberOfCallsToTriggerStateChange =
+      config(externalServiceName).getOptional[Int]("circuitBreaker.numberOfCallsToTriggerStateChange"),
+    unavailablePeriodDuration = config(externalServiceName)
+        .getOptional[Int]("circuitBreaker.unavailablePeriodDurationInSeconds") map (_ * 1000),
+    unstablePeriodDuration = config(externalServiceName)
+        .getOptional[Int]("circuitBreaker.unstablePeriodDurationInSeconds") map (_ * 1000)
   )
 
   override protected def breakOnException(t: Throwable): Boolean = t match {

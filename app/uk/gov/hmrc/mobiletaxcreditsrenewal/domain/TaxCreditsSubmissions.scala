@@ -16,11 +16,10 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
+import java.time.{LocalDateTime, ZoneId}
+
 import com.google.inject.Singleton
 import javax.inject.{Inject, Named}
-import org.joda.time.DateTime
-import org.joda.time.DateTime.parse
-import org.joda.time.DateTimeZone.UTC
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.time.DateTimeUtils
 
@@ -60,9 +59,9 @@ trait LoadConfig {
 }
 
 trait TaxCreditsControl {
-  def toTaxCreditsSubmissions(): TaxCreditsSubmissions
+  def toTaxCreditsSubmissions: TaxCreditsSubmissions
 
-  def toTaxCreditsRenewalsState(): TaxCreditsRenewalsState
+  def toTaxCreditsRenewalsState: TaxCreditsRenewalsState
 }
 
 @Singleton
@@ -73,29 +72,17 @@ class TaxCreditsSubmissionControlConfig @Inject() (
     extends TaxCreditsControl
     with DateTimeUtils {
 
-  val submissionControl: TaxCreditsSubmissionControl =
-    TaxCreditsSubmissionControl(
-      parse(submissionStartDate).toDateTime(UTC),
-      parse(submissionEndDate).toDateTime(UTC),
-      parse(submissionEnvViewRenewalsDate).toDateTime(UTC)
-    )
+  val startDate:           LocalDateTime = LocalDateTime.parse(submissionStartDate)
+  val endDate:             LocalDateTime = LocalDateTime.parse(submissionEndDate)
+  val endViewRenewalsDate: LocalDateTime = LocalDateTime.parse(submissionEnvViewRenewalsDate)
 
   def toTaxCreditsSubmissions: TaxCreditsSubmissions = {
-    val currentTime          = now.getMillis
-    val allowSubmissions     = currentTime >= submissionControl.startMs && currentTime <= submissionControl.endMs
-    val allowViewSubmissions = currentTime >= submissionControl.startMs && currentTime <= submissionControl.endViewMs
+    val currentTime          = LocalDateTime.now(ZoneId.of("Europe/London"))
+    val allowSubmissions     = currentTime.isAfter(startDate) && currentTime.isBefore(endDate)
+    val allowViewSubmissions = currentTime.isAfter(startDate) && currentTime.isBefore(endViewRenewalsDate)
     new TaxCreditsSubmissions(allowSubmissions, allowViewSubmissions)
   }
 
   def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =
     toTaxCreditsSubmissions.toTaxCreditsRenewalsState
-}
-
-sealed case class TaxCreditsSubmissionControl(
-  startDate:           DateTime,
-  endDate:             DateTime,
-  endViewRenewalsDate: DateTime) {
-  val startMs:   Long = startDate.getMillis
-  val endMs:     Long = endDate.getMillis
-  val endViewMs: Long = endViewRenewalsDate.getMillis
 }

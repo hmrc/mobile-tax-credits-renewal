@@ -1,8 +1,8 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal
 
+import java.time.{LocalDateTime, ZoneId}
+
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone.UTC
 import play.api.libs.json.Json.{parse, toJson}
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.ws.{WSRequest, WSResponse}
@@ -14,7 +14,6 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.ShutteringStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.TaxCreditsBrokerStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
-import uk.gov.hmrc.time.DateTimeUtils
 
 class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
   protected val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
@@ -22,7 +21,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
   protected val renewal =
     TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
 
-  protected val now: DateTime = DateTimeUtils.now.withZone(UTC)
+  protected val now: LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/London"))
   val barcodeReference = RenewalReference("200000000000013")
 
   protected val submissionStateEnabledRequest: WSRequest = wsUrl(

@@ -19,7 +19,7 @@ Return Renewals Information
    
    The nino given must be a valid nino. ([http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm](http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm))
 
-   **Optional**: `journeyId=journeyId`
+   **Required**: `journeyId=journeyId`
 
    journey id provides clarity to log messages.
 

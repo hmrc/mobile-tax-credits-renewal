@@ -25,6 +25,12 @@ Return Claimant Details object
    
    The nino given must be a valid nino. ([http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm](http://www.hmrc.gov.uk/manuals/nimmanual/nim39110.htm))
 
+   **Required**:
+   
+   `journeyId=journeyId`
+   
+   journey id provides clarity to log messages.
+   
 *  **HTTP Headers**
 
    **Required:**

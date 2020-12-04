@@ -9,6 +9,16 @@ Submit renewal
 * **Method:**
 
   `POST`
+  
+*  **URL Params**
+
+     **Required**: 
+     
+     `journeyId=journeyId`
+     
+     journey id provides clarity to log messages.
+
+* **Success Response:**
 
     Example JSON post payload for renewal.
 

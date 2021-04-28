@@ -30,9 +30,8 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, Sh
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
-import uk.gov.hmrc.play.HeaderCarrierConverter
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
-import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
+import uk.gov.hmrc.play.http.HeaderCarrierConverter.fromRequest
 
 import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -103,7 +102,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
     journeyId:        JourneyId
   ): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromRequest(request)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
         withShuttering(shuttered) {
           errorWrapper(
@@ -122,7 +121,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
     claims:    Option[String] = None
   ): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromRequest(request)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
         withShuttering(shuttered) {
           errorWrapper(validateTcrAuthHeader(claims) { implicit hc =>
@@ -153,7 +152,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
     journeyId: JourneyId
   ): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromRequest(request)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
         withShuttering(shuttered) {
 
@@ -299,7 +298,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
   ): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) {
       implicit request =>
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromRequest(request)
         shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
           withShuttering(shuttered) {
             request.body
@@ -332,7 +331,7 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
 
   override def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
-      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromRequest(request)
       errorWrapper(Future {
         taxCreditsControl.toTaxCreditsRenewalsState
       }.map { submissionState =>

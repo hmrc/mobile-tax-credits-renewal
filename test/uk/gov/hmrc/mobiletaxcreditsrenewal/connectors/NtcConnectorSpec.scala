@@ -30,7 +30,6 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.hooks.HttpHook
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -143,18 +142,17 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
       Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
     lazy val response: Future[HttpResponse] = http400Response
 
-    val serviceUrl = "someUrl"
+    val serviceUrl = "https://localhost"
 
     val http: CoreGet with CorePost = new CoreGet with HttpGet with CorePost with HttpPost with GetHttpTransport {
       override val hooks: Seq[HttpHook] = NoneRequired
 
-      override def configuration: Option[Config] = None
+      override def configuration: Config = Configuration.load(Environment.simple()).underlying
 
       override def doGet(
         url:         String,
         headers:     Seq[(String, String)] = Seq.empty
-      )(implicit hc: HeaderCarrier,
-        ec:          ExecutionContext
+      )(implicit ec: ExecutionContext
       ): Future[HttpResponse] = response
 
       override def doPost[A](
@@ -162,7 +160,6 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
         body:         A,
         headers:      Seq[(String, String)]
       )(implicit wts: Writes[A],
-        hc:           HeaderCarrier,
         ec:           ExecutionContext
       ): Future[HttpResponse] =
         response
@@ -171,23 +168,20 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
         url:         String,
         body:        String,
         headers:     Seq[(String, String)]
-      )(implicit hc: HeaderCarrier,
-        ec:          ExecutionContext
+      )(implicit ec: ExecutionContext
       ): Future[HttpResponse] = ???
 
       override def doFormPost(
         url:         String,
         body:        Map[String, Seq[String]],
         headers:     Seq[(String, String)] = Seq.empty
-      )(implicit hc: HeaderCarrier,
-        ec:          ExecutionContext
+      )(implicit ec: ExecutionContext
       ): Future[HttpResponse] = ???
 
       override def doEmptyPost[A](
         url:         String,
         headers:     Seq[(String, String)] = Seq.empty
-      )(implicit hc: HeaderCarrier,
-        ec:          ExecutionContext
+      )(implicit ec: ExecutionContext
       ): Future[HttpResponse] = ???
 
       override protected def actorSystem: ActorSystem = ActorSystem()
@@ -197,11 +191,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
       http:                 CoreGet with CorePost,
       runModeConfiguration: Configuration,
       environment:          Environment)
-        extends NtcConnector(http,
-                             serviceUrl,
-                             runModeConfiguration,
-                             environment,
-                             new RunMode(runModeConfiguration, environment.mode)) {
+        extends NtcConnector(http, serviceUrl, runModeConfiguration, environment) {
       override protected def circuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
     }
 

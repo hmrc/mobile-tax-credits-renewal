@@ -38,9 +38,11 @@ class ShutteringConnectorSpec
 
   def mockShutteringGet[T](f: Future[T]) =
     (mockCoreGet
-      .GET(_: String)(_: HttpReads[T], _: HeaderCarrier, _: ExecutionContext))
+      .GET(_: String, _: Seq[(String, String)], _: Seq[(String, String)])(_: HttpReads[T], _: HeaderCarrier, _: ExecutionContext))
       .expects(
         "/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f",
+        *,
+        *,
         *,
         *,
         *

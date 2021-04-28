@@ -17,7 +17,6 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.LoggerLike
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc._
 import uk.gov.hmrc.api.sandbox.FileResource
@@ -29,7 +28,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SandboxMobileTaxCreditsRenewalController @Inject() (
-  val logger:                    LoggerLike,
   val controllerComponents:      ControllerComponents
 )(implicit val executionContext: ExecutionContext)
     extends MobileTaxCreditsRenewalController

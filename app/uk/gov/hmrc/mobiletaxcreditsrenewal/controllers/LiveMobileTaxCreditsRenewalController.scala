@@ -31,8 +31,8 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, Sh
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
-import uk.gov.hmrc.play.bootstrap.controller.BackendBaseController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
+import uk.gov.hmrc.play.http.HeaderCarrierConverter.fromRequest
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -85,7 +85,7 @@ class LiveMobileTaxCreditsRenewalController @Inject() (
     journeyId: JourneyId
   ): Action[AnyContent] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async { implicit request =>
-      implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+      implicit val hc: HeaderCarrier = fromRequest(request)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
         withShuttering(shuttered) {
           errorWrapper(
@@ -103,7 +103,7 @@ class LiveMobileTaxCreditsRenewalController @Inject() (
   ): Action[JsValue] =
     validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) {
       implicit request =>
-        implicit val hc: HeaderCarrier = fromHeadersAndSession(request.headers, None)
+        implicit val hc: HeaderCarrier = fromRequest(request)
         shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
           withShuttering(shuttered) {
             request.body

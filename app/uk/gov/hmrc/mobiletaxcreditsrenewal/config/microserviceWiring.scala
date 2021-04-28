@@ -26,7 +26,7 @@ import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.Audit
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.play.http.ws._
 
 trait Hooks extends HttpHooks with HttpAuditing {
@@ -47,7 +47,7 @@ class WSHttpImpl @Inject() (
     with WSPatch
     with Hooks {
 
-  override protected def configuration: Option[Config] = Some(config.underlying)
+  override protected def configuration: Config = config.underlying
 }
 
 class MicroserviceAudit @Inject() (

@@ -41,14 +41,10 @@ class SandboxMobileTaxCreditsRenewalControllerSpec
     with MockFactory
     with FileResource {
 
-  private val logger = new LoggerLike {
-    override val logger: Logger = getLogger("SandboxMobileTaxCreditsRenewalController")
-  }
-
   private val nino = Nino("CS700100A")
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
-  private val controller = new SandboxMobileTaxCreditsRenewalController(logger, stubControllerComponents())
+  private val controller = new SandboxMobileTaxCreditsRenewalController(stubControllerComponents())
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 

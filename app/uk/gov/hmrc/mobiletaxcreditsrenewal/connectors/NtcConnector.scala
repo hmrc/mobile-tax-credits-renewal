@@ -23,7 +23,6 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
-import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,9 +31,8 @@ class NtcConnector @Inject() (
   http:                     CoreGet with CorePost,
   @Named("ntc") serviceUrl: String,
   val runModeConfiguration: Configuration,
-  environment:              Environment,
-  runMode:                  RunMode)
-    extends ServicesCircuitBreaker("ntc", runModeConfiguration, runMode) {
+  environment:              Environment)
+    extends ServicesCircuitBreaker("ntc", runModeConfiguration) {
 
   val externalServiceName = "ntc"
 

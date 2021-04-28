@@ -43,14 +43,12 @@ class ShutteringConnector @Inject() (
       .map { json =>
         (json).as[Shuttering]
       } recover {
-      case e: Upstream5xxResponse => {
+      case e: Upstream5xxResponse =>
         Logger.warn(s"Internal Server Error received from mobile-shuttering:\n $e \nAssuming unshuttered.")
         Shuttering.shutteringDisabled
-      }
 
-      case e => {
+      case e =>
         Logger.warn(s"Call to mobile-shuttering failed:\n $e \nAssuming unshuttered.")
         Shuttering.shutteringDisabled
-      }
     }
 }

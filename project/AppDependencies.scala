@@ -4,9 +4,9 @@ private object AppDependencies {
   import play.core.PlayVersion
   import play.sbt.PlayImport._
 
-  private val bootstrap26Version       = "1.3.0"
+  private val bootstrap26Version       = "4.3.0"
   private val domainVersion            = "5.6.0-play-26"
-  private val playHmrcApiVersion       = "4.1.0-play-26"
+  private val playHmrcApiVersion       = "6.2.0-play-26"
   private val playUIVersion            = "8.7.0-play-26"
   private val circuitBreakerVersion    = "3.5.0"
   private val wiremockVersion          = "2.21.0"
@@ -15,15 +15,17 @@ private object AppDependencies {
   private val pegdownVersion           = "1.6.0"
   private val scalaMockVersion         = "4.1.0"
   private val scalaTestVersion         = "3.0.8"
+  private val timeVersion              = "3.19.0"
 
   val compile = Seq(
     ws,
-    "uk.gov.hmrc" %% "bootstrap-play-26"        % bootstrap26Version,
-    "uk.gov.hmrc" %% "play-hmrc-api"            % playHmrcApiVersion,
-    "uk.gov.hmrc" %% "domain"                   % domainVersion,
-    "uk.gov.hmrc" %% "reactive-circuit-breaker" % circuitBreakerVersion,
-    "uk.gov.hmrc" %% "play-ui"                  % playUIVersion,
-    "eu.timepit"  %% "refined"                  % refinedVersion
+    "uk.gov.hmrc" %% "bootstrap-backend-play-26" % bootstrap26Version,
+    "uk.gov.hmrc" %% "play-hmrc-api"             % playHmrcApiVersion,
+    "uk.gov.hmrc" %% "domain"                    % domainVersion,
+    "uk.gov.hmrc" %% "reactive-circuit-breaker"  % circuitBreakerVersion,
+    "uk.gov.hmrc" %% "play-ui"                   % playUIVersion,
+    "eu.timepit"  %% "refined"                   % refinedVersion,
+    "uk.gov.hmrc" %% "time"                      % timeVersion
   )
 
   trait TestDependencies {
@@ -37,10 +39,11 @@ private object AppDependencies {
       new TestDependencies {
 
         override lazy val test = Seq(
-          "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
-          "org.scalatest"     %% "scalatest" % scalaTestVersion    % scope,
-          "org.scalamock"     %% "scalamock" % scalaMockVersion    % scope,
-          "org.pegdown"       % "pegdown"    % pegdownVersion      % scope
+          "com.typesafe.play" %% "play-test"              % PlayVersion.current % scope,
+          "org.scalatest"     %% "scalatest"              % scalaTestVersion    % scope,
+          "org.scalamock"     %% "scalamock"              % scalaMockVersion    % scope,
+          "org.pegdown"       % "pegdown"                 % pegdownVersion      % scope,
+          "uk.gov.hmrc"       %% "bootstrap-test-play-26" % bootstrap26Version  % scope
         )
       }.test
   }

@@ -19,21 +19,17 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 import play.api.Configuration
 import uk.gov.hmrc.circuitbreaker.{CircuitBreakerConfig, UsingCircuitBreaker}
 import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
-import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 class ServicesCircuitBreaker(
   externalServiceName: String,
-  configuration:       Configuration,
-  runMode:             RunMode)
+  configuration:       Configuration)
     extends UsingCircuitBreaker {
 
   protected lazy val rootServices = "microservice.services"
-  protected lazy val services     = s"${runMode.env}.microservice.services"
 
   protected def config(serviceName: String): Configuration =
     configuration
       .getOptional[Configuration](s"$rootServices.$serviceName")
-      .orElse(configuration.getOptional[Configuration](s"$services.$serviceName"))
       .getOrElse(throw new IllegalArgumentException(s"Configuration for service $serviceName not found"))
 
   protected def circuitBreakerConfig = CircuitBreakerConfig(

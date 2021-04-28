@@ -21,6 +21,7 @@ import com.typesafe.config.Config
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpecLike}
+import play.api.{Configuration, Environment}
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.Helpers._
@@ -57,18 +58,17 @@ class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with Scal
     lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
     lazy val response:        Future[HttpResponse]             = http200EmployedEarningsRtiResponse
 
-    val serviceUrl = "someUrl"
+    val serviceUrl = "https://localhost"
 
     val http: CoreGet = new CoreGet with HttpGet with GetHttpTransport {
       override val hooks: Seq[HttpHook] = NoneRequired
 
-      override def configuration: Option[Config] = None
+      override def configuration: Config = Configuration.load(Environment.simple()).underlying
 
       override def doGet(
         url:         String,
         headers:     Seq[(String, String)] = Seq.empty
-      )(implicit hc: HeaderCarrier,
-        ec:          ExecutionContext
+      )(implicit ec:          ExecutionContext
       ): Future[HttpResponse] = response
 
       override protected def actorSystem: ActorSystem = ActorSystem()

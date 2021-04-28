@@ -29,7 +29,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SandboxMobileTaxCreditsRenewalController @Inject() (
-  val logger:                    LoggerLike,
   val controllerComponents:      ControllerComponents
 )(implicit val executionContext: ExecutionContext)
     extends MobileTaxCreditsRenewalController

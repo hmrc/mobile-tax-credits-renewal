@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.{CoreGet, CorePost}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{TaxCreditsControl, TaxCreditsSubmissionControlConfig}
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.collection.JavaConverters._
@@ -35,7 +35,7 @@ class GuiceModule @Inject() (
   configuration: Configuration)
     extends AbstractModule {
 
-  val servicesConfig: ServicesConfig = new ServicesConfig(configuration, new RunMode(configuration, environment.mode))
+  val servicesConfig: ServicesConfig = new ServicesConfig(configuration)
 
   override def configure(): Unit = {
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])

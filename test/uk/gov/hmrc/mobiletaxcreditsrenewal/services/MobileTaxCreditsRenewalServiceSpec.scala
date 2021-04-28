@@ -54,7 +54,6 @@ class MobileTaxCreditsRenewalServiceSpec
   implicit val auditConnector:            AuditConnector            = mock[AuditConnector]
   implicit val taxCreditsControl:         TaxCreditsControl         = mock[TaxCreditsControl]
   implicit val configuration:             Configuration             = mock[Configuration]
-  implicit val logger:                    TestLoggerLike            = new TestLoggerLike()
 
   val nino           = Nino("CS700100A")
   val taxCreditsNino = TaxCreditsNino(nino.nino)

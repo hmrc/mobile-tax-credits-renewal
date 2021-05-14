@@ -24,7 +24,7 @@ import play.api.mvc._
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableException}
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableException, Upstream4xxResponse, Upstream5xxResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, ShutteredCheck}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
@@ -66,7 +66,6 @@ trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with
 @Singleton
 class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
   override val authConnector:                                   AuthConnector,
-  val logger:                                                   LoggerLike,
   val service:                                                  MobileTaxCreditsRenewalService,
   val taxCreditsControl:                                        TaxCreditsControl,
   @Named("controllers.confidenceLevel") override val confLevel: Int,
@@ -80,19 +79,20 @@ class LiveLegacyMobileTaxCreditsRenewalController @Inject() (
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
 
   private val tcrAuthToken = "tcrAuthToken"
+  override val logger: Logger = Logger(this.getClass)
 
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
   def errorWrapper(func: => Future[mvc.Result]): Future[Result] =
     func.recover {
-      case _: NotFoundException => notFound
+      case ex: UpstreamErrorResponse if ex.statusCode == NOT_FOUND => notFound
 
-      case ex: ServiceUnavailableException =>
-        Logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
+      case ex: UpstreamErrorResponse if ex.statusCode == SERVICE_UNAVAILABLE =>
+        logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
         Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
 
       case e: Throwable =>
-        Logger.error(s"Internal server error: ${e.getMessage}", e)
+        logger.error(s"Internal server error: ${e.getMessage}", e)
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 

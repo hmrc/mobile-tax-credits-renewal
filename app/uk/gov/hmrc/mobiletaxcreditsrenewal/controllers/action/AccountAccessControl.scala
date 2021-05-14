@@ -34,6 +34,7 @@ trait AccountAccessControl extends Results with Authorisation {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   lazy val requiresAuth: Boolean = true
+  val logger: Logger = Logger(this.getClass)
 
   def invokeAuthBlock[A](
     request: Request[A],
@@ -48,19 +49,19 @@ trait AccountAccessControl extends Results with Authorisation {
       }
       .recover {
         case _: Upstream4xxResponse =>
-          Logger.info("Unauthorized! Failed to grant access since 4xx response!")
+          logger.info("Unauthorized! Failed to grant access since 4xx response!")
           Unauthorized(toJson(ErrorUnauthorizedMicroService))
 
         case _: NinoNotFoundOnAccount =>
-          Logger.info("Unauthorized! NINO not found on account!")
+          logger.info("Unauthorized! NINO not found on account!")
           Forbidden(toJson(ErrorForbidden))
 
         case _: FailToMatchTaxIdOnAuth =>
-          Logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
+          logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
           Forbidden(toJson(ErrorForbidden))
 
         case _: AccountWithLowCL =>
-          Logger.info("Unauthorized! Account with low CL!")
+          logger.info("Unauthorized! Account with low CL!")
           Forbidden(toJson(ErrorForbidden))
       }
   }

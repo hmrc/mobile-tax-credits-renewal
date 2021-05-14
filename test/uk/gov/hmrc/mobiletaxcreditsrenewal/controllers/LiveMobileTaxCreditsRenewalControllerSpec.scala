@@ -59,7 +59,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
   private val controller = new LiveMobileTaxCreditsRenewalController(authConnector,
-                                                                     logger,
                                                                      service,
                                                                      L200.level,
                                                                      stubControllerComponents(),
@@ -92,7 +91,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     }
 
     "return forbidden for a user with L100 confidence level" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L100)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
       status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 403
     }
 
@@ -140,7 +139,7 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     }
 
     "return forbidden for a user with L100 confidence level" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L100)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
       status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
     }
 

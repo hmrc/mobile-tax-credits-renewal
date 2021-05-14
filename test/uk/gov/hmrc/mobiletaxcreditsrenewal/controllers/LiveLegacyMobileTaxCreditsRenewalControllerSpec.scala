@@ -32,7 +32,7 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.ConfidenceLevel._
 import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, UpstreamErrorResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
@@ -55,21 +55,16 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
   implicit val service:             MobileTaxCreditsRenewalService = mock[MobileTaxCreditsRenewalService]
   implicit val shutteringConnector: ShutteringConnector            = mock[ShutteringConnector]
 
-  private val logger = new LoggerLike {
-    override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
-  }
-
   private val nino          = Nino("CS700100A")
   private val nino2         = Nino("CS700101A")
   private val incorrectNino = Nino("SC100700A")
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
   private val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
-  private val notFoundException: Future[Nothing] = Future failed new NotFoundException("cant find it")
+  private val notFoundException: Future[Nothing] = Future failed UpstreamErrorResponse("Not Found", NOT_FOUND)
   private val forbidden:         JsValue         = parse("""{"code":"FORBIDDEN","message":"Forbidden"}""")
 
   private val controller =
     new LiveLegacyMobileTaxCreditsRenewalController(authConnector,
-                                                    logger,
                                                     service,
                                                     mockControlConfig,
                                                     L200.level,
@@ -157,7 +152,7 @@ class LiveLegacyMobileTaxCreditsRenewalControllerSpec
     }
 
     "return forbidden when authority record has a low CL" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L100)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
 
       val result = controller.getRenewalAuthentication(nino, renewalReference, journeyId).apply(fakeRequest)
       status(result)        shouldBe 403

@@ -23,6 +23,7 @@ import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.{CoreGet, HeaderCarrier, Upstream5xxResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,6 +31,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ShutteringConnector @Inject() (
   http:                                   CoreGet,
   @Named("mobile-shuttering") serviceUrl: String) {
+
+  val logger: Logger = Logger(this.getClass)
 
   def getShutteringStatus(
     journeyId:              JourneyId
@@ -44,11 +47,11 @@ class ShutteringConnector @Inject() (
         (json).as[Shuttering]
       } recover {
       case e: Upstream5xxResponse =>
-        Logger.warn(s"Internal Server Error received from mobile-shuttering:\n $e \nAssuming unshuttered.")
+        logger.warn(s"Internal Server Error received from mobile-shuttering:\n $e \nAssuming unshuttered.")
         Shuttering.shutteringDisabled
 
       case e =>
-        Logger.warn(s"Call to mobile-shuttering failed:\n $e \nAssuming unshuttered.")
+        logger.warn(s"Call to mobile-shuttering failed:\n $e \nAssuming unshuttered.")
         Shuttering.shutteringDisabled
     }
 }

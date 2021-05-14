@@ -17,10 +17,12 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import com.google.inject.{Inject, Singleton}
+
 import javax.inject.Named
 import play.api.Logger
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.http.{CoreGet, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{EmployedEarningsRti, TaxCreditsNino}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,6 +31,7 @@ class TaxCreditsBrokerConnector @Inject() (
   http:                                    CoreGet,
   @Named("tax-credits-broker") serviceUrl: String) {
 
+  val logger: Logger = Logger(this.getClass)
   val externalServiceName = "tax-credits-broker"
 
   def employedEarningsRti(
@@ -38,10 +41,10 @@ class TaxCreditsBrokerConnector @Inject() (
   ): Future[Option[EmployedEarningsRti]] =
     http.GET[Option[EmployedEarningsRti]](s"$serviceUrl/tcs/${nino.value}/employed-earnings-rti") recover {
       case e: NotFoundException =>
-        Logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
+        logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
         None
       case e: Exception =>
-        Logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
+        logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
         None
     }
 

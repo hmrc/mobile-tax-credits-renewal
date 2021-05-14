@@ -17,12 +17,13 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import com.google.inject.{Inject, Singleton}
+
 import javax.inject.Named
-import play.Logger
-import play.api.{Configuration, Environment}
-import uk.gov.hmrc.http._
+import play.api.{Configuration, Environment, Logger}
+import uk.gov.hmrc.http.{BadRequestException, CoreGet, CorePost, HeaderCarrier, HttpResponse, NotFoundException}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, LegacyClaims, RenewalReference, TaxCreditsNino, TcrAuthenticationToken, TcrRenewal}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,6 +34,8 @@ class NtcConnector @Inject() (
   val runModeConfiguration: Configuration,
   environment:              Environment)
     extends ServicesCircuitBreaker("ntc", runModeConfiguration) {
+
+  val logger: Logger = Logger(this.getClass)
 
   val externalServiceName = "ntc"
 
@@ -47,7 +50,7 @@ class NtcConnector @Inject() (
       status:  Int,
       message: String
     ): Unit =
-      Logger.info(s"Response from tcs auth service $status and message $message.")
+      logger.info(s"Response from tcs auth service $status and message $message.")
 
     withCircuitBreaker(
       http

@@ -64,7 +64,6 @@ class MobileTaxCreditsRenewalServiceSpec
                                                    auditConnector,
                                                    configuration,
                                                    taxCreditsControl,
-                                                   logger,
                                                    "mobile-tax-credits-renewal")
 
   "Submit renewal" should {

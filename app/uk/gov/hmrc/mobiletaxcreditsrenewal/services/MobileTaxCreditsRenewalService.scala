@@ -20,7 +20,7 @@ import com.google.inject.{Inject, Singleton}
 import javax.inject.Named
 import play.api.libs.json.Json.{obj, toJson}
 import play.api.mvc.Request
-import play.api.{Configuration, Logger, LoggerLike}
+import play.api.{Configuration, Logger}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors._
@@ -43,12 +43,12 @@ class MobileTaxCreditsRenewalService @Inject() (
   val auditConnector:                    AuditConnector,
   val appNameConfiguration:              Configuration,
   val taxCreditsSubmissionControlConfig: TaxCreditsControl,
-  val logger:                            LoggerLike,
   @Named("appName") val appName:         String)
     extends Auditor
     with RenewalStatus {
 
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
+  override val logger: Logger = Logger(this.getClass)
 
   def renewals(
     nino:                   Nino,
@@ -125,7 +125,7 @@ class MobileTaxCreditsRenewalService @Inject() (
       def reformatDateAndLogErrors(maybeDateString: Option[String]): Option[String] =
         maybeDateString.flatMap { dateString =>
           dateConverter.convertDateFormat(dateString).orElse {
-            Logger
+            logger
               .error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
             None
           }
@@ -223,7 +223,7 @@ class MobileTaxCreditsRenewalService @Inject() (
     def reformatDateAndLogErrors(maybeDateString: Option[String]): Option[String] =
       maybeDateString.flatMap { dateString =>
         dateConverter.convertDateFormat(dateString).orElse {
-          Logger.error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
+          logger.error(s"Failed to convert input date $dateString for NINO ${nino.value}. Removing date from response!")
           None
         }
       }
@@ -274,6 +274,8 @@ trait RenewalStatus {
   val awaitingBarcode      = "AWAITING_BARCODE"
   val no_barcode           = "000000000000000"
 
+  val logger: Logger = Logger(this.getClass)
+
   val transformations: List[RenewalStatusTransform] = List[RenewalStatusTransform](
     RenewalStatusTransform("NOT_SUBMITTED", Seq("DISREGARD", "UNKNOWN")),
     RenewalStatusTransform(
@@ -293,7 +295,7 @@ trait RenewalStatus {
   )
 
   def defaultRenewalStatusReturned(returned: String): String = {
-    Logger.warn(s"Failed to resolve renewalStatus $returned against configuration! Returning default status.")
+    logger.warn(s"Failed to resolve renewalStatus $returned against configuration! Returning default status.")
     defaultRenewalStatus
   }
 

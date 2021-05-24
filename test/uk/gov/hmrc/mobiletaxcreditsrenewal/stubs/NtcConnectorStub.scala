@@ -36,26 +36,6 @@ trait NtcConnectorStub extends MockFactory {
       .expects(nino, renewalReference, *, *)
       .returning(Future successful Some(token))
 
-  def stubAuthenticateRenewalFailure(
-    nino:                  TaxCreditsNino,
-    renewalReference:      RenewalReference
-  )(implicit ntcConnector: NtcConnector
-  ): Unit =
-    (ntcConnector
-      .authenticateRenewal(_: TaxCreditsNino, _: RenewalReference)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, renewalReference, *, *)
-      .returning(Future failed new RuntimeException())
-
-  def stubClaimantClaims(
-    nino:                  TaxCreditsNino,
-    response:              Claims
-  )(implicit ntcConnector: NtcConnector
-  ): Unit =
-    (ntcConnector
-      .claimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, *, *)
-      .returning(Future successful response)
-
   def stubClaimantDetails(
     nino:                  TaxCreditsNino,
     claimantDetails:       ClaimantDetails
@@ -66,29 +46,4 @@ trait NtcConnectorStub extends MockFactory {
       .expects(nino, *, *)
       .returning(Future successful claimantDetails)
 
-  def stubClaimantDetailsFailure(nino: TaxCreditsNino)(implicit ntcConnector: NtcConnector): Unit =
-    (ntcConnector
-      .claimantDetails(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, *, *)
-      .returning(Future failed new RuntimeException())
-
-  def stubSubmitRenewals(
-    nino:                  TaxCreditsNino,
-    response:              Int
-  )(implicit ntcConnector: NtcConnector
-  ): Unit =
-    (ntcConnector
-      .submitRenewal(_: TaxCreditsNino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, *, *, *)
-      .returning(Future successful response)
-
-  def stubSubmitRenewalsFailure(
-    nino:                  TaxCreditsNino,
-    e:                     RuntimeException = new RuntimeException()
-  )(implicit ntcConnector: NtcConnector
-  ): Unit =
-    (ntcConnector
-      .submitRenewal(_: TaxCreditsNino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, *, *, *)
-      .returning(Future failed e)
 }

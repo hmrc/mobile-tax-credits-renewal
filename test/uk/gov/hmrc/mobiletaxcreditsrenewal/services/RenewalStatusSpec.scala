@@ -18,7 +18,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Claim, Household, Renewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Household, Claim, Renewal}
 
 class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
 
@@ -31,44 +31,44 @@ class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
 
   "Renewal status" should {
     "resolve to NOT_SUBMITTED" in {
-      renewalStatus.resolveStatus(claim(Some("DISREGARD"))) shouldBe "NOT_SUBMITTED"
-      renewalStatus.resolveStatus(claim(Some("UNKNOWN")))   shouldBe "NOT_SUBMITTED"
+      renewalStatus.legacyResolveStatus(claim(Some("DISREGARD"))) shouldBe "NOT_SUBMITTED"
+      renewalStatus.legacyResolveStatus(claim(Some("UNKNOWN")))   shouldBe "NOT_SUBMITTED"
     }
 
     "resolve to SUBMITTED_AND_PROCESSING" in {
-      renewalStatus.resolveStatus(claim(Some("S17 LOGGED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("SUPERCEDED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("PARTIAL CAPTURE")))                    shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("AWAITING PROCESS")))                   shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("INHIBITED")))                          shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("AWAITING CHANGE OF CIRCUMSTANCES")))   shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("1 REPLY FROM 2 APPLICANT HOUSEHOLD"))) shouldBe "SUBMITTED_AND_PROCESSING"
-      renewalStatus.resolveStatus(claim(Some("DUPLICATE")))                          shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("S17 LOGGED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("SUPERCEDED")))                         shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("PARTIAL CAPTURE")))                    shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("AWAITING PROCESS")))                   shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("INHIBITED")))                          shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("AWAITING CHANGE OF CIRCUMSTANCES")))   shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("1 REPLY FROM 2 APPLICANT HOUSEHOLD"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("DUPLICATE")))                          shouldBe "SUBMITTED_AND_PROCESSING"
     }
 
     "resolve to COMPLETE" in {
-      renewalStatus.resolveStatus(claim(Some("REPLY USED FOR FINALISATION"))) shouldBe "COMPLETE"
-      renewalStatus.resolveStatus(claim(Some("SYSTEM FINALISED")))            shouldBe "COMPLETE"
+      renewalStatus.legacyResolveStatus(claim(Some("REPLY USED FOR FINALISATION"))) shouldBe "COMPLETE"
+      renewalStatus.legacyResolveStatus(claim(Some("SYSTEM FINALISED")))            shouldBe "COMPLETE"
     }
 
     "handle unknown status as NOT_SUBMITTED" in {
-      renewalStatus.resolveStatus(claim(None))        shouldBe "NOT_SUBMITTED"
-      renewalStatus.resolveStatus(claim(Some("")))    shouldBe "NOT_SUBMITTED"
-      renewalStatus.resolveStatus(claim(Some("foo"))) shouldBe "NOT_SUBMITTED"
+      renewalStatus.legacyResolveStatus(claim(None))        shouldBe "NOT_SUBMITTED"
+      renewalStatus.legacyResolveStatus(claim(Some("")))    shouldBe "NOT_SUBMITTED"
+      renewalStatus.legacyResolveStatus(claim(Some("foo"))) shouldBe "NOT_SUBMITTED"
     }
 
     "handles awaiting barcode" in {
       val noBarcodeClaim = claim().copy(household = household.copy(barcodeReference = "000000000000000"))
 
-      renewalStatus.resolveStatus(noBarcodeClaim) shouldBe "AWAITING_BARCODE"
+      renewalStatus.legacyResolveStatus(noBarcodeClaim) shouldBe "AWAITING_BARCODE"
     }
 
     "transform case insensitively" in {
-      renewalStatus.resolveStatus(claim(Some("SuPeRcEdEd"))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("SuPeRcEdEd"))) shouldBe "SUBMITTED_AND_PROCESSING"
     }
 
     "transform ignoring whitespace" in {
-      renewalStatus.resolveStatus(claim(Some("   SUPERCEDED   "))) shouldBe "SUBMITTED_AND_PROCESSING"
+      renewalStatus.legacyResolveStatus(claim(Some("   SUPERCEDED   "))) shouldBe "SUBMITTED_AND_PROCESSING"
     }
   }
 }

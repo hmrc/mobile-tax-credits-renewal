@@ -1,9 +1,8 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalReference, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 
 object NtcStub {
   val applicationId = "198765432134566"
@@ -190,23 +189,4 @@ object NtcStub {
   def claimantDetailsAreNotFoundFor(nino: Nino): Unit =
     stubFor(get(urlPathEqualTo(s"/tcs/${nino.value}/claimant-details")).willReturn(aResponse().withStatus(404)))
 
-  def renewalIsSuccessful(
-    nino:        Nino,
-    renewalData: TcrRenewal
-  ): Unit =
-    stubFor(
-      post(urlEqualTo(s"/tcs/${nino.value}/renewal"))
-        .withRequestBody(equalToJson(toJson(renewalData).toString(), true, false))
-        .willReturn(aResponse().withStatus(200))
-    )
-
-  def renewalFails(
-    nino:        Nino,
-    renewalData: TcrRenewal
-  ): Unit =
-    stubFor(
-      post(urlEqualTo(s"/tcs/${nino.value}/renewal"))
-        .withRequestBody(equalToJson(toJson(renewalData).toString(), true, false))
-        .willReturn(aResponse().withStatus(500))
-    )
 }

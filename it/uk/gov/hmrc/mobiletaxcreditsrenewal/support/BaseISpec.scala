@@ -28,8 +28,6 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrAuthenticationToken.basicAuthString
 
-import scala.language.postfixOps
-
 class BaseISpec
     extends WordSpecLike
     with Matchers

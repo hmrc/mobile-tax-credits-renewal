@@ -20,10 +20,10 @@ import com.google.inject.{Inject, Singleton}
 
 import javax.inject.Named
 import play.api.{Configuration, Environment, Logger}
-import uk.gov.hmrc.http.{BadRequestException, CoreGet, CorePost, HeaderCarrier, HttpResponse, NotFoundException}
+import uk.gov.hmrc.http.{BadRequestException, CoreGet, CorePost, HeaderCarrier, NotFoundException}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, LegacyClaims, RenewalReference, TaxCreditsNino, TcrAuthenticationToken, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, RenewalReference, TaxCreditsNino, TcrAuthenticationToken}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -85,26 +85,7 @@ class NtcConnector @Inject() (
     nino:                   TaxCreditsNino
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
-  ): Future[LegacyClaims] =
-    withCircuitBreaker(http.GET[LegacyClaims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
-
-  def submitRenewal(
-    nino:                   TaxCreditsNino,
-    renewalData:            TcrRenewal
-  )(implicit headerCarrier: HeaderCarrier,
-    ex:                     ExecutionContext
-  ): Future[Int] = {
-    val uri = s"$serviceUrl/tcs/${nino.taxCreditsNino}/renewal"
-    withCircuitBreaker(
-      http
-        .POST[TcrRenewal, HttpResponse](uri, renewalData, Seq())
-        .map { response =>
-          response.status match {
-            case x if x >= 200 && x < 300 => x
-            case _                        => throw new RuntimeException("Unsupported response code: " + response.status)
-          }
-        }
-    )
-  }
+  ): Future[Claims] =
+    withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
 }

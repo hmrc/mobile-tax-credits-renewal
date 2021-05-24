@@ -26,17 +26,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait MobileTaxCreditsRenewalServiceStub extends MockFactory {
 
-  def stubAuthRenewalResponse(
-    response:                                Option[TcrAuthenticationToken],
-    nino:                                    Nino,
-    renewalReference:                        RenewalReference
-  )(implicit mobileTaxCreditsRenewalService: MobileTaxCreditsRenewalService
-  ): Unit =
-    (mobileTaxCreditsRenewalService
-      .authenticateRenewal(_: Nino, _: RenewalReference)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, renewalReference, *, *)
-      .returning(Future successful response)
-
   def stubClaimantDetailsResponse(
     response:                                ClaimantDetails,
     nino:                                    Nino
@@ -48,8 +37,8 @@ trait MobileTaxCreditsRenewalServiceStub extends MockFactory {
       .returning(Future successful response)
 
   def stubServiceClaimantClaims(
-    claims:                                  LegacyClaims,
-    nino:                                    Nino
+                                 claims:                                  Claims,
+                                 nino:                                    Nino
   )(implicit mobileTaxCreditsRenewalService: MobileTaxCreditsRenewalService
   ): Unit =
     (mobileTaxCreditsRenewalService
@@ -67,16 +56,6 @@ trait MobileTaxCreditsRenewalServiceStub extends MockFactory {
       .authenticateRenewal(_: Nino, _: RenewalReference)(_: HeaderCarrier, _: ExecutionContext))
       .expects(nino, renewalReference, *, *)
       .returning(Future successful Some(token))
-
-  def stubClaimantClaimsResponse(
-    response:                                LegacyClaims,
-    nino:                                    Nino
-  )(implicit mobileTaxCreditsRenewalService: MobileTaxCreditsRenewalService
-  ): Unit =
-    (mobileTaxCreditsRenewalService
-      .legacyClaimantClaims(_: Nino)(_: HeaderCarrier, _: ExecutionContext))
-      .expects(nino, *, *)
-      .returning(Future successful response)
 
   def stubEmployedEarningsRti(
     employedEarningsRti:                     Option[EmployedEarningsRti],

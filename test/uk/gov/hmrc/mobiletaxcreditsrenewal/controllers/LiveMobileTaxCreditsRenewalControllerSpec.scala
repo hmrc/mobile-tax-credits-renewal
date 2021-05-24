@@ -17,141 +17,374 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import eu.timepit.refined.auto._
+import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpecLike}
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory.getLogger
-import play.api.LoggerLike
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json.{parse, toJson}
-import play.api.mvc.{AnyContentAsEmpty, Request, Result}
+import play.api.libs.json.Json.toJson
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.ConfidenceLevel._
 import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalService
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, ShutteringMock}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCreditsRenewalServiceStub, ShutteringMock}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
 
 class LiveMobileTaxCreditsRenewalControllerSpec
     extends WordSpecLike
     with Matchers
     with MockFactory
     with AuthorisationStub
+    with MobileTaxCreditsRenewalServiceStub
+    with ClaimsJson
     with ShutteringMock {
-  implicit val authConnector: AuthConnector = mock[AuthConnector]
-  private val service = mock[MobileTaxCreditsRenewalService]
-  implicit val shutteringConnector: ShutteringConnector = mock[ShutteringConnector]
+  implicit val authConnector:       AuthConnector                  = mock[AuthConnector]
+  implicit val mockControlConfig:   TaxCreditsControl              = mock[TaxCreditsControl]
+  implicit val service:             MobileTaxCreditsRenewalService = mock[MobileTaxCreditsRenewalService]
+  implicit val shutteringConnector: ShutteringConnector            = mock[ShutteringConnector]
 
-  private val logger = new LoggerLike {
-    override val logger: Logger = getLogger("LiveMobileTaxCreditsRenewalControllerSpec")
-  }
-
-  private val nino = Nino("CS700100A")
+  private val nino          = Nino("CS700100A")
+  private val nino2         = Nino("CS700101A")
+  private val incorrectNino = Nino("SC100700A")
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
+  private val tcrAuthToken = TcrAuthenticationToken("some-auth-token")
 
-  private val controller = new LiveMobileTaxCreditsRenewalController(authConnector,
-                                                                     service,
-                                                                     L200.level,
-                                                                     stubControllerComponents(),
-                                                                     shutteringConnector)
+  private val controller =
+    new LiveMobileTaxCreditsRenewalController(authConnector,
+                                                    service,
+                                                    mockControlConfig,
+                                                    L200.level,
+                                                    stubControllerComponents(),
+                                                    shutteringConnector)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
-  "renewals" should {
-    lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
-      FakeRequest()
-        .withSession("AuthToken" -> "Some Header")
-        .withHeaders(acceptHeader, "Authorization" -> "Some Header")
+  val renewalReference = RenewalReference("111111111111111")
 
-    "return the renewals summary from the service for an authorised user with the right nino and a L200 confidence level" in {
-      val renewals = RenewalsSummary("closed", None)
+  lazy val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
+    .withSession(
+      "AuthToken" -> "Some Header"
+    )
+    .withHeaders(
+      acceptHeader,
+      "Authorization" -> "Some Header"
+    )
 
-      def mockServiceCall(): Unit =
-        (service
-          .renewals(_: Nino, _: JourneyId)(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
-          .expects(nino, journeyId, *, *, *)
-          .returning(Future successful renewals)
+  lazy val requestInvalidHeaders: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
+    .withSession(
+      "AuthToken" -> "Some Header"
+    )
+    .withHeaders(
+      "Authorization" -> "Some Header"
+    )
 
-      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockServiceCall()
+  def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
+
+  def encodedAuth(
+    nino:                Nino,
+    tcrRenewalReference: RenewalReference
+  ): String =
+    new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
+
+  def emptyRequestWithAcceptHeaderAndAuthHeader(
+    renewalsRef: RenewalReference,
+    nino:        Nino
+  ): FakeRequest[AnyContentAsEmpty.type] =
+    FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
+
+  "fullClaimantDetails" should {
+    val applicant       = Applicant(nino.nino, "MR", "BOB", None, "ROBSON", None)
+    val applicant2      = Applicant(nino2.nino, "MRS", "BOBETTE", None, "ROBSON", None)
+    val renewal         = Renewal(None, None, None, None, None, None)
+    val renewalFormType = "renewalFormType"
+
+    "return 401 if unauthorised" in {
+      stubAuthorisationUnauthorised()
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 401
+    }
+
+    "return Low CL if low confidence level" in {
+      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 403
+    }
+
+    "return ninoNotFound if no nino found" in {
+      stubAuthorisationGrantAccess(None and L200)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 403
+    }
+
+    "return noMatchingNinoFound if different nino returned found" in {
+      stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 403
+    }
+
+    "return invalidAcceptHeader if invalid headers sent" in {
+      val result = controller.fullClaimantDetails(nino, journeyId)(requestInvalidHeaders)
+      status(result)        shouldBe 406
+    }
+
+    "return details with the renewalFormType set" in {
+      val household = Household(renewalReference.value, "applicationId", applicant, None, None, None)
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
       mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(None, nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
-      val result: Future[Result] = controller.renewals(nino, journeyId).apply(fakeRequest)
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
       status(result)        shouldBe 200
-      contentAsJson(result) shouldBe parse("""{"submissionsState":"closed"}""")
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
 
-    "return forbidden for a user with L100 confidence level" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
-      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 403
-    }
-
-    "return forbidden when trying to access another users nino" in {
-      stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 403
-    }
-
-    "return unauthoirsed for an unauthorised user" in {
-      stubAuthorisationUnauthorised()
-      status(controller.renewals(nino, journeyId).apply(fakeRequest)) shouldBe 401
-    }
-  }
-
-  "submitDeclarations" should {
-    val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val certainBenefits =
-      CertainBenefits(receivedBenefits = false, incomeSupport = false, jsa = false, esa = false, pensionCredit = false)
-    val otherIncome = OtherIncome(Some(100), Some(false))
-    val renewal = TcrRenewal(RenewalData(Some(incomeDetails), Some(incomeDetails), Some(certainBenefits)),
-                             None,
-                             Some(otherIncome),
-                             Some(otherIncome),
-                             hasChangeOfCircs = false)
-
-    val submitRenewalRequest: FakeRequest[JsValue] = FakeRequest()
-      .withBody(toJson(renewal))
-      .withHeaders(
-        acceptHeader,
-        HeaderKeys.tcrAuthToken -> "some-auth-token"
+    "return details with employed earnings RTI populated for applicant1 and not applicant2 - logged in at applicant 1" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = None)),
+        None,
+        None
       )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
 
-    def mockServiceCall(): Unit =
-      (service
-        .submitRenewal(_: Nino, _: TcrRenewal)(_: HeaderCarrier, _: ExecutionContext, _: Request[_]))
-        .expects(nino, renewal, *, *, *)
-        .returning(Future successful 200)
-
-    "submit a valid form for an authorised user with the right nino and a L200 confidence level when renewals are open" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
-      mockServiceCall()
       mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), None)), nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
 
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 200
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
 
-    "return forbidden for a user with L100 confidence level" in {
-      stubAuthorisationGrantAccess(Some(nino.nino) and L50)
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
+    "return details with employed earnings RTI populated for applicant2 and not applicant1 - logged in at applicant 1" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = None),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = Some(22000.0))),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(None, Some(22000.0))), nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
+
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
 
-    "return forbidden when trying to access another users nino" in {
-      stubAuthorisationGrantAccess(Some("AM242413B") and L200)
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 403
+    "return details with employed earnings RTI populated both applicant1 and applicant2 - logged in at applicant 1" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = Some(22000.0))),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(20000.0), Some(22000.0))), nino)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino)
+
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
 
-    "return unauthorised for an unauthorised user" in {
-      stubAuthorisationUnauthorised()
-      status(controller.submitRenewal(nino, journeyId).apply(submitRenewalRequest)) shouldBe 401
+    "return details with employed earnings RTI populated for applicant1 and not applicant2 - logged in at applicant 2" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = None)),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino2)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(None, Some(20000.0))), nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
+
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
     }
 
+    "return details with employed earnings RTI populated for applicant2 and not applicant1 - logged in at applicant 2" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = None),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = Some(22000.0))),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino2)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(22000.0), None)), nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
+
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with employed earnings RTI populated both applicant1 and applicant2 - logged in at applicant 2" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = Some(20000.0)),
+        Some(applicant2.copy(previousYearRtiEmployedEarnings = Some(22000.0))),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino2)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
+      stubEmployedEarningsRti(Some(EmployedEarningsRti(Some(22000.0), Some(20000.0))), nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
+
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return details with no employed earnings RTI for either applicant" in {
+      val household = Household(
+        renewalReference.value,
+        "applicationId",
+        applicant.copy(previousYearRtiEmployedEarnings = None),
+        Some(applicant.copy(previousYearRtiEmployedEarnings = None)),
+        None,
+        None
+      )
+      val expectedClaimDetails =
+        Claim(household, Renewal(None, None, None, None, None, Some(renewalFormType)))
+
+      mockShutteringResponse(false)
+      stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
+      stubServiceClaimantClaims(Claims(Some(Seq(Claim(household, renewal)))), nino2)
+      stubServiceAuthenticateRenewal(tcrAuthToken, nino2, renewalReference)
+      stubEmployedEarningsRti(None, nino2)
+      stubClaimantDetailsResponse(ClaimantDetails(hasPartner = false,
+                                                  1,
+                                                  renewalFormType,
+                                                  incorrectNino.value,
+                                                  None,
+                                                  availableForCOCAutomation = false,
+                                                  "some-app-id"),
+                                  nino2)
+
+      val result = controller.fullClaimantDetails(nino2, journeyId)(fakeRequest)
+      status(result)        shouldBe 200
+      contentAsJson(result) shouldBe toJson(Claims(Some(Seq(expectedClaimDetails))))
+    }
+
+    "return 521 when shuttered" in {
+      stubAuthorisationGrantAccess(Some(nino.nino) and L200)
+      mockShutteringResponse(true)
+
+      val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
+      status(result) shouldBe 521
+      val jsonBody = contentAsJson(result)
+      (jsonBody \ "shuttered").as[Boolean] shouldBe true
+      (jsonBody \ "title").as[String]      shouldBe "Shuttered"
+      (jsonBody \ "message").as[String]    shouldBe "Tax Credits Renewal is currently not available"
+    }
   }
+
 }

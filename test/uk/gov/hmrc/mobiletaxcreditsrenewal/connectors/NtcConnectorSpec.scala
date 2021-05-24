@@ -279,9 +279,9 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     "return a valid response when a 200 response is received with a valid json payload" in new Setup {
       override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
-      val result:                 LegacyClaims                     = await(connector.legacyClaimantClaims(taxCreditNino))
+      val result:                 Claims                     = await(connector.legacyClaimantClaims(taxCreditNino))
 
-      result shouldBe toJson(claims200Success).as[LegacyClaims]
+      result shouldBe toJson(claims200Success).as[Claims]
     }
 
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
@@ -319,30 +319,4 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
     }
   }
 
-  "submitRenewal" should {
-
-    "throw BadRequestException when a 400 response is returned" in new Setup {
-      override lazy val response: Future[Nothing] = http400Response
-      intercept[BadRequestException] {
-        await(connector.submitRenewal(taxCreditNino, renewal))
-      }
-    }
-
-    "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response: Future[Nothing] = http500Response
-      intercept[Upstream5xxResponse] {
-        await(connector.submitRenewal(taxCreditNino, renewal))
-      }
-    }
-
-    "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response: Future[AnyRef with HttpResponse] = http204Response
-      await(connector.submitRenewal(taxCreditNino, renewal)) shouldBe 204
-    }
-
-    "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response: Future[Nothing] = http500Response
-      executeCB(connector.submitRenewal(taxCreditNino, renewal))
-    }
-  }
 }

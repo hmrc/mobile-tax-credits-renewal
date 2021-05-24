@@ -19,14 +19,13 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 import javax.inject.{Inject, Named, Singleton}
 import play.api._
 import play.api.libs.json.Json.toJson
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, ServiceUnavailableException, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.ShutteringConnector
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{AccessControl, ShutteredCheck}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
@@ -34,35 +33,36 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalServi
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.play.http.HeaderCarrierConverter.fromRequest
 
+import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
-trait MobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
+trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
 
-  def renewals(
+  def fullClaimantDetails(
     nino:      Nino,
     journeyId: JourneyId
   ): Action[AnyContent]
 
-  def submitRenewal(
-    nino:      Nino,
-    journeyId: JourneyId
-  ): Action[JsValue]
-
+  def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent]
 }
 
 @Singleton
-class LiveMobileTaxCreditsRenewalController @Inject() (
+class LiveMobileTaxCreditsRenewalController @Inject()(
   override val authConnector:                                   AuthConnector,
   val service:                                                  MobileTaxCreditsRenewalService,
+  val taxCreditsControl:                                        TaxCreditsControl,
   @Named("controllers.confidenceLevel") override val confLevel: Int,
   val controllerComponents:                                     ControllerComponents,
   shutteringConnector:                                          ShutteringConnector
 )(implicit val executionContext:                                ExecutionContext)
-    extends MobileTaxCreditsRenewalController
+    extends LegacyMobileTaxCreditsRenewalController
     with AccessControl
     with ShutteredCheck {
+
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
-  override val logger: Logger                 = Logger(this.getClass)
+
+  private val tcrAuthToken = "tcrAuthToken"
+  override val logger: Logger = Logger(this.getClass)
 
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
 
@@ -79,7 +79,7 @@ class LiveMobileTaxCreditsRenewalController @Inject() (
         Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
     }
 
-  override def renewals(
+  override def fullClaimantDetails(
     nino:      Nino,
     journeyId: JourneyId
   ): Action[AnyContent] =
@@ -87,71 +87,151 @@ class LiveMobileTaxCreditsRenewalController @Inject() (
       implicit val hc: HeaderCarrier = fromRequest(request)
       shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
         withShuttering(shuttered) {
-          errorWrapper(
-            service.renewals(nino, journeyId).map { renewals =>
-              Ok(toJson(renewals))
+
+          def swapRtiIfNeeded(
+            optApplicantNino:           Option[String],
+            urlNino:                    Nino,
+            rtiEmployedEarnings:        Option[Double],
+            rtiEmployedEarningsPartner: Option[Double]
+          ): Option[Double] =
+            optApplicantNino.flatMap(applicantNino =>
+              if (applicantNino == urlNino.value) rtiEmployedEarnings
+              else rtiEmployedEarningsPartner
+            )
+
+          errorWrapper({
+            def fullClaimantDetails(claim: Claim): Future[Claim] = {
+              def getClaimantDetail(
+                token: TcrAuthenticationToken,
+                hc:    HeaderCarrier
+              ): Future[Claim] = {
+                implicit val hcWithToken: HeaderCarrier =
+                  hc.copy(extraHeaders = Seq(tcrAuthToken -> token.tcrAuthToken))
+
+                service.claimantDetails(nino).flatMap {
+                  claimantDetails =>
+                    service.employedEarningsRti(nino) map {
+                      case Some(employedEarningsRti) =>
+                        employedEarningsRti match {
+                          case EmployedEarningsRti(Some(rtiEmployedEarnings), Some(rtiEmployedEarningsPartner)) =>
+                            claim.copy(
+                              household = claim.household.copy(
+                                applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings =
+                                  swapRtiIfNeeded(Some(claim.household.applicant1.nino),
+                                                  nino,
+                                                  Some(rtiEmployedEarnings),
+                                                  Some(rtiEmployedEarningsPartner))
+                                ),
+                                applicant2 = claim.household.applicant2.map(
+                                  _.copy(previousYearRtiEmployedEarnings =
+                                    swapRtiIfNeeded(claim.household.applicant2.map(_.nino),
+                                                    nino,
+                                                    Some(rtiEmployedEarnings),
+                                                    Some(rtiEmployedEarningsPartner))
+                                  )
+                                )
+                              ),
+                              renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
+                            )
+                          case EmployedEarningsRti(_, Some(rtiEmployedEarningsPartner)) =>
+                            claim.copy(
+                              household = claim.household.copy(
+                                applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings =
+                                  swapRtiIfNeeded(Some(claim.household.applicant1.nino),
+                                                  nino,
+                                                  None,
+                                                  Some(rtiEmployedEarningsPartner))
+                                ),
+                                applicant2 = claim.household.applicant2.map(
+                                  _.copy(previousYearRtiEmployedEarnings =
+                                    swapRtiIfNeeded(claim.household.applicant2.map(_.nino),
+                                                    nino,
+                                                    None,
+                                                    Some(rtiEmployedEarningsPartner))
+                                  )
+                                )
+                              ),
+                              renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
+                            )
+                          case EmployedEarningsRti(Some(rtiEmployedEarnings), _) =>
+                            claim.copy(
+                              household = claim.household.copy(
+                                applicant1 = claim.household.applicant1.copy(previousYearRtiEmployedEarnings =
+                                  swapRtiIfNeeded(Some(claim.household.applicant1.nino),
+                                                  nino,
+                                                  Some(rtiEmployedEarnings),
+                                                  None)
+                                ),
+                                applicant2 = claim.household.applicant2.map(
+                                  _.copy(previousYearRtiEmployedEarnings =
+                                    swapRtiIfNeeded(claim.household.applicant2.map(_.nino),
+                                                    nino,
+                                                    Some(rtiEmployedEarnings),
+                                                    None)
+                                  )
+                                )
+                              ),
+                              renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
+                            )
+                          case _ =>
+                            claim.copy(renewal =
+                              claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
+                            )
+                        }
+                      case _ =>
+                        claim.copy(renewal = claim.renewal.copy(renewalFormType = Some(claimantDetails.renewalFormType))
+                        )
+                    }
+                }
+              }
+
+              service
+                .authenticateRenewal(nino, RenewalReference(claim.household.barcodeReference))
+                .flatMap { maybeToken =>
+                  if (maybeToken.nonEmpty) getClaimantDetail(maybeToken.get, hc)
+                  else Future successful claim
+                }
+                .recover {
+                  case e: Exception =>
+                    logger.warn(s"${e.getMessage} for ${claim.household.barcodeReference}")
+                    claim
+                }
             }
-          )
+
+            val eventualClaims: Future[Seq[Claim]] = service.legacyClaimantClaims(nino).flatMap {
+              claimantClaims =>
+                val claims: Seq[Claim] = claimantClaims.references.getOrElse(Seq.empty[Claim])
+
+                if (claims.isEmpty) logger.warn(s"Empty claims list for journeyId $journeyId")
+
+                Future sequence claims.map { claim =>
+                  val barcodeReference = claim.household.barcodeReference
+
+                  if (barcodeReference.equals("000000000000000")) {
+                    logger.warn(
+                      s"Invalid barcode reference $barcodeReference for journeyId $journeyId applicationId ${claim.household.applicationID}"
+                    )
+                    Future successful claim
+                  } else fullClaimantDetails(claim)
+                }
+            }
+
+            eventualClaims.map { claimantDetails =>
+              Ok(toJson(Claims(if (claimantDetails.isEmpty) None else Some(claimantDetails))))
+            }
+          })
         }
       }
     }
 
-  override def submitRenewal(
-    nino:      Nino,
-    journeyId: JourneyId
-  ): Action[JsValue] =
-    validateAcceptWithAuth(acceptHeaderValidationRules, Option(nino)).async(controllerComponents.parsers.json) {
-      implicit request =>
-        implicit val hc: HeaderCarrier = fromRequest(request)
-        shutteringConnector.getShutteringStatus(journeyId).flatMap { shuttered =>
-          withShuttering(shuttered) {
-            request.body
-              .validate[TcrRenewal]
-              .fold(
-                errors => {
-                  logger.warn("Received error with service submitRenewal: " + errors)
-                  Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
-                },
-                renewal =>
-                  errorWrapper(validateTcrAuthHeader(None) { implicit hc =>
-                    service
-                      .submitRenewal(nino, renewal)
-                      .map { _ =>
-                        logger.info(s"Tax credit renewal submission successful for journeyId $journeyId")
-                        Ok
-                      }
-                      .recover {
-                        case e: Exception =>
-                          logger.warn(
-                            s"Tax credit renewal submission failed with exception ${e.getMessage} for journeyId $journeyId"
-                          )
-                          throw e
-                      }
-                  })
-              )
-          }
-        }
+  override def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent] =
+    validateAccept(acceptHeaderValidationRules).async { implicit request =>
+      implicit val hc: HeaderCarrier = fromRequest(request)
+      errorWrapper(Future {
+        taxCreditsControl.toTaxCreditsRenewalsState
+      }.map { submissionState =>
+        Ok(Json.toJson(submissionState))
+      })
     }
 
-  private def validateTcrAuthHeader(
-    mode:             Option[String]
-  )(func:             HeaderCarrier => Future[mvc.Result]
-  )(implicit request: Request[_],
-    hc:               HeaderCarrier
-  ): Future[Result] =
-    (request.headers.get(tcrAuthToken), mode) match {
-
-      case (None, Some(_)) => func(hc)
-
-      case (Some(token), None) => func(hc.copy(extraHeaders = Seq(tcrAuthToken -> token)))
-
-      case _ =>
-        val default: ErrorResponse = ErrorNoAuthToken
-        val authTokenShouldNotBeSupplied = ErrorAuthTokenSupplied
-        val response = mode.fold(default) { _ =>
-          authTokenShouldNotBeSupplied
-        }
-        logger.warn("Either tcrAuthToken must be supplied as header or 'claims' as query param.")
-        Future.successful(Forbidden(toJson(response)))
-    }
 }

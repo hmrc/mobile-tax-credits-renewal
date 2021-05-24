@@ -17,20 +17,21 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json.Json.toJson
+import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalsSummary, Shuttering, TcrRenewal}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SandboxMobileTaxCreditsRenewalController @Inject() (
+class SandboxMobileTaxCreditsRenewalController @Inject()(
   val controllerComponents:      ControllerComponents
 )(implicit val executionContext: ExecutionContext)
-    extends MobileTaxCreditsRenewalController
+    extends LegacyMobileTaxCreditsRenewalController
     with FileResource {
 
   private final val WebServerIsDown = new Status(521)
@@ -44,55 +45,35 @@ class SandboxMobileTaxCreditsRenewalController @Inject() (
 
   override def parser: BodyParser[AnyContent] = controllerComponents.parsers.anyContent
 
-  override def renewals(
+  override def fullClaimantDetails(
     nino:      Nino,
     journeyId: JourneyId
   ): Action[AnyContent] =
     validateAccept(acceptHeaderValidationRules).async { implicit request =>
-      def returnRenewalsResponse(file: String): Result = {
-        val resource: String = findResource(s"/resources/claimantdetails/$file")
-          .getOrElse(throw new IllegalArgumentException("Resource not found!"))
-        Ok(Json.toJson(Json.parse(resource).as[RenewalsSummary]))
-      }
-
-      Future successful (
-        request.headers.get("SANDBOX-CONTROL") match {
-          case Some("ERROR-401")                => Unauthorized
-          case Some("ERROR-403")                => Forbidden
-          case Some("ERROR-404")                => NotFound
-          case Some("ERROR-500")                => InternalServerError
-          case Some("SHUTTERED")                => WebServerIsDown(shuttered)
-          case Some("RENEWALS-RESPONSE-CLOSED") => returnRenewalsResponse("renewals-response-closed.json")
-          case Some("RENEWALS-RESPONSE-CHECK-STATUS-ONLY") =>
-            returnRenewalsResponse("renewals-response-check-status-only.json")
-          case _ => returnRenewalsResponse("renewals-response-open.json")
-        }
-      )
+      Future.successful(request.headers.get("SANDBOX-CONTROL") match {
+        case Some("ERROR-401") => Unauthorized
+        case Some("ERROR-403") => Forbidden
+        case Some("ERROR-404") => NotFound
+        case Some("ERROR-500") => InternalServerError
+        case Some("SHUTTERED") => WebServerIsDown(shuttered)
+        case _ =>
+          val resource: String = findResource(s"/resources/claimantdetails/claimant-details.json")
+            .getOrElse(throw new IllegalArgumentException("Resource not found!"))
+          Ok(toJson(Json.parse(resource).as[Claims]))
+      })
     }
 
-  override def submitRenewal(
-    nino:      Nino,
-    journeyId: JourneyId
-  ): Action[JsValue] =
-    validateAccept(acceptHeaderValidationRules).async(controllerComponents.parsers.json) { implicit request =>
-      request.body
-        .validate[TcrRenewal]
-        .fold(
-          errors => {
-            logger.warn("Received error with service submitRenewal: " + errors)
-            Future.successful(BadRequest(Json.obj("message" -> JsError.toJson(errors))))
-          },
-          renewal =>
-            Future successful (
-              request.headers.get("SANDBOX-CONTROL") match {
-                case Some("ERROR-401") => Unauthorized
-                case Some("ERROR-403") => Forbidden
-                case Some("ERROR-404") => NotFound
-                case Some("ERROR-500") => InternalServerError
-                case Some("SHUTTERED") => WebServerIsDown(shuttered)
-                case _                 => Ok
-              }
-            )
-        )
+  override def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent] =
+    validateAccept(acceptHeaderValidationRules).async { implicit request =>
+      Future.successful(request.headers.get("SANDBOX-CONTROL") match {
+        case Some("ERROR-401")         => Unauthorized
+        case Some("ERROR-403")         => Forbidden
+        case Some("ERROR-404")         => NotFound
+        case Some("ERROR-500")         => InternalServerError
+        case Some("SHUTTERED")         => WebServerIsDown(shuttered)
+        case Some("CLOSED")            => Ok(Json.toJson(TaxCreditsRenewalsState("closed")))
+        case Some("CHECK-STATUS-ONLY") => Ok(Json.toJson(TaxCreditsRenewalsState("check_status_only")))
+        case _                         => Ok(Json.toJson(TaxCreditsRenewalsState("open")))
+      })
     }
 }

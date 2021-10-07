@@ -23,7 +23,6 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-hmrc-api"             % playHmrcApiVersion,
     "uk.gov.hmrc" %% "domain"                    % domainVersion,
     "uk.gov.hmrc" %% "reactive-circuit-breaker"  % circuitBreakerVersion,
-    "uk.gov.hmrc" %% "play-ui"                   % playUIVersion,
     "eu.timepit"  %% "refined"                   % refinedVersion,
     "uk.gov.hmrc" %% "time"                      % timeVersion
   )

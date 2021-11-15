@@ -4,10 +4,10 @@ private object AppDependencies {
   import play.core.PlayVersion
   import play.sbt.PlayImport._
 
-  private val bootstrap27Version       = "5.1.0"
-  private val domainVersion            = "5.11.0-play-27"
-  private val playHmrcApiVersion       = "6.2.0-play-27"
-  private val playUIVersion            = "9.2.0-play-27"
+  private val bootstrap28Version       = "5.16.0"
+  private val domainVersion            = "6.2.0-play-28"
+  private val playHmrcApiVersion       = "6.4.0-play-28"
+//  private val playUIVersion            = "9.2.0-play-28"
   private val circuitBreakerVersion    = "3.5.0"
   private val wiremockVersion          = "2.21.0"
   private val scalatestplusPlayVersion = "4.0.3"
@@ -19,7 +19,7 @@ private object AppDependencies {
 
   val compile = Seq(
     ws,
-    "uk.gov.hmrc" %% "bootstrap-backend-play-27" % bootstrap27Version,
+    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrap28Version,
     "uk.gov.hmrc" %% "play-hmrc-api"             % playHmrcApiVersion,
     "uk.gov.hmrc" %% "domain"                    % domainVersion,
     "uk.gov.hmrc" %% "reactive-circuit-breaker"  % circuitBreakerVersion,
@@ -42,7 +42,7 @@ private object AppDependencies {
           "org.scalatest"     %% "scalatest"              % scalaTestVersion    % scope,
           "org.scalamock"     %% "scalamock"              % scalaMockVersion    % scope,
           "org.pegdown"       % "pegdown"                 % pegdownVersion      % scope,
-          "uk.gov.hmrc"       %% "bootstrap-test-play-27" % bootstrap27Version  % scope
+          "uk.gov.hmrc"       %% "bootstrap-test-play-28" % bootstrap28Version  % scope
         )
       }.test
   }

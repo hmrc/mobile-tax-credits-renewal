@@ -50,19 +50,19 @@ trait AccountAccessControl extends Results with Authorisation {
       .recover {
         case _: Upstream4xxResponse =>
           logger.info("Unauthorized! Failed to grant access since 4xx response!")
-          Unauthorized(toJson(ErrorUnauthorizedMicroService))
+          Unauthorized(toJson[ErrorResponse](ErrorUnauthorizedMicroService))
 
         case _: NinoNotFoundOnAccount =>
           logger.info("Unauthorized! NINO not found on account!")
-          Forbidden(toJson(ErrorForbidden))
+          Forbidden(toJson[ErrorResponse](ErrorForbidden))
 
         case _: FailToMatchTaxIdOnAuth =>
           logger.info("Unauthorized! Failure to match URL NINO against Auth NINO")
-          Forbidden(toJson(ErrorForbidden))
+          Forbidden(toJson[ErrorResponse](ErrorForbidden))
 
         case _: AccountWithLowCL =>
           logger.info("Unauthorized! Account with low CL!")
-          Forbidden(toJson(ErrorForbidden))
+          Forbidden(toJson[ErrorResponse](ErrorForbidden))
       }
   }
 }
@@ -85,7 +85,7 @@ trait AccessControl extends AccountAccessControl {
       ): Future[Result] =
         if (rules(request.headers.get("Accept"))) {
           invokeAuthBlock(request, block, taxId)
-        } else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson(ErrorAcceptHeaderInvalid)))
+        } else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson[ErrorResponse](ErrorAcceptHeaderInvalid)))
       override def parser:                     BodyParser[AnyContent] = outer.parser
       override protected def executionContext: ExecutionContext       = outer.executionContext
     }

@@ -64,7 +64,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
   private val tcrAuthToken = "tcrAuthToken"
   override val logger: Logger = Logger(this.getClass)
 
-  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson(ErrorNotFound))
+  def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson[ErrorResponse](ErrorNotFound))
 
   def errorWrapper(func: => Future[mvc.Result]): Future[Result] =
     func.recover {
@@ -72,11 +72,11 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
 
       case ex: UpstreamErrorResponse if ex.statusCode == SERVICE_UNAVAILABLE =>
         logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)
-        Status(ClientRetryRequest.httpStatusCode)(toJson(ClientRetryRequest))
+        Status(ClientRetryRequest.httpStatusCode)(toJson[ErrorResponse](ClientRetryRequest))
 
       case e: Throwable =>
         logger.error(s"Internal server error: ${e.getMessage}", e)
-        Status(ErrorInternalServerError.httpStatusCode)(toJson(ErrorInternalServerError))
+        Status(ErrorInternalServerError.httpStatusCode)(toJson[ErrorResponse](ErrorInternalServerError))
     }
 
   override def fullClaimantDetails(

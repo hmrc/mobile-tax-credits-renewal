@@ -7,7 +7,6 @@ private object AppDependencies {
   private val bootstrap28Version       = "5.16.0"
   private val domainVersion            = "6.2.0-play-28"
   private val playHmrcApiVersion       = "6.4.0-play-28"
-//  private val playUIVersion            = "9.2.0-play-28"
   private val circuitBreakerVersion    = "3.5.0"
   private val wiremockVersion          = "2.21.0"
   private val scalatestplusPlayVersion = "4.0.3"

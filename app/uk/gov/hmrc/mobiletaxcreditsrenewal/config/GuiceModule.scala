@@ -18,6 +18,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
+import play.api.Logger
 import javax.inject.Inject
 import play.api.{Configuration, Environment, Logger, LoggerLike}
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -36,6 +37,7 @@ class GuiceModule @Inject() (
     extends AbstractModule {
 
   val servicesConfig: ServicesConfig = new ServicesConfig(configuration)
+  val logger: Logger = Logger(this.getClass)
 
   override def configure(): Unit = {
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
@@ -53,7 +55,7 @@ class GuiceModule @Inject() (
     bindConfigString("submission.startDate", "microservice.services.ntc.submission.startDate")
     bindConfigString("submission.endDate", "microservice.services.ntc.submission.endDate")
     bindConfigString("submission.endViewRenewalsDate", "microservice.services.ntc.submission.endViewRenewalsDate")
-    bind(classOf[LoggerLike]).toInstance(Logger)
+    bind(classOf[LoggerLike]).toInstance(logger)
 
     bind(classOf[String]).annotatedWith(named("ntc")).toInstance(servicesConfig.baseUrl("ntc"))
     bind(classOf[String])

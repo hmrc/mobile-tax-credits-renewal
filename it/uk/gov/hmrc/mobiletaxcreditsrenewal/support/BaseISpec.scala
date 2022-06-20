@@ -45,6 +45,7 @@ class BaseISpec
   protected val renewalReference:       RenewalReference = RenewalReference("renewalReference")
   protected val tcrAuthenticationToken: String           = basicAuthString(nino1.value, renewalReference.value)
   protected val tcrAuthTokenHeader:     (String, String) = tcrAuthToken -> tcrAuthenticationToken
+  protected val authorisationJsonHeader: (String, String) = "AUTHORIZATION" -> "Bearer 123"
 
   def config: Map[String, Any] =
     Map(

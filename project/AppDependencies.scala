@@ -4,9 +4,9 @@ private object AppDependencies {
   import play.core.PlayVersion
   import play.sbt.PlayImport._
 
-  private val bootstrap28Version       = "5.16.0"
+  private val bootstrap28Version       = "5.24.0"
   private val domainVersion            = "8.1.0-play-28"
-  private val playHmrcApiVersion       = "6.4.0-play-28"
+  private val playHmrcApiVersion       = "7.0.0-play-28"
   private val circuitBreakerVersion    = "3.5.0"
   private val wiremockVersion          = "2.21.0"
   private val scalatestplusPlayVersion = "4.0.3"

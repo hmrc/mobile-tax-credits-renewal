@@ -4,9 +4,9 @@ private object AppDependencies {
   import play.core.PlayVersion
   import play.sbt.PlayImport._
 
-  private val bootstrap28Version       = "5.16.0"
-  private val domainVersion            = "6.2.0-play-28"
-  private val playHmrcApiVersion       = "6.4.0-play-28"
+  private val bootstrap28Version       = "5.24.0"
+  private val domainVersion            = "8.1.0-play-28"
+  private val playHmrcApiVersion       = "7.0.0-play-28"
   private val circuitBreakerVersion    = "3.5.0"
   private val wiremockVersion          = "2.21.0"
   private val scalatestplusPlayVersion = "4.0.3"
@@ -14,7 +14,7 @@ private object AppDependencies {
   private val pegdownVersion           = "1.6.0"
   private val scalaMockVersion         = "4.1.0"
   private val scalaTestVersion         = "3.0.8"
-  private val timeVersion              = "3.19.0"
+  private val timeVersion              = "3.25.0"
 
   val compile = Seq(
     ws,

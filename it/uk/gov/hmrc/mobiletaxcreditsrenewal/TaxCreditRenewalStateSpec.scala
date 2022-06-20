@@ -48,7 +48,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
   def submitTaxCreditRenewal: WSResponse = {
     def request(nino: Nino) =
       wsUrl(s"/declarations/${nino.value}?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f")
-        .addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+        .addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, authorisationJsonHeader)
 
     grantAccess(nino1.value)
 
@@ -67,7 +67,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
     val barcodeReference  = RenewalReference("200000000000013")
     val request = wsUrl(
       s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f"
-    ).addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader)
+    ).addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, authorisationJsonHeader)
 
     "retrieve claimant claims for main applicant and set renewalFormType for a renewal where bar code ref is not '000000000000000'" in {
       grantAccess(mainApplicantNino.value)
@@ -202,7 +202,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       val response = await(
         wsUrl(
           s"/income/${mainApplicantNino.value}/tax-credits/full-claimant-details?journeyId=ThisIsAnInvalidJourneyId"
-        ).addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader).get()
+        ).addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, authorisationJsonHeader).get()
       )
       response.status shouldBe 400
     }

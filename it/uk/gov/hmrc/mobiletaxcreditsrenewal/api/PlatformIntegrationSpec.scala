@@ -46,8 +46,8 @@ class PlatformIntegrationSpec extends BaseISpec with Eventually with PlayRunners
       (accessDetails \ "whitelistedApplicationIds")(1).as[String]   shouldBe appId2
     }
 
-    "provide RAML conf endpoint" in {
-      val result: WSResponse = await(wsUrl("/api/conf/1.0/application.raml").get())
+    "provide YAML conf endpoint" in {
+      val result: WSResponse = await(wsUrl("/api/conf/1.0/application.yaml").get())
       result.status shouldBe 200
     }
   }

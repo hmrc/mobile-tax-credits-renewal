@@ -9,10 +9,6 @@ baseUri: https://api.service.hmrc.gov.uk/
 documentation:
  - title: Overview
    content: !include docs/overview.md
- - title: Versioning
-   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/versioning.md
- - title: Errors
-   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/errors.md
 
 mediaType: [ application/json, application/hal+json ]
 
@@ -65,11 +61,11 @@ uses:
               application/json:
                 examples:
                   example-1:
-                    value: !include examples/renewals-open-example.json
+                    value: !include examples/renewals-closed-example.json
                   example-2:
                     value: !include examples/renewals-response-check-status-only-example.json
                   example-3:
-                    value: !include examples/renewals-closed-example.json
+                    value: !include examples/renewals-open-example.json
   /income:
     /tax-credits:
       /submission:

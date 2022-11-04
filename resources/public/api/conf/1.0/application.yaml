@@ -1,0 +1,969 @@
+openapi: 3.0.0
+info:
+  title: Mobile Tax Credits Renewal
+  description: >-
+    ### What is this API for?
+
+    The API is used to retrieve and update tax credits renewal information.
+  contact: {}
+  version: '1.0'
+servers:
+  - url: https://test-api.service.hmrc.gov.uk/mobile-tax-credits-renewal
+    description: Sandbox
+  - url: https://api.service.hmrc.gov.uk/mobile-tax-credits-renewal
+    description: Production
+    variables: {}
+paths:
+  /mobile-tax-credits-renewal/declarations/{nino}:
+    post:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Submit renewal
+      description: This endpoint submits a renewal.
+      operationId: Submitrenewal
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content: {}
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/renewals/{nino}:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get renewals details
+      description: This endpoint retrieves the renewals.
+      operationId: Getrenewalsdetails
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalRenewalsresponse'
+                  - example:
+                      submissionsState: closed
+              examples:
+                example-1:
+                  value:
+                    submissionsState: closed
+                example-2:
+                  value:
+                    submissionsState: check_status_only
+                    claims:
+                      - household:
+                          barcodeReference: '200000000000013'
+                          applicationID: '198765432134567'
+                          applicant1:
+                            nino: AA000000A
+                            title: MR
+                            firstForename: JOHN
+                            secondForename: ''
+                            surname: DENSMORE
+                          householdEndReason: ''
+                        renewal:
+                          awardStartDate: 12/10/2030
+                          awardEndDate: 12/10/2010
+                          renewalStatus: NOT_SUBMITTED
+                          renewalNoticeIssuedDate: 12/10/2030
+                          renewalNoticeFirstSpecifiedDate: 12/10/2010
+                          claimantDetails:
+                            hasPartner: true
+                            claimantNumber: 123
+                            renewalFormType: D
+                            mainApplicantNino: AA000000A
+                            usersPartnerNino: AP412713B
+                            availableForCOCAutomation: false
+                            applicationId: '198765432134566'
+                      - household:
+                          barcodeReference: '000000000000000'
+                          applicationID: '198765432134567'
+                          applicant1:
+                            nino: AA000000A
+                            title: MR
+                            firstForename: JOHN
+                            secondForename: ''
+                            surname: DENSMORE
+                          householdEndReason: ''
+                        renewal:
+                          awardStartDate: 12/10/2030
+                          awardEndDate: 12/10/2010
+                          renewalStatus: AWAITING_BARCODE
+                          renewalNoticeIssuedDate: 12/10/2030
+                          renewalNoticeFirstSpecifiedDate: 12/10/2010
+                example-3:
+                  value:
+                    submissionsState: open
+                    claims:
+                      - household:
+                          barcodeReference: '200000000000013'
+                          applicationID: '198765432134567'
+                          applicant1:
+                            nino: AA000000A
+                            title: MR
+                            firstForename: JOHN
+                            secondForename: ''
+                            surname: DENSMORE
+                          householdEndReason: ''
+                        renewal:
+                          awardStartDate: 12/10/2030
+                          awardEndDate: 12/10/2010
+                          renewalStatus: NOT_SUBMITTED
+                          renewalNoticeIssuedDate: 12/10/2030
+                          renewalNoticeFirstSpecifiedDate: 12/10/2010
+                          claimantDetails:
+                            hasPartner: true
+                            claimantNumber: 123
+                            renewalFormType: D
+                            mainApplicantNino: AA000000A
+                            usersPartnerNino: AP412713B
+                            availableForCOCAutomation: false
+                            applicationId: '198765432134566'
+                      - household:
+                          barcodeReference: '000000000000000'
+                          applicationID: '198765432134567'
+                          applicant1:
+                            nino: AA000000A
+                            title: MR
+                            firstForename: JOHN
+                            secondForename: ''
+                            surname: DENSMORE
+                          householdEndReason: ''
+                        renewal:
+                          awardStartDate: 12/10/2030
+                          awardEndDate: 12/10/2010
+                          renewalStatus: AWAITING_BARCODE
+                          renewalNoticeIssuedDate: 12/10/2030
+                          renewalNoticeFirstSpecifiedDate: 12/10/2010
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/tax-credits/submission/state:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get tax credits submission state
+      description: This endpoint retrieves the current state of tax credit submissions
+      operationId: Gettaxcreditssubmissionstate
+      parameters:
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateresponse'
+                  - example:
+                      submissionShuttered: false
+                      inSubmitRenewalsPeriod: true
+                      inViewRenewalsPeriod: true
+              examples:
+                example-1:
+                  value:
+                    submissionShuttered: false
+                    inSubmitRenewalsPeriod: true
+                    inViewRenewalsPeriod: true
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/tax-credits/submission/state/enabled:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get tax credits submission state enabled
+      description: This endpoint retrieves the current state of tax credit submissions
+      operationId: Gettaxcreditssubmissionstateenabled
+      parameters:
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateEnabledresponse'
+                  - example:
+                      submissionsState: open
+              examples:
+                example-1:
+                  value:
+                    submissionsState: open
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/{nino}/tax-credits/{renewalReference}/auth:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get auth token
+      description: This endpoint retrieves the auth token and validates the nino and tax reference number.
+      operationId: Getauthtoken
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: renewalReference
+          in: path
+          description: ''
+          required: true
+          style: simple
+          schema:
+            type: string
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsAuthresponse'
+                  - example:
+                      nino: KM569110B
+                      version: 1
+                      workingTaxableTotal: 0
+                      actualTaxableTotal: 0
+                      remainingTaxFree: 0
+                      adjustedNetIncome: 0
+              examples:
+                example-1:
+                  value:
+                    nino: KM569110B
+                    version: 1
+                    workingTaxableTotal: 0
+                    actualTaxableTotal: 0
+                    remainingTaxFree: 0
+                    adjustedNetIncome: 0
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/{nino}/tax-credits/claimant-details:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get claiment details
+      description: This endpoint retrieves the claiment details.
+      operationId: Getclaimentdetails
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: claims
+          in: query
+          description: ''
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsClaimantDetailsresponse'
+                  - example:
+                      nino: KM569110B
+                      version: 1
+                      workingTaxableTotal: 0
+                      actualTaxableTotal: 0
+                      remainingTaxFree: 0
+                      adjustedNetIncome: 0
+              examples:
+                example-1:
+                  value:
+                    nino: KM569110B
+                    version: 1
+                    workingTaxableTotal: 0
+                    actualTaxableTotal: 0
+                    remainingTaxFree: 0
+                    adjustedNetIncome: 0
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/{nino}/tax-credits/full-claimant-details:
+    get:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Get full claiment details
+      description: This endpoint retrieves the full claiment details.
+      operationId: Getfullclaimentdetails
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsFullClaimantDetailsresponse'
+                  - example:
+                      references:
+                        - household:
+                            barcodeReference: '200000000000013'
+                            applicationID: '198765432134567'
+                            applicant1:
+                              nino: CS700100A
+                              title: MR
+                              firstForename: JOHN
+                              secondForename: ''
+                              surname: DENSMORE
+                            householdEndReason: ''
+                          renewal:
+                            awardStartDate: 12/10/2030
+                            awardEndDate: 12/10/2010
+                            renewalStatus: NOT_SUBMITTED
+                            renewalNoticeIssuedDate: 12/10/2030
+                            renewalNoticeFirstSpecifiedDate: 12/10/2010
+                            renewalFormType: D
+              examples:
+                example-1:
+                  value:
+                    references:
+                      - household:
+                          barcodeReference: '200000000000013'
+                          applicationID: '198765432134567'
+                          applicant1:
+                            nino: CS700100A
+                            title: MR
+                            firstForename: JOHN
+                            secondForename: ''
+                            surname: DENSMORE
+                          householdEndReason: ''
+                        renewal:
+                          awardStartDate: 12/10/2030
+                          awardEndDate: 12/10/2010
+                          renewalStatus: NOT_SUBMITTED
+                          renewalNoticeIssuedDate: 12/10/2030
+                          renewalNoticeFirstSpecifiedDate: 12/10/2010
+                          renewalFormType: D
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+  /mobile-tax-credits-renewal/income/{nino}/tax-credits/renewal:
+    post:
+      tags:
+        - mobile-tax-credits-renewal
+      summary: Submit renewal1
+      description: This endpoint submits a renewal.
+      operationId: Submitrenewal1
+      parameters:
+        - name: nino
+          in: path
+          description: The NINO for the individual.
+          required: true
+          style: simple
+          schema:
+            type: string
+            example: NS123456B
+        - name: journeyId
+          in: query
+          description: ''
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/MobileTaxCreditsRenewalIncomeTaxCreditsRenewalresponse'
+                  - example:
+                      nino: KM569110B
+                      version: 1
+                      workingTaxableTotal: 0
+                      actualTaxableTotal: 0
+                      remainingTaxFree: 0
+                      adjustedNetIncome: 0
+              examples:
+                example-1:
+                  value:
+                    nino: KM569110B
+                    version: 1
+                    workingTaxableTotal: 0
+                    actualTaxableTotal: 0
+                    remainingTaxFree: 0
+                    adjustedNetIncome: 0
+      deprecated: false
+      security:
+        - userRestricted:
+            - read:native-apps-api-orchestration
+components:
+  securitySchemes:
+    userRestricted:
+      type: oauth2
+      description: |
+        HMRC supports OAuth 2.0 for authenticating user-restricted API requests using an OAuth 2.0 Bearer Token in the
+        AUTHORIZATION header.
+        See https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints for details.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.service.hmrc.gov.uk/oauth/authorize
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          refreshUrl: https://api.service.hmrc.gov.uk/oauth/refresh
+          scopes:
+            read:native-apps-api-orchestration: Expose APIs to app for tax credits renewal services.
+  schemas:
+    errorResponse:
+      title: errorResponse
+      required:
+        - code
+      type: object
+      properties:
+        code:
+          type: string
+    Applicant1:
+      title: Applicant1
+      required:
+        - nino
+        - title
+        - firstForename
+        - secondForename
+        - surname
+      type: object
+      properties:
+        nino:
+          type: string
+        title:
+          type: string
+        firstForename:
+          type: string
+        secondForename:
+          type: string
+        surname:
+          type: string
+      example:
+        nino: AA000000A
+        title: MR
+        firstForename: JOHN
+        secondForename: ''
+        surname: DENSMORE
+    Claim:
+      title: Claim
+      required:
+        - household
+        - renewal
+      type: object
+      properties:
+        household:
+          $ref: '#/components/schemas/Household'
+        renewal:
+          $ref: '#/components/schemas/Renewal'
+      example:
+        household:
+          barcodeReference: '200000000000013'
+          applicationID: '198765432134567'
+          applicant1:
+            nino: AA000000A
+            title: MR
+            firstForename: JOHN
+            secondForename: ''
+            surname: DENSMORE
+          householdEndReason: ''
+        renewal:
+          awardStartDate: 12/10/2030
+          awardEndDate: 12/10/2010
+          renewalStatus: NOT_SUBMITTED
+          renewalNoticeIssuedDate: 12/10/2030
+          renewalNoticeFirstSpecifiedDate: 12/10/2010
+          claimantDetails:
+            hasPartner: true
+            claimantNumber: 123
+            renewalFormType: D
+            mainApplicantNino: AA000000A
+            usersPartnerNino: AP412713B
+            availableForCOCAutomation: false
+            applicationId: '198765432134566'
+    ClaimantDetails:
+      title: ClaimantDetails
+      required:
+        - hasPartner
+        - claimantNumber
+        - renewalFormType
+        - mainApplicantNino
+        - usersPartnerNino
+        - availableForCOCAutomation
+        - applicationId
+      type: object
+      properties:
+        hasPartner:
+          type: boolean
+        claimantNumber:
+          type: integer
+          format: int32
+        renewalFormType:
+          type: string
+        mainApplicantNino:
+          type: string
+        usersPartnerNino:
+          type: string
+        availableForCOCAutomation:
+          type: boolean
+        applicationId:
+          type: string
+      example:
+        hasPartner: true
+        claimantNumber: 123
+        renewalFormType: D
+        mainApplicantNino: AA000000A
+        usersPartnerNino: AP412713B
+        availableForCOCAutomation: false
+        applicationId: '198765432134566'
+    Household:
+      title: Household
+      required:
+        - barcodeReference
+        - applicationID
+        - applicant1
+        - householdEndReason
+      type: object
+      properties:
+        barcodeReference:
+          type: string
+        applicationID:
+          type: string
+        applicant1:
+          $ref: '#/components/schemas/Applicant1'
+        householdEndReason:
+          type: string
+      example:
+        barcodeReference: '200000000000013'
+        applicationID: '198765432134567'
+        applicant1:
+          nino: AA000000A
+          title: MR
+          firstForename: JOHN
+          secondForename: ''
+          surname: DENSMORE
+        householdEndReason: ''
+    MobileTaxCreditsRenewalIncomeTaxCreditsAuthresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsAuthresponse
+      required:
+        - nino
+        - version
+        - workingTaxableTotal
+        - actualTaxableTotal
+        - remainingTaxFree
+        - adjustedNetIncome
+      type: object
+      properties:
+        nino:
+          type: string
+        version:
+          type: integer
+          format: int32
+        workingTaxableTotal:
+          type: integer
+          format: int32
+        actualTaxableTotal:
+          type: integer
+          format: int32
+        remainingTaxFree:
+          type: integer
+          format: int32
+        adjustedNetIncome:
+          type: integer
+          format: int32
+      example:
+        nino: KM569110B
+        version: 1
+        workingTaxableTotal: 0
+        actualTaxableTotal: 0
+        remainingTaxFree: 0
+        adjustedNetIncome: 0
+    MobileTaxCreditsRenewalIncomeTaxCreditsClaimantDetailsresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsClaimantDetailsresponse
+      required:
+        - nino
+        - version
+        - workingTaxableTotal
+        - actualTaxableTotal
+        - remainingTaxFree
+        - adjustedNetIncome
+      type: object
+      properties:
+        nino:
+          type: string
+        version:
+          type: integer
+          format: int32
+        workingTaxableTotal:
+          type: integer
+          format: int32
+        actualTaxableTotal:
+          type: integer
+          format: int32
+        remainingTaxFree:
+          type: integer
+          format: int32
+        adjustedNetIncome:
+          type: integer
+          format: int32
+      example:
+        nino: KM569110B
+        version: 1
+        workingTaxableTotal: 0
+        actualTaxableTotal: 0
+        remainingTaxFree: 0
+        adjustedNetIncome: 0
+    MobileTaxCreditsRenewalIncomeTaxCreditsFullClaimantDetailsresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsFullClaimantDetailsresponse
+      required:
+        - references
+      type: object
+      properties:
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reference'
+          description: ''
+      example:
+        references:
+          - household:
+              barcodeReference: '200000000000013'
+              applicationID: '198765432134567'
+              applicant1:
+                nino: CS700100A
+                title: MR
+                firstForename: JOHN
+                secondForename: ''
+                surname: DENSMORE
+              householdEndReason: ''
+            renewal:
+              awardStartDate: 12/10/2030
+              awardEndDate: 12/10/2010
+              renewalStatus: NOT_SUBMITTED
+              renewalNoticeIssuedDate: 12/10/2030
+              renewalNoticeFirstSpecifiedDate: 12/10/2010
+              renewalFormType: D
+    MobileTaxCreditsRenewalIncomeTaxCreditsRenewalresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsRenewalresponse
+      required:
+        - nino
+        - version
+        - workingTaxableTotal
+        - actualTaxableTotal
+        - remainingTaxFree
+        - adjustedNetIncome
+      type: object
+      properties:
+        nino:
+          type: string
+        version:
+          type: integer
+          format: int32
+        workingTaxableTotal:
+          type: integer
+          format: int32
+        actualTaxableTotal:
+          type: integer
+          format: int32
+        remainingTaxFree:
+          type: integer
+          format: int32
+        adjustedNetIncome:
+          type: integer
+          format: int32
+      example:
+        nino: KM569110B
+        version: 1
+        workingTaxableTotal: 0
+        actualTaxableTotal: 0
+        remainingTaxFree: 0
+        adjustedNetIncome: 0
+    MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateEnabledresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateEnabledresponse
+      required:
+        - submissionsState
+      type: object
+      properties:
+        submissionsState:
+          type: string
+      example:
+        submissionsState: open
+    MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateresponse:
+      title: MobileTaxCreditsRenewalIncomeTaxCreditsSubmissionStateresponse
+      required:
+        - submissionShuttered
+        - inSubmitRenewalsPeriod
+        - inViewRenewalsPeriod
+      type: object
+      properties:
+        submissionShuttered:
+          type: boolean
+        inSubmitRenewalsPeriod:
+          type: boolean
+        inViewRenewalsPeriod:
+          type: boolean
+      example:
+        submissionShuttered: false
+        inSubmitRenewalsPeriod: true
+        inViewRenewalsPeriod: true
+    MobileTaxCreditsRenewalRenewalsresponse:
+      title: MobileTaxCreditsRenewalRenewalsresponse
+      required:
+        - submissionsState
+      type: object
+      properties:
+        submissionsState:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+          description: ''
+      example:
+        submissionsState: open
+        claims:
+          - household:
+              barcodeReference: '200000000000013'
+              applicationID: '198765432134567'
+              applicant1:
+                nino: AA000000A
+                title: MR
+                firstForename: JOHN
+                secondForename: ''
+                surname: DENSMORE
+              householdEndReason: ''
+            renewal:
+              awardStartDate: 12/10/2030
+              awardEndDate: 12/10/2010
+              renewalStatus: NOT_SUBMITTED
+              renewalNoticeIssuedDate: 12/10/2030
+              renewalNoticeFirstSpecifiedDate: 12/10/2010
+              claimantDetails:
+                hasPartner: true
+                claimantNumber: 123
+                renewalFormType: D
+                mainApplicantNino: AA000000A
+                usersPartnerNino: AP412713B
+                availableForCOCAutomation: false
+                applicationId: '198765432134566'
+          - household:
+              barcodeReference: '000000000000000'
+              applicationID: '198765432134567'
+              applicant1:
+                nino: AA000000A
+                title: MR
+                firstForename: JOHN
+                secondForename: ''
+                surname: DENSMORE
+              householdEndReason: ''
+            renewal:
+              awardStartDate: 12/10/2030
+              awardEndDate: 12/10/2010
+              renewalStatus: AWAITING_BARCODE
+              renewalNoticeIssuedDate: 12/10/2030
+              renewalNoticeFirstSpecifiedDate: 12/10/2010
+    Reference:
+      title: Reference
+      required:
+        - household
+        - renewal
+      type: object
+      properties:
+        household:
+          $ref: '#/components/schemas/Household'
+        renewal:
+          $ref: '#/components/schemas/Renewal1'
+      example:
+        household:
+          barcodeReference: '200000000000013'
+          applicationID: '198765432134567'
+          applicant1:
+            nino: CS700100A
+            title: MR
+            firstForename: JOHN
+            secondForename: ''
+            surname: DENSMORE
+          householdEndReason: ''
+        renewal:
+          awardStartDate: 12/10/2030
+          awardEndDate: 12/10/2010
+          renewalStatus: NOT_SUBMITTED
+          renewalNoticeIssuedDate: 12/10/2030
+          renewalNoticeFirstSpecifiedDate: 12/10/2010
+          renewalFormType: D
+    Renewal:
+      title: Renewal
+      required:
+        - awardStartDate
+        - awardEndDate
+        - renewalStatus
+        - renewalNoticeIssuedDate
+        - renewalNoticeFirstSpecifiedDate
+      type: object
+      properties:
+        awardStartDate:
+          type: string
+        awardEndDate:
+          type: string
+        renewalStatus:
+          type: string
+        renewalNoticeIssuedDate:
+          type: string
+        renewalNoticeFirstSpecifiedDate:
+          type: string
+        claimantDetails:
+          $ref: '#/components/schemas/ClaimantDetails'
+      example:
+        awardStartDate: 12/10/2030
+        awardEndDate: 12/10/2010
+        renewalStatus: NOT_SUBMITTED
+        renewalNoticeIssuedDate: 12/10/2030
+        renewalNoticeFirstSpecifiedDate: 12/10/2010
+        claimantDetails:
+          hasPartner: true
+          claimantNumber: 123
+          renewalFormType: D
+          mainApplicantNino: AA000000A
+          usersPartnerNino: AP412713B
+          availableForCOCAutomation: false
+          applicationId: '198765432134566'
+    Renewal1:
+      title: Renewal1
+      required:
+        - awardStartDate
+        - awardEndDate
+        - renewalStatus
+        - renewalNoticeIssuedDate
+        - renewalNoticeFirstSpecifiedDate
+        - renewalFormType
+      type: object
+      properties:
+        awardStartDate:
+          type: string
+        awardEndDate:
+          type: string
+        renewalStatus:
+          type: string
+        renewalNoticeIssuedDate:
+          type: string
+        renewalNoticeFirstSpecifiedDate:
+          type: string
+        renewalFormType:
+          type: string
+      example:
+        awardStartDate: 12/10/2030
+        awardEndDate: 12/10/2010
+        renewalStatus: NOT_SUBMITTED
+        renewalNoticeIssuedDate: 12/10/2030
+        renewalNoticeFirstSpecifiedDate: 12/10/2010
+        renewalFormType: D
+tags:
+  - name: mobile-tax-credits-renewal
+    description: ''

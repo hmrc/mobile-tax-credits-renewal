@@ -453,7 +453,7 @@ paths:
     post:
       tags:
         - mobile-tax-credits-renewal
-      summary: Submit renewal1
+      summary: Submit renewal
       description: This endpoint submits a renewal.
       operationId: Submitrenewal1
       parameters:

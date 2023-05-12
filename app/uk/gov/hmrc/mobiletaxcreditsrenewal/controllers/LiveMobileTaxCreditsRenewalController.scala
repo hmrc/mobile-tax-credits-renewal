@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,9 +66,13 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
 
   def notFound: Result = Status(ErrorNotFound.httpStatusCode)(toJson[ErrorResponse](ErrorNotFound))
 
+  def tooManyRequests: Result = Status(ErrorTooManyRequests.httpStatusCode)(toJson[ErrorResponse](ErrorTooManyRequests))
+
   def errorWrapper(func: => Future[mvc.Result]): Future[Result] =
     func.recover {
       case ex: UpstreamErrorResponse if ex.statusCode == NOT_FOUND => notFound
+
+      case ex: UpstreamErrorResponse if ex.statusCode == TOO_MANY_REQUESTS => tooManyRequests
 
       case ex: UpstreamErrorResponse if ex.statusCode == SERVICE_UNAVAILABLE =>
         logger.error(s"ServiceUnavailableException reported: ${ex.getMessage}", ex)

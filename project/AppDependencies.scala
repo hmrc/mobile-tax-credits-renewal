@@ -18,6 +18,7 @@ private object AppDependencies {
 
   val compile = Seq(
     ws,
+    "uk.gov.hmrc" %% "bootstrap-backend-play-28" % bootstrap28Version,
     "uk.gov.hmrc" %% "play-hmrc-api"             % playHmrcApiVersion,
     "uk.gov.hmrc" %% "domain"                    % domainVersion,
     "uk.gov.hmrc" %% "reactive-circuit-breaker"  % circuitBreakerVersion,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,6 +134,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
     lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
     lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
     lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
+    lazy val http429Response: Future[Nothing]                  = Future.failed(new TooManyRequestException("too many requests"))
 
     lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] =
       Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
@@ -210,6 +211,13 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
       override lazy val response: Future[Nothing]                = http400Response
       val result:                 Option[TcrAuthenticationToken] = await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       result shouldBe None
+    }
+
+    "return None when 429 returned" in new Setup {
+      override lazy val response: Future[Nothing] = http429Response
+      intercept[TooManyRequestException]{
+        await(connector.authenticateRenewal(taxCreditNino, renewalReference))
+      }
     }
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {

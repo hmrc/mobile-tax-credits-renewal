@@ -181,6 +181,21 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       applicant1.value.get("previousYearRtiEmployedEarnings") shouldBe None
     }
 
+    "retrieve claimant claims for main applicant with a 429 error from tax-credits-broker" in {
+      grantAccess(mainApplicantNino.value)
+      claimantClaimsAreFound(mainApplicantNino, barcodeReference)
+      authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
+      employedEarningsRtiError(mainApplicantNino, 429)
+      claimantDetailsAreFoundFor(mainApplicantNino, mainApplicantNino, nino2, tcrAuthenticationToken)
+
+      val response = await(request.get())
+      response.status shouldBe 200
+
+      val references = (response.json \ "references").as[JsArray]
+      val applicant1 = (references(0) \ "household" \ "applicant1").as[JsObject]
+      applicant1.value.get("previousYearRtiEmployedEarnings") shouldBe None
+    }
+
     "return 400 if no journeyId is supplied" in {
       grantAccess(mainApplicantNino.value)
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,3 +35,5 @@ class NinoNotFoundOnAccount extends GrantAccessException("Unauthorised! NINO not
 class AccountWithLowCL extends GrantAccessException("Unauthorised! Account with low CL!")
 
 class AccountWithWeakCredStrength(message: String) extends HttpException(message, 401)
+
+case object ErrorTooManyRequests extends ErrorResponse(429,"TOO_MANY_REQUESTS","Too many requests made to mobile-tax-credits please try again later")

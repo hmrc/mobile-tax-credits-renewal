@@ -28,6 +28,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{Authorisation, Authority}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 class AuthorisationSpec
     extends AnyWordSpecLike
     with Matchers

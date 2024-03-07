@@ -31,15 +31,15 @@ case object ErrorUnauthorizedMicroService extends ErrorResponse(401, "UNAUTHORIZ
 case object ErrorForbidden extends ErrorResponse(403, "FORBIDDEN", "Forbidden")
 
 trait AccountAccessControl extends Results with Authorisation {
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   lazy val requiresAuth: Boolean = true
-  val logger: Logger = Logger(this.getClass)
+  val logger:            Logger  = Logger(this.getClass)
 
   def invokeAuthBlock[A](
-    request: Request[A],
-    block:   (Request[A]) => Future[Result],
-    taxId:   Option[Nino]
+    request:     Request[A],
+    block:       (Request[A]) => Future[Result],
+    taxId:       Option[Nino]
+  )(implicit ec: ExecutionContext
   ): Future[Result] = {
     implicit val hc: HeaderCarrier = fromRequest(request)
 
@@ -74,8 +74,9 @@ trait AccessControl extends AccountAccessControl {
   def parser:           BodyParser[AnyContent]
 
   def validateAcceptWithAuth(
-    rules: Option[String] ⇒ Boolean,
-    taxId: Option[Nino]
+    rules:       Option[String] ⇒ Boolean,
+    taxId:       Option[Nino]
+  )(implicit ec: ExecutionContext
   ): ActionBuilder[Request, AnyContent] =
     new ActionBuilder[Request, AnyContent] {
 
@@ -85,7 +86,10 @@ trait AccessControl extends AccountAccessControl {
       ): Future[Result] =
         if (rules(request.headers.get("Accept"))) {
           invokeAuthBlock(request, block, taxId)
-        } else Future.successful(Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson[ErrorResponse](ErrorAcceptHeaderInvalid)))
+        } else
+          Future.successful(
+            Status(ErrorAcceptHeaderInvalid.httpStatusCode)(toJson[ErrorResponse](ErrorAcceptHeaderInvalid))
+          )
       override def parser:                     BodyParser[AnyContent] = outer.parser
       override protected def executionContext: ExecutionContext       = outer.executionContext
     }

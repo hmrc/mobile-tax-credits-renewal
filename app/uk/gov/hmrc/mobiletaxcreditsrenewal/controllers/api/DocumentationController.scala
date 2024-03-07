@@ -17,15 +17,18 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api
 
 import controllers.Assets
+
 import javax.inject.{Inject, Singleton}
 import play.api.http.HttpErrorHandler
 import play.api.libs.json.{Json, OWrites}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.views.txt
 
+import scala.collection.mutable
+
 case class ApiAccess(
   `type`:                    String,
-  whitelistedApplicationIds: Seq[String])
+  whitelistedApplicationIds: mutable.Buffer[String])
 
 object ApiAccess {
   implicit val writes: OWrites[ApiAccess] = Json.writes[ApiAccess]

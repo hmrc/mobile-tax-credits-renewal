@@ -17,10 +17,11 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Household, Claim, Renewal}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{Applicant, Claim, Household, Renewal}
 
-class RenewalStatusSpec extends WordSpecLike with Matchers with MockFactory {
+class RenewalStatusSpec extends AnyWordSpecLike with Matchers with MockFactory {
 
   val renewalStatus: RenewalStatus = new RenewalStatus {}
 

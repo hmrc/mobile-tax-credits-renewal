@@ -49,8 +49,3 @@ class WSHttpImpl @Inject() (
 
   override protected def configuration: Config = config.underlying
 }
-
-class MicroserviceAudit @Inject() (
-  @Named("appName") val applicationName: String,
-  val auditConnector:                    AuditConnector)
-    extends Audit(applicationName, auditConnector)

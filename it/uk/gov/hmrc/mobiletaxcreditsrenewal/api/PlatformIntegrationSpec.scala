@@ -34,7 +34,7 @@ class PlatformIntegrationSpec extends BaseISpec with Eventually with PlayRunners
       result.status shouldBe 200
 
       val definition: JsValue      = result.json
-      val versions:   Seq[JsValue] = (definition \ "api" \\ "versions").head.as[JsArray].value
+      val versions:   Seq[JsValue] = (definition \ "api" \\ "versions").head.as[JsArray].value.toSeq
       versions.length shouldBe 1
 
       val versionJson: JsValue = versions.head

@@ -16,15 +16,14 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.utils
 
-import com.github.nscala_time.time.Imports.DateTimeFormat
-import org.joda.time.format.DateTimeFormatter
-
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import scala.util.Try
 
 class ClaimsDateConverter {
 
   private val formatters: Seq[DateTimeFormatter] =
-    Seq(DateTimeFormat.forPattern("yyyy-MM-dd"), DateTimeFormat.forPattern("yyyyMMdd"))
+    Seq(DateTimeFormatter.ofPattern("yyyy-MM-dd"), DateTimeFormatter.ofPattern("yyyyMMdd"))
 
   def convertDateFormat(date: String): Option[String] = {
     def convert(
@@ -33,7 +32,7 @@ class ClaimsDateConverter {
     ): Option[String] =
       result.orElse {
         Try {
-          Some(formatter.parseDateTime(date).toString("d/M/yyyy"))
+          Some(LocalDate.parse(date, formatter).format(DateTimeFormatter.ofPattern("d/M/yyyy")))
         }.getOrElse {
           None
         }

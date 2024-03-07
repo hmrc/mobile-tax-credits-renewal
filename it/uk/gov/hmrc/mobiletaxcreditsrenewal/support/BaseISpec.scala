@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.support
 
-import org.scalatest.{Matchers, OptionValues, WordSpecLike}
+import org.scalatest.OptionValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.play.WsScalaTestClient
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
@@ -29,7 +31,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrAuthenticationToken.basicAuthString
 
 class BaseISpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with OptionValues
     with FutureAwaits
@@ -41,10 +43,10 @@ class BaseISpec
 
   protected val nino1 = Nino("AA000000A")
   protected val nino2 = Nino("AP412713B")
-  protected val acceptJsonHeader:       (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
-  protected val renewalReference:       RenewalReference = RenewalReference("renewalReference")
-  protected val tcrAuthenticationToken: String           = basicAuthString(nino1.value, renewalReference.value)
-  protected val tcrAuthTokenHeader:     (String, String) = tcrAuthToken -> tcrAuthenticationToken
+  protected val acceptJsonHeader:        (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
+  protected val renewalReference:        RenewalReference = RenewalReference("renewalReference")
+  protected val tcrAuthenticationToken:  String           = basicAuthString(nino1.value, renewalReference.value)
+  protected val tcrAuthTokenHeader:      (String, String) = tcrAuthToken -> tcrAuthenticationToken
   protected val authorisationJsonHeader: (String, String) = "AUTHORIZATION" -> "Bearer 123"
 
   def config: Map[String, Any] =

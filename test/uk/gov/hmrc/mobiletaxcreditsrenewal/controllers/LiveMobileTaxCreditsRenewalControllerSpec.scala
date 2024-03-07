@@ -19,7 +19,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 import eu.timepit.refined.auto._
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.json.Json.toJson
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
@@ -37,7 +38,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCr
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class LiveMobileTaxCreditsRenewalControllerSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with MockFactory
     with AuthorisationStub
@@ -57,11 +58,11 @@ class LiveMobileTaxCreditsRenewalControllerSpec
 
   private val controller =
     new LiveMobileTaxCreditsRenewalController(authConnector,
-                                                    service,
-                                                    mockControlConfig,
-                                                    L200.level,
-                                                    stubControllerComponents(),
-                                                    shutteringConnector)
+                                              service,
+                                              mockControlConfig,
+                                              L200.level,
+                                              stubControllerComponents(),
+                                              shutteringConnector)
 
   private val acceptHeader: (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
 
@@ -107,30 +108,30 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     "return 401 if unauthorised" in {
       stubAuthorisationUnauthorised()
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 401
+      status(result) shouldBe 401
     }
 
     "return Low CL if low confidence level" in {
       stubAuthorisationGrantAccess(Some(nino.nino) and L50)
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 403
+      status(result) shouldBe 403
     }
 
     "return ninoNotFound if no nino found" in {
       stubAuthorisationGrantAccess(None and L200)
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 403
+      status(result) shouldBe 403
     }
 
     "return noMatchingNinoFound if different nino returned found" in {
       stubAuthorisationGrantAccess(Some(nino2.nino) and L200)
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)
-      status(result)        shouldBe 403
+      status(result) shouldBe 403
     }
 
     "return invalidAcceptHeader if invalid headers sent" in {
       val result = controller.fullClaimantDetails(nino, journeyId)(requestInvalidHeaders)
-      status(result)        shouldBe 406
+      status(result) shouldBe 406
     }
 
     "return details with the renewalFormType set" in {

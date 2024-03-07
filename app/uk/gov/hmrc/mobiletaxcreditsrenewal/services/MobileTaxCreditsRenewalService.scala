@@ -38,12 +38,12 @@ class MobileTaxCreditsRenewalService @Inject() (
   val auditConnector:                    AuditConnector,
   val appNameConfiguration:              Configuration,
   val taxCreditsSubmissionControlConfig: TaxCreditsControl,
-  @Named("appName") val appName:         String)
-    extends Auditor
-    with RenewalStatus {
+  @Named("appName") val appName:         String,
+  auditService:                          AuditService)
+    extends RenewalStatus {
 
   private val dateConverter: ClaimsDateConverter = new ClaimsDateConverter
-  override val logger: Logger = Logger(this.getClass)
+  override val logger:       Logger              = Logger(this.getClass)
 
   def authenticateRenewal(
     nino:                Nino,
@@ -51,7 +51,7 @@ class MobileTaxCreditsRenewalService @Inject() (
   )(implicit hc:         HeaderCarrier,
     ex:                  ExecutionContext
   ): Future[Option[TcrAuthenticationToken]] =
-    withAudit("authenticateRenewal", Map("nino" -> nino.value)) {
+    auditService.withAudit("authenticateRenewal", Map("nino" -> nino.value)) {
       ntcConnector.authenticateRenewal(TaxCreditsNino(nino.value), tcrRenewalReference)
     }
 
@@ -60,7 +60,7 @@ class MobileTaxCreditsRenewalService @Inject() (
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[ClaimantDetails] =
-    withAudit("claimantDetails", Map("nino" -> nino.value)) {
+    auditService.withAudit("claimantDetails", Map("nino" -> nino.value)) {
       ntcConnector.claimantDetails(TaxCreditsNino(nino.value))
     }
 
@@ -69,7 +69,7 @@ class MobileTaxCreditsRenewalService @Inject() (
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[Option[EmployedEarningsRti]] =
-    withAudit("employedEarningsRti", Map("nino" -> nino.value)) {
+    auditService.withAudit("employedEarningsRti", Map("nino" -> nino.value)) {
       taxCreditsBrokerConnector.employedEarningsRti(TaxCreditsNino(nino.value))
     }
 
@@ -78,7 +78,7 @@ class MobileTaxCreditsRenewalService @Inject() (
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[Claims] =
-    withAudit("claimantClaims", Map("nino" -> nino.value)) {
+    auditService.withAudit("claimantClaims", Map("nino" -> nino.value)) {
 
       def claimMatch(claim: Claim): Boolean = {
         val match1 = claim.household.applicant1.nino == nino.value

@@ -18,7 +18,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.services
 
 import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.mvc.Request
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -33,11 +34,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{NtcConnectorStub, TaxCreditsBr
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class MobileTaxCreditsRenewalServiceSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with MockFactory
     with NtcConnectorStub
@@ -49,6 +51,7 @@ class MobileTaxCreditsRenewalServiceSpec
   implicit val ntcConnector:              NtcConnector              = mock[NtcConnector]
   implicit val taxCreditsBrokerConnector: TaxCreditsBrokerConnector = mock[TaxCreditsBrokerConnector]
   implicit val auditConnector:            AuditConnector            = mock[AuditConnector]
+  implicit val auditService:              AuditService              = new AuditService(auditConnector, "mobile-tax-credits-renewal")
   implicit val taxCreditsControl:         TaxCreditsControl         = mock[TaxCreditsControl]
   implicit val configuration:             Configuration             = mock[Configuration]
 
@@ -61,7 +64,8 @@ class MobileTaxCreditsRenewalServiceSpec
                                                    auditConnector,
                                                    configuration,
                                                    taxCreditsControl,
-                                                   "mobile-tax-credits-renewal")
+                                                   "mobile-tax-credits-renewal",
+                                                   auditService)
 
   "authenticateRenewal" should {
     val tcrAuthToken     = TcrAuthenticationToken("some-auth-token")

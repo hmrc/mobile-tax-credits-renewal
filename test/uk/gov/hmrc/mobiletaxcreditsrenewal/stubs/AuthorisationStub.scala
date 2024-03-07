@@ -17,7 +17,6 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 
 import org.scalamock.scalatest.MockFactory
-import uk.gov.hmrc.auth.core.ConfidenceLevel.L50
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
 import uk.gov.hmrc.auth.core.{AuthConnector, ConfidenceLevel}

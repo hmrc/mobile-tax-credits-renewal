@@ -19,12 +19,10 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 import eu.timepit.refined.auto._
 import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory.getLogger
-import play.api.LoggerLike
-import play.api.libs.json.Json.{parse, toJson}
-import play.api.libs.json.{JsValue, Json}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import play.api.libs.json.Json.toJson
+import play.api.libs.json.Json
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -38,7 +36,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.{AuthorisationStub, MobileTaxCr
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SandboxMobileTaxCreditsRenewalControllerSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with MockFactory
     with AuthorisationStub

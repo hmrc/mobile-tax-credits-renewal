@@ -20,7 +20,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
 import play.api.Logger
 import javax.inject.Inject
-import play.api.{Configuration, Environment, Logger, LoggerLike}
+import play.api.{Configuration, Environment, LoggerLike}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.{CoreGet, CorePost}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.api.ApiAccess
@@ -29,7 +29,7 @@ import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class GuiceModule @Inject() (
   environment:   Environment,

@@ -1,7 +1,5 @@
 import play.sbt.PlayImport.PlayKeys.playDefaultPort
 import sbt.Tests.{Group, SubProcess}
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
-import uk.gov.hmrc.versioning.SbtGitVersioning
 
 val appName: String = "mobile-tax-credits-renewal"
 
@@ -10,7 +8,6 @@ lazy val microservice = Project(appName, file("."))
   .disablePlugins(JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
-  .settings(publishingSettings: _*)
   .settings(routesImport ++= Seq(
     "uk.gov.hmrc.domain._",
     "uk.gov.hmrc.mobiletaxcreditsrenewal.binders.Binders._",
@@ -20,15 +17,14 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     majorVersion := 0,
     playDefaultPort := 8245,
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.8",
     libraryDependencies ++= AppDependencies(),
-    dependencyOverrides ++= AppDependencies.jettyOverrides,
-    evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
+    update / evictionWarningOptions := EvictionWarningOptions.default.withWarnScalaVersionEviction(false),
     resolvers += Resolver.jcenterRepo,
-    unmanagedResourceDirectories in Compile += baseDirectory.value / "resources",
-    unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest)(base => Seq(base / "it")).value,
-    testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
-    coverageMinimumStmtTotal := 89,
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
+    IntegrationTest / unmanagedSourceDirectories := (IntegrationTest / baseDirectory)(base => Seq(base / "it")).value,
+    IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
+    coverageMinimumStmtTotal := 90,
     coverageFailOnMinimum := true,
     coverageHighlighting := true,
     coverageExcludedPackages := "<empty>;.*Routes.*;app.*;.*prod;.*definition;.*testOnlyDoNotUseInAppConf;.*com.kenshoo.*;.*javascript.*;.*BuildInfo;.*Reverse.*;.*domain.*;.*binders.*;.*Base64.*"

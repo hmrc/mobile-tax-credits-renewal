@@ -33,7 +33,6 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.services.MobileTaxCreditsRenewalServi
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendBaseController
 import uk.gov.hmrc.play.http.HeaderCarrierConverter.fromRequest
 
-import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LegacyMobileTaxCreditsRenewalController extends BackendBaseController with HeaderValidator {
@@ -204,7 +203,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
 
             val eventualClaims: Future[Seq[Claim]] = service.legacyClaimantClaims(nino).flatMap {
               claimantClaims =>
-                val claims: Seq[Claim] = claimantClaims.references.getOrElse(Seq.empty[Claim])
+                val claims: Seq[Claim] = claimantClaims.references.getOrElse(Seq.empty[Claim]).toSeq
 
                 if (claims.isEmpty) logger.warn(s"Empty claims list for journeyId $journeyId")
 

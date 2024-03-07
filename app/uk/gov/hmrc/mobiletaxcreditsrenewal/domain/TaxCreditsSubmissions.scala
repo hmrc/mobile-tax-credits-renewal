@@ -21,7 +21,6 @@ import java.time.{LocalDateTime, ZoneId}
 import com.google.inject.Singleton
 import javax.inject.{Inject, Named}
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.time.DateTimeUtils
 
 import scala.collection.Seq
 
@@ -43,7 +42,7 @@ case class TaxCreditsRenewalsState(submissionsState: String) {
   val showSummaryData: Boolean = statesThatRequireSummaryData.contains(submissionsState)
 }
 
-object TaxCreditsSubmissions extends DateTimeUtils {
+object TaxCreditsSubmissions {
   implicit val formats: OFormat[TaxCreditsSubmissions] = Json.format[TaxCreditsSubmissions]
 }
 
@@ -69,8 +68,7 @@ class TaxCreditsSubmissionControlConfig @Inject() (
   @Named("submission.startDate") submissionStartDate:                     String,
   @Named("submission.endDate") submissionEndDate:                         String,
   @Named("submission.endViewRenewalsDate") submissionEnvViewRenewalsDate: String)
-    extends TaxCreditsControl
-    with DateTimeUtils {
+    extends TaxCreditsControl {
 
   val startDate:           LocalDateTime = LocalDateTime.parse(submissionStartDate)
   val endDate:             LocalDateTime = LocalDateTime.parse(submissionEndDate)

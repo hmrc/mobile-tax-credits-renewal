@@ -17,10 +17,11 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.ConfidenceLevel.{L50, L200}
+import uk.gov.hmrc.auth.core.ConfidenceLevel.{L200, L50}
 import uk.gov.hmrc.auth.core.syntax.retrieved._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
@@ -28,7 +29,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.action.{Authorisation, Au
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthorisationStub
 
 class AuthorisationSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with FutureAwaits
     with DefaultAwaitTimeout

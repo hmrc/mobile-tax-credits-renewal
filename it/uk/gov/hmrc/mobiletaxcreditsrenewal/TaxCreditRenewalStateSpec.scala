@@ -240,12 +240,12 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
   "GET /income/tax-credits/submission/state/enabled" should {
     "return open state" in {
-      val response = await(submissionStateEnabledRequest.get)
+      val response = await(submissionStateEnabledRequest.get())
       response.status                                 shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "open"
     }
     "return 400 when journeyId not supplied" in {
-      val response = await(wsUrl("/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader).get)
+      val response = await(wsUrl("/income/tax-credits/submission/state/enabled").addHttpHeaders(acceptJsonHeader).get())
       response.status shouldBe 400
     }
     "return 400 when invalid journeyId supplied" in {
@@ -269,7 +269,7 @@ class TaxCreditRenewalClosedStateSpec extends TaxCreditRenewalStateSpec {
 
   "GET /income/tax-credits/submission/state/enabled" should {
     "return closed state so that no new renewals can be started" in {
-      val response = await(submissionStateEnabledRequest.get)
+      val response = await(submissionStateEnabledRequest.get())
       response.status                                 shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "closed"
     }
@@ -285,7 +285,7 @@ class TaxCreditRenewalCheckStatusOnlyPeriodStateSpec extends TaxCreditRenewalSta
 
   "GET /income/tax-credits/submission/state/enabled" should {
     "return check-only state so that no new renewals can be started" in {
-      val response = await(submissionStateEnabledRequest.get)
+      val response = await(submissionStateEnabledRequest.get())
       response.status                                 shouldBe 200
       (response.json \ "submissionsState").as[String] shouldBe "check_status_only"
     }

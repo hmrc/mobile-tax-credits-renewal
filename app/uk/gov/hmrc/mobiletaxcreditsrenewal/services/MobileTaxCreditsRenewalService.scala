@@ -26,7 +26,6 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.connectors.{NtcConnector, TaxCreditsB
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.ClaimsDateConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.service.Auditor
 
 import scala.collection.Seq
 import scala.concurrent.{ExecutionContext, Future}

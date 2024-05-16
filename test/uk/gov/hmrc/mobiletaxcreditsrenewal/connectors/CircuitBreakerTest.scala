@@ -17,17 +17,19 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Assertion, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
 trait CircuitBreakerTest {
 
-  self: WordSpecLike with Matchers with ScalaFutures =>
+  self: AnyWordSpecLike with Matchers with ScalaFutures =>
 
   def executeCB(func: => Future[Any]): Assertion = {
     1 to 5 foreach { _ =>
-      func.failed.futureValue shouldBe an[uk.gov.hmrc.http.Upstream5xxResponse]
+      func.failed.futureValue shouldBe an[uk.gov.hmrc.http.UpstreamErrorResponse]
     }
     func.failed.futureValue shouldBe an[uk.gov.hmrc.circuitbreaker.UnhealthyServiceException]
   }

@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.{Configuration, Environment}
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json}
@@ -32,7 +33,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class TaxCreditsBrokerConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with MockFactory {
+class TaxCreditsBrokerConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

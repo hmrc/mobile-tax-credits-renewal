@@ -228,8 +228,7 @@ class LiveMobileTaxCreditsRenewalController @Inject()(
     }
 
   override def taxCreditsSubmissionStateEnabled(journeyId: JourneyId): Action[AnyContent] =
-    validateAccept(acceptHeaderValidationRules).async { implicit request =>
-      implicit val hc: HeaderCarrier = fromRequest(request)
+    validateAccept(acceptHeaderValidationRules).async {
       errorWrapper(Future {
         taxCreditsControl.toTaxCreditsRenewalsState
       }.map { submissionState =>

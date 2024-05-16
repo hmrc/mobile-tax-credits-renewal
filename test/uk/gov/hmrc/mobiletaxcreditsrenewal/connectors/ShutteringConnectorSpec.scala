@@ -18,7 +18,8 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import eu.timepit.refined.auto._
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
@@ -28,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ShutteringConnectorSpec
     extends MockFactory
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with FutureAwaits
     with DefaultAwaitTimeout {

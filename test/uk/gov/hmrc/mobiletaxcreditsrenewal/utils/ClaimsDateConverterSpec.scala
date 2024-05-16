@@ -16,9 +16,11 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.utils
 
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClaimsDateConverterSpec extends WordSpecLike with Matchers {
+
+class ClaimsDateConverterSpec extends AnyWordSpecLike with Matchers {
   private val dateConverter = new ClaimsDateConverter
 
   "convert date format" should {

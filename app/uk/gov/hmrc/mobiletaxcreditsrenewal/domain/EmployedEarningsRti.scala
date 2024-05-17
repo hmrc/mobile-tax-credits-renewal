@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.domain
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class EmployedEarningsRti(
   previousYearRTIEmployedEarnings:        Option[Double],
   previousYearRTIEmployedEarningsPartner: Option[Double])
 
 object EmployedEarningsRti {
-  implicit val formats = Json.format[EmployedEarningsRti]
+  implicit val formats: OFormat[EmployedEarningsRti] = Json.format[EmployedEarningsRti]
 }

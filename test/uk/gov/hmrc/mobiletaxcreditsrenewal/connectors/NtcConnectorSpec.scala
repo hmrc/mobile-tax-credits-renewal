@@ -16,11 +16,12 @@
 
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.actor.ActorSystem
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.test.Helpers._
@@ -33,7 +34,7 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
+class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -130,14 +131,14 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     lazy val http200ClaimsResponse: Future[AnyRef with HttpResponse] =
       Future.successful(HttpResponse(200, Some(claims200Success)))
-    lazy val http500Response: Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
+    lazy val http500Response: Future[Nothing]                  = Future.failed(uk.gov.hmrc.http.UpstreamErrorResponse("Error", 500, 500))
     lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
     lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
     lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
     lazy val http429Response: Future[Nothing]                  = Future.failed(new TooManyRequestException("too many requests"))
 
     lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] =
-      Future.successful(HttpResponse(200, Some(toJson(tcrAuthToken))))
+      Future.successful(uk.gov.hmrc.http.HttpResponse(200, Some(toJson(tcrAuthToken))))
 
     lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] =
       Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
@@ -193,7 +194,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
       runModeConfiguration: Configuration,
       environment:          Environment)
         extends NtcConnector(http, serviceUrl, runModeConfiguration, environment) {
-      override protected def circuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
+      override protected def circuitBreakerConfig: CircuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
     }
 
     val connector = new TestNtcConnector(http, mock[Configuration], mock[Environment])
@@ -222,7 +223,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
-      intercept[Upstream5xxResponse] {
+      intercept[uk.gov.hmrc.http.UpstreamErrorResponse] {
         await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       }
     }
@@ -251,7 +252,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
-      intercept[Upstream5xxResponse] {
+      intercept[uk.gov.hmrc.http.UpstreamErrorResponse] {
         await(connector.claimantClaims(taxCreditNino))
       }
     }
@@ -280,7 +281,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
-      intercept[Upstream5xxResponse] {
+      intercept[uk.gov.hmrc.http.UpstreamErrorResponse] {
         await(connector.legacyClaimantClaims(taxCreditNino))
       }
     }
@@ -309,7 +310,7 @@ class NtcConnectorSpec extends WordSpecLike with Matchers with ScalaFutures with
 
     "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
-      intercept[Upstream5xxResponse] {
+      intercept[uk.gov.hmrc.http.UpstreamErrorResponse] {
         await(connector.claimantDetails(taxCreditNino))
       }
     }

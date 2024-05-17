@@ -44,7 +44,7 @@ trait AccountAccessControl extends Results with Authorisation {
     implicit val hc: HeaderCarrier = fromRequest(request)
 
     grantAccess(taxId.getOrElse(Nino("")))
-      .flatMap { _ ⇒
+      .flatMap { _ =>
         block(request)
       }
       .recover {
@@ -74,7 +74,7 @@ trait AccessControl extends AccountAccessControl {
   def parser:           BodyParser[AnyContent]
 
   def validateAcceptWithAuth(
-    rules:       Option[String] ⇒ Boolean,
+    rules:       Option[String] => Boolean,
     taxId:       Option[Nino]
   )(implicit ec: ExecutionContext
   ): ActionBuilder[Request, AnyContent] =

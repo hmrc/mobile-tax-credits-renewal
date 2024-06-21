@@ -4,7 +4,7 @@ import uk.gov.hmrc.DefaultBuildSettings.oneForkedJvmPerTest
 val appName: String = "mobile-tax-credits-renewal"
 
 lazy val microservice = Project(appName, file("."))
-  .enablePlugins(Seq(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtDistributablesPlugin, ScoverageSbtPlugin): _*)
+  .enablePlugins(Seq(play.sbt.PlayScala, SbtDistributablesPlugin, ScoverageSbtPlugin): _*)
   .disablePlugins(JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)

@@ -53,10 +53,10 @@ class TaxCreditsBrokerConnectorSpec extends AnyWordSpecLike with Matchers with S
     val employedEarningsRti200Success: JsValue = Json.parse(employedEarningsRtiJson)
 
     lazy val http200EmployedEarningsRtiResponse: Future[AnyRef with HttpResponse] =
-      Future.successful(HttpResponse(200, Some(employedEarningsRti200Success)))
-    lazy val http500Response: Future[Nothing]                  = Future.failed(Upstream5xxResponse("Error", 500, 500))
+      Future.successful(HttpResponse(200, employedEarningsRtiJson))
+    lazy val http500Response: Future[Nothing]                  = Future.failed(UpstreamErrorResponse("Error", 500, 500))
     lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
-    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
+    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404, "{ NOT_FOUND }"))
     lazy val response:        Future[HttpResponse]             = http200EmployedEarningsRtiResponse
 
     val serviceUrl = "https://localhost"
@@ -69,7 +69,7 @@ class TaxCreditsBrokerConnectorSpec extends AnyWordSpecLike with Matchers with S
       override def doGet(
         url:         String,
         headers:     Seq[(String, String)] = Seq.empty
-      )(implicit ec:          ExecutionContext
+      )(implicit ec: ExecutionContext
       ): Future[HttpResponse] = response
 
       override protected def actorSystem: ActorSystem = ActorSystem()

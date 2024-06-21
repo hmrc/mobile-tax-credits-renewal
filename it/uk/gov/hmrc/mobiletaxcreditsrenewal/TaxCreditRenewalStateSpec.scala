@@ -3,33 +3,24 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal
 import java.time.{LocalDateTime, ZoneId}
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json.{parse, toJson}
+import play.api.libs.json.Json.parse
 import play.api.libs.json.{JsArray, JsObject, Json}
-import play.api.libs.ws.{WSRequest, WSResponse}
+import play.api.libs.ws.WSRequest
 import uk.gov.hmrc.api.sandbox.FileResource
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{IncomeDetails, RenewalData, RenewalReference, Shuttering, TcrRenewal}
+import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{RenewalReference, Shuttering}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.AuthStub.grantAccess
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.NtcStub._
-import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.ShutteringStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.TaxCreditsBrokerStub._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.support.BaseISpec
 
 class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
-  protected val incomeDetails = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-
-  protected val renewal =
-    TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
 
   protected val now: LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/London"))
-  val barcodeReference = RenewalReference("200000000000013")
 
   protected val submissionStateEnabledRequest: WSRequest = wsUrl(
     s"/income/tax-credits/submission/state/enabled?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f"
   ).addHttpHeaders(acceptJsonHeader)
-
-  protected val renewalsRequest: WSRequest =
-    wsUrl(s"/renewals/${nino1.value}?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f").addHttpHeaders(acceptJsonHeader)
 
   protected def submissionStartDate: String = now.minusDays(1).toString
 
@@ -45,23 +36,6 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
       "microservice.services.ntc.submission.endViewRenewalsDate" -> endViewRenewalsDate
     )
 
-  def submitTaxCreditRenewal: WSResponse = {
-    def request(nino: Nino) =
-      wsUrl(s"/declarations/${nino.value}?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f")
-        .addHttpHeaders(acceptJsonHeader, tcrAuthTokenHeader, authorisationJsonHeader)
-
-    grantAccess(nino1.value)
-
-    val renewalJson = toJson(renewal)
-    await(request(nino1).post(renewalJson))
-  }
-
-  protected def verifyNoSubmissionForPostToTaxCreditsRenewlEndpoint(): Unit = {
-    val response = submitTaxCreditRenewal
-    response.status shouldBe 200
-    verify(0, postRequestedFor(urlEqualTo(s"/tcs/${nino1.value}/renewal")))
-  }
-
   "GET /income/:nino/tax-credits/full-claimant-details" should {
     val mainApplicantNino = Nino("CS700100A")
     val barcodeReference  = RenewalReference("200000000000013")
@@ -71,6 +45,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant and set renewalFormType for a renewal where bar code ref is not '000000000000000'" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       claimantDetailsAreFoundFor(mainApplicantNino, mainApplicantNino, nino2, tcrAuthenticationToken)
@@ -88,6 +63,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant and not set renewalFormType if no token is found" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalNotFound(mainApplicantNino, barcodeReference)
 
@@ -103,6 +79,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant and not set renewalFormType if no claimant details found" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       claimantDetailsAreNotFoundFor(mainApplicantNino)
@@ -117,6 +94,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant with applicant1 employed earnings RTI" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       employedEarningsRtiFound(mainApplicantNino, false)
@@ -133,6 +111,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant with applicant1 and applicant2 employed earnings RTI" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFoundWithPartner(mainApplicantNino, nino2, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       employedEarningsRtiFound(mainApplicantNino, true)
@@ -153,6 +132,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant with no employed earnings RTI" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       employedEarningsRtiError(mainApplicantNino, 404)
@@ -168,6 +148,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant with a 500 error from tax-credits-broker" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       employedEarningsRtiError(mainApplicantNino, 500)
@@ -183,6 +164,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "retrieve claimant claims for main applicant with a 429 error from tax-credits-broker" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalSuccessful(mainApplicantNino, barcodeReference, tcrAuthenticationToken)
       employedEarningsRtiError(mainApplicantNino, 429)
@@ -198,6 +180,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "return 400 if no journeyId is supplied" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalNotFound(mainApplicantNino, barcodeReference)
 
@@ -211,6 +194,7 @@ class TaxCreditRenewalStateSpec extends BaseISpec with FileResource {
 
     "return 400 if invalid journeyId is supplied" in {
       grantAccess(mainApplicantNino.value)
+      stubForShutteringDisabled
       claimantClaimsAreFound(mainApplicantNino, barcodeReference)
       authenticationRenewalNotFound(mainApplicantNino, barcodeReference)
 
@@ -252,7 +236,7 @@ class TaxCreditRenewalOpenStateSpec extends TaxCreditRenewalStateSpec {
       val response = await(
         wsUrl("/income/tax-credits/submission/state/enabled?journeyId=ThisIsAnInvalidJourneyId")
           .addHttpHeaders(acceptJsonHeader)
-          .get
+          .get()
       )
       response.status shouldBe 400
     }

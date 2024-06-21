@@ -157,7 +157,7 @@ class MobileTaxCreditsRenewalServiceSpec
 
     "get claimant claims and audit the request" in {
       (ntcConnector
-        .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
+        .claimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
         .expects(taxCreditsNino, *, *)
         .returning(Future successful foundClaims)
       (auditConnector
@@ -193,7 +193,7 @@ class MobileTaxCreditsRenewalServiceSpec
           )
         )
       (ntcConnector
-        .legacyClaimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
+        .claimantClaims(_: TaxCreditsNino)(_: HeaderCarrier, _: ExecutionContext))
         .expects(taxCreditsNino, *, *)
         .returning(Future successful foundClaims)
       (auditConnector

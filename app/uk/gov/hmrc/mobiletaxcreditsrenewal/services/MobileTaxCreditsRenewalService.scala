@@ -96,7 +96,7 @@ class MobileTaxCreditsRenewalService @Inject() (
           }
         }
 
-      ntcConnector.legacyClaimantClaims(TaxCreditsNino(nino.value)).map { claims: Claims =>
+      ntcConnector.claimantClaims(TaxCreditsNino(nino.value)).map { claims: Claims =>
         claims.references.fold(Claims(None)) { items =>
           val references = items
             .filter(a => claimMatch(a))

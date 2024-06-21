@@ -1,8 +1,6 @@
 mobile-tax-credits-renewal
 =============================================
 
-[ ![Download](https://api.bintray.com/packages/hmrc/releases/mobile-tax-credits-renewal/images/download.svg) ](https://bintray.com/hmrc/releases/mobile-tax-credits-renewal/_latestVersion)
-
 An API designed for mobile device use which provides services pertaining to tax credits renewal.
 
 Requirements
@@ -10,46 +8,45 @@ Requirements
 
 The following services are exposed.
 
-Please note it is mandatory to supply an Accept HTTP header to all below services with the value ```application/vnd.hmrc.1.0+json```. 
+Please note it is mandatory to supply an Accept HTTP header to all below services with the
+value ```application/vnd.hmrc.1.0+json```.
 
 API
 ---
 
-| *Task* | *Supported Methods* | *Description* |
-|--------|----|----|
-| ```/declarations/:nino``` | POST | Post a renewal declaration to NTC for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/declarations.md) |
-| ```/renewals/:nino``` | GET | Retrieve the declaration details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/renewals.md)|
-| ```/income/:nino/tax-credits/:renewalReference/auth``` | GET | Validate and retrieve the TCR auth-token assoicated with the NINO and renewal reference. [More...](docs/authenticate.md)|
-| ```/income/:nino/tax-credits/claimant-details``` | GET | Retrieve the claiment-details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/claimentDetails.md) |
-| ```/income/:nino/tax-credits/full-claimant-details``` | GET | Retrieve the full-claiment-details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/fullClaimentDetails.md) |
-| ```/income/:nino/tax-credits/renewal``` | POST | Post a renewal to the NTC micro-service for off-line processing. Note the header tcrAuthToken must be supplied. [More...](docs/renewal.md)|
-| ```/income/tax-credits/submission/state/enabled``` | GET | This endpoint retrieves the current state of tax credit submissions. [More...](docs/tax-credits-submission-state-enabled.md)|
+| *Task*                                                | *Supported Methods* | *Description*                                                                                                                                      |
+|-------------------------------------------------------|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| ```/income/:nino/tax-credits/full-claimant-details``` | GET                 | Retrieve the full-claiment-details associated with the nino. Note the header tcrAuthToken must be supplied. [More...](docs/fullClaimentDetails.md) |
+| ```/income/tax-credits/submission/state/enabled```    | GET                 | This endpoint retrieves the current state of tax credit submissions. [More...](docs/tax-credits-submission-state-enabled.md)                       |
 
 # Sandbox
+
 All the above endpoints are accessible on sandbox with `/sandbox` prefix on each endpoint, i.e:
+
 ```
-    GET /declarations/:nino
-    POST /renewals/:nino
+    GET /income/:nino/tax-credits/full-claimant-details
 ```
 
 To trigger the sandbox endpoints locally, use the "X-MOBILE-USER-ID" header with one of the following values:
 208606423740 or 167927702220
 
-To test different scenarios, add a header "SANDBOX-CONTROL" to specify the appropriate status code and return payload. 
+To test different scenarios, add a header "SANDBOX-CONTROL" to specify the appropriate status code and return payload.
 See each linked file for details:
 
-| *Task* | *Supported Methods* | *Description* |
-|--------|----|----|
-| ```/sandbox/declarations/:nino``` | POST | Acts as a stub for the related live endpoint. [More...](docs/sandbox/declarations.md)  |
-| ```/sandbox/renewals/:nino``` | GET | Acts as a stub for the related live endpoint. [More...](docs/sandbox/renewals.md)|
-
+| *Task*                                                        | *Supported Methods* | *Description*                                 |
+|---------------------------------------------------------------|---------------------|-----------------------------------------------|
+| ```/sandbox/income/:nino/tax-credits/full-claimant-details``` | GET                 | Acts as a stub for the related live endpoint. |
+| ```/sandbox/income/tax-credits/submission/state/enabled```    | GET                 | Acts as a stub for the related live endpoint. |
 
 # Version
+
 Version of API need to be provided in `Accept` request header
+
 ```
 Accept: application/vnd.hmrc.v1.0+json
 ```
 
 ### License
 
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
+This code is open source software licensed under
+the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")

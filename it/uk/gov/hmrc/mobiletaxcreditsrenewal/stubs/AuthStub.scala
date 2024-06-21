@@ -21,8 +21,7 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 object AuthStub {
 
   def grantAccess(
-    nino:            String,
-    confidenceLevel: Int = 200
+    nino:            String
   ): Unit =
     stubFor(
       post(urlEqualTo("/auth/authorise"))

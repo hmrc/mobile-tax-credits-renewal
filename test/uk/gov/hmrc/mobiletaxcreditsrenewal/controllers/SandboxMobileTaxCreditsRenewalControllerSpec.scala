@@ -40,13 +40,12 @@ class SandboxMobileTaxCreditsRenewalControllerSpec
     with Matchers
     with MockFactory
     with AuthorisationStub
-    with MobileTaxCreditsRenewalServiceStub
-    with ClaimsJson {
+    with MobileTaxCreditsRenewalServiceStub {
   implicit val authConnector:     AuthConnector                  = mock[AuthConnector]
   implicit val mockControlConfig: TaxCreditsControl              = mock[TaxCreditsControl]
   implicit val service:           MobileTaxCreditsRenewalService = mock[MobileTaxCreditsRenewalService]
 
-  private val nino          = Nino("CS700100A")
+  private val nino = Nino("CS700100A")
   private val journeyId: JourneyId = "87144372-6bda-4cc9-87db-1d52fd96498f"
 
   private val controller =
@@ -62,14 +61,6 @@ class SandboxMobileTaxCreditsRenewalControllerSpec
     )
     .withHeaders(
       acceptHeader,
-      "Authorization" -> "Some Header"
-    )
-
-  lazy val requestInvalidHeaders: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
-    .withSession(
-      "AuthToken" -> "Some Header"
-    )
-    .withHeaders(
       "Authorization" -> "Some Header"
     )
 
@@ -98,11 +89,11 @@ class SandboxMobileTaxCreditsRenewalControllerSpec
                   None,
                   Some("")),
         Renewal(Some("12/10/2030"),
-                      Some("12/10/2010"),
-                      Some("NOT_SUBMITTED"),
-                      Some("12/10/2030"),
-                      Some("12/10/2010"),
-                      Some("D"))
+                Some("12/10/2010"),
+                Some("NOT_SUBMITTED"),
+                Some("12/10/2030"),
+                Some("12/10/2010"),
+                Some("D"))
       )
 
       val result = controller.fullClaimantDetails(nino, journeyId)(fakeRequest)

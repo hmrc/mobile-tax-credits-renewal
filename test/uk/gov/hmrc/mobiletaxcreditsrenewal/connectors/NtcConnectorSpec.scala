@@ -34,7 +34,12 @@ import uk.gov.hmrc.mobiletaxcreditsrenewal.domain._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures with CircuitBreakerTest with MockFactory {
+class NtcConnectorSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with ScalaFutures
+    with CircuitBreakerTest
+    with MockFactory {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -44,8 +49,6 @@ class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures w
 
     val nino             = Nino("KM569110B")
     val taxCreditNino    = TaxCreditsNino(nino.value)
-    val incomeDetails    = IncomeDetails(Some(10), Some(20), Some(30), Some(40), Some(true))
-    val renewal          = TcrRenewal(RenewalData(Some(incomeDetails), None, None), None, None, None, hasChangeOfCircs = false)
     val renewalReference = RenewalReference("123456")
     val tcrAuthToken     = TcrAuthenticationToken("some-token")
 
@@ -130,18 +133,17 @@ class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures w
     val claims200Success: JsValue = Json.parse(claimsJson)
 
     lazy val http200ClaimsResponse: Future[AnyRef with HttpResponse] =
-      Future.successful(HttpResponse(200, Some(claims200Success)))
+      Future.successful(HttpResponse(200, claimsJson))
     lazy val http500Response: Future[Nothing]                  = Future.failed(uk.gov.hmrc.http.UpstreamErrorResponse("Error", 500, 500))
     lazy val http400Response: Future[Nothing]                  = Future.failed(new BadRequestException("bad request"))
-    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404))
-    lazy val http204Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(204))
+    lazy val http404Response: Future[AnyRef with HttpResponse] = Future.successful(HttpResponse(404, "{ NOT_FOUND }"))
     lazy val http429Response: Future[Nothing]                  = Future.failed(new TooManyRequestException("too many requests"))
 
     lazy val http200AuthenticateResponse: Future[AnyRef with HttpResponse] =
-      Future.successful(uk.gov.hmrc.http.HttpResponse(200, Some(toJson(tcrAuthToken))))
+      Future.successful(uk.gov.hmrc.http.HttpResponse(200, toJson(tcrAuthToken).toString))
 
     lazy val http200ClaimantDetailsResponse: Future[AnyRef with HttpResponse] =
-      Future.successful(HttpResponse(200, Some(toJson(claimantDetails))))
+      Future.successful(HttpResponse(200, toJson(claimantDetails).toString))
     lazy val response: Future[HttpResponse] = http400Response
 
     val serviceUrl = "https://localhost"
@@ -194,7 +196,9 @@ class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures w
       runModeConfiguration: Configuration,
       environment:          Environment)
         extends NtcConnector(http, serviceUrl, runModeConfiguration, environment) {
-      override protected def circuitBreakerConfig: CircuitBreakerConfig = CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
+
+      override protected def circuitBreakerConfig: CircuitBreakerConfig =
+        CircuitBreakerConfig(externalServiceName, 5, 2000, 2000)
     }
 
     val connector = new TestNtcConnector(http, mock[Configuration], mock[Environment])
@@ -216,7 +220,7 @@ class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures w
 
     "return None when 429 returned" in new Setup {
       override lazy val response: Future[Nothing] = http429Response
-      intercept[TooManyRequestException]{
+      intercept[TooManyRequestException] {
         await(connector.authenticateRenewal(taxCreditNino, renewalReference))
       }
     }
@@ -267,35 +271,6 @@ class NtcConnectorSpec extends AnyWordSpecLike with Matchers with ScalaFutures w
     "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
       override lazy val response: Future[Nothing] = http500Response
       executeCB(connector.claimantClaims(taxCreditNino))
-    }
-  }
-
-  "legacy claims" should {
-
-    "throw BadRequestException when a 400 response is returned" in new Setup {
-      override lazy val response: Future[Nothing] = http400Response
-      intercept[BadRequestException] {
-        await(connector.legacyClaimantClaims(taxCreditNino))
-      }
-    }
-
-    "throw Upstream5xxResponse when a 500 response is returned" in new Setup {
-      override lazy val response: Future[Nothing] = http500Response
-      intercept[uk.gov.hmrc.http.UpstreamErrorResponse] {
-        await(connector.legacyClaimantClaims(taxCreditNino))
-      }
-    }
-
-    "return a valid response when a 200 response is received with a valid json payload" in new Setup {
-      override lazy val response: Future[AnyRef with HttpResponse] = http200ClaimsResponse
-      val result:                 Claims                     = await(connector.legacyClaimantClaims(taxCreditNino))
-
-      result shouldBe toJson(claims200Success).as[Claims]
-    }
-
-    "circuit breaker configuration should be applied and unhealthy service exception will kick in after 5th failed call" in new Setup {
-      override lazy val response: Future[Nothing] = http500Response
-      executeCB(connector.legacyClaimantClaims(taxCreditNino))
     }
   }
 

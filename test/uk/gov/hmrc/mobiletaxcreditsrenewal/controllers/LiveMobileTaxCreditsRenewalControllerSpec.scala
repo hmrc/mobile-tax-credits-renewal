@@ -17,7 +17,6 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 
 import eu.timepit.refined.auto._
-import org.apache.commons.codec.binary.Base64.encodeBase64
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -43,7 +42,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     with MockFactory
     with AuthorisationStub
     with MobileTaxCreditsRenewalServiceStub
-    with ClaimsJson
     with ShutteringMock {
   implicit val authConnector:       AuthConnector                  = mock[AuthConnector]
   implicit val mockControlConfig:   TaxCreditsControl              = mock[TaxCreditsControl]
@@ -84,20 +82,6 @@ class LiveMobileTaxCreditsRenewalControllerSpec
     .withHeaders(
       "Authorization" -> "Some Header"
     )
-
-  def basicAuthString(encodedAuth: String): String = "Basic " + encodedAuth
-
-  def encodedAuth(
-    nino:                Nino,
-    tcrRenewalReference: RenewalReference
-  ): String =
-    new String(encodeBase64(s"${nino.value}:${tcrRenewalReference.value}".getBytes))
-
-  def emptyRequestWithAcceptHeaderAndAuthHeader(
-    renewalsRef: RenewalReference,
-    nino:        Nino
-  ): FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   "fullClaimantDetails" should {
     val applicant       = Applicant(nino.nino, "MR", "BOB", None, "ROBSON", None)

@@ -21,7 +21,7 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import uk.gov.hmrc.api.controllers._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers._
 import uk.gov.hmrc.play.http.HeaderCarrierConverter.fromRequest
 
@@ -48,7 +48,7 @@ trait AccountAccessControl extends Results with Authorisation {
         block(request)
       }
       .recover {
-        case _: Upstream4xxResponse =>
+        case e: UpstreamErrorResponse if (e.statusCode > 399 && e.statusCode < 500) =>
           logger.info("Unauthorized! Failed to grant access since 4xx response!")
           Unauthorized(toJson[ErrorResponse](ErrorUnauthorizedMicroService))
 

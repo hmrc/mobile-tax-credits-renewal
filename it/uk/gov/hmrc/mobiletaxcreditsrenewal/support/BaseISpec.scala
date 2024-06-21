@@ -29,6 +29,7 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrAuthenticationToken.basicAuthString
+import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.ShutteringStub
 
 class BaseISpec
     extends AnyWordSpecLike
@@ -38,7 +39,8 @@ class BaseISpec
     with DefaultAwaitTimeout
     with WsScalaTestClient
     with GuiceOneServerPerSuite
-    with WireMockSupport {
+    with WireMockSupport
+    with ShutteringStub {
   override implicit lazy val app: Application = appBuilder.build()
 
   protected val nino1 = Nino("AA000000A")
@@ -52,6 +54,7 @@ class BaseISpec
   def config: Map[String, Any] =
     Map(
       "auditing.enabled"                              -> false,
+      "microservice.services.mobile-shuttering.port"  -> wireMockPort,
       "microservice.services.auth.port"               -> wireMockPort,
       "microservice.services.datastream.port"         -> wireMockPort,
       "microservice.services.ntc.port"                -> wireMockPort,

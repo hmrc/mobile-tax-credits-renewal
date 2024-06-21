@@ -18,7 +18,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.config
 
 import play.api.Configuration
 import uk.gov.hmrc.circuitbreaker.{CircuitBreakerConfig, UsingCircuitBreaker}
-import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
+import uk.gov.hmrc.http.{BadRequestException, NotFoundException, UpstreamErrorResponse}
 
 class ServicesCircuitBreaker(
   externalServiceName: String,
@@ -43,10 +43,10 @@ class ServicesCircuitBreaker(
   )
 
   override protected def breakOnException(t: Throwable): Boolean = t match {
-    case _: BadRequestException => false
-    case _: NotFoundException   => false
-    case _: Upstream4xxResponse => false
-    case _: Upstream5xxResponse => true
+    case _: BadRequestException                                                 => false
+    case _: NotFoundException                                                   => false
+    case e: UpstreamErrorResponse if (e.statusCode > 399 && e.statusCode < 500) => false
+    case e: UpstreamErrorResponse if (e.statusCode > 499)                       => true
     case _ => true
   }
 }

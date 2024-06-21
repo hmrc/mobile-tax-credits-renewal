@@ -3,7 +3,7 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.stubs
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, stubFor, urlPathEqualTo}
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 
-object ShutteringStub {
+trait ShutteringStub {
 
   def stubForShutteringDisabled: StubMapping =
     stubFor(

@@ -81,11 +81,4 @@ class NtcConnector @Inject() (
   ): Future[Claims] =
     withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
 
-  def legacyClaimantClaims(
-    nino:                   TaxCreditsNino
-  )(implicit headerCarrier: HeaderCarrier,
-    ex:                     ExecutionContext
-  ): Future[Claims] =
-    withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
-
 }

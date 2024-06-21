@@ -22,8 +22,6 @@ import com.google.inject.Singleton
 import javax.inject.{Inject, Named}
 import play.api.libs.json.{Json, OFormat}
 
-import scala.collection.Seq
-
 case class TaxCreditsSubmissions(
   inSubmitRenewalsPeriod: Boolean,
   inViewRenewalsPeriod:   Boolean) {
@@ -36,25 +34,10 @@ case class TaxCreditsSubmissions(
     )
 }
 
-case class TaxCreditsRenewalsState(submissionsState: String) {
-  private val statesThatRequireSummaryData = Seq("open", "check_status_only")
-
-  val showSummaryData: Boolean = statesThatRequireSummaryData.contains(submissionsState)
-}
-
-object TaxCreditsSubmissions {
-  implicit val formats: OFormat[TaxCreditsSubmissions] = Json.format[TaxCreditsSubmissions]
-}
+case class TaxCreditsRenewalsState(submissionsState: String)
 
 object TaxCreditsRenewalsState {
   implicit val formats: OFormat[TaxCreditsRenewalsState] = Json.format[TaxCreditsRenewalsState]
-}
-
-trait LoadConfig {
-
-  import com.typesafe.config.Config
-
-  def config: Config
 }
 
 trait TaxCreditsControl {
@@ -78,7 +61,7 @@ class TaxCreditsSubmissionControlConfig @Inject() (
     val currentTime          = LocalDateTime.now(ZoneId.of("Europe/London"))
     val allowSubmissions     = currentTime.isAfter(startDate) && currentTime.isBefore(endDate)
     val allowViewSubmissions = currentTime.isAfter(startDate) && currentTime.isBefore(endViewRenewalsDate)
-    new TaxCreditsSubmissions(allowSubmissions, allowViewSubmissions)
+    TaxCreditsSubmissions(allowSubmissions, allowViewSubmissions)
   }
 
   def toTaxCreditsRenewalsState: TaxCreditsRenewalsState =

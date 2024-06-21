@@ -8,9 +8,9 @@ object NtcStub {
   val applicationId = "198765432134566"
 
   def claimantClaimsAreFound(
-                              nino: Nino,
-                              barcodeReference: RenewalReference
-                            ): Unit =
+    nino:             Nino,
+    barcodeReference: RenewalReference
+  ): Unit =
     stubFor(
       get(urlPathEqualTo(s"/tcs/${nino.value}/claimant-claims")).willReturn(
         aResponse()
@@ -66,10 +66,10 @@ object NtcStub {
     )
 
   def claimantClaimsAreFoundWithPartner(
-                                         nino: Nino,
-                                         applicant2Nino: Nino,
-                                         barcodeReference: RenewalReference
-                                       ): Unit =
+    nino:             Nino,
+    applicant2Nino:   Nino,
+    barcodeReference: RenewalReference
+  ): Unit =
     stubFor(
       get(urlPathEqualTo(s"/tcs/${nino.value}/claimant-claims")).willReturn(
         aResponse()
@@ -139,18 +139,18 @@ object NtcStub {
     )
 
   def authenticationRenewalNotFound(
-                                     nino: Nino,
-                                     barcodeReference: RenewalReference
-                                   ): Unit =
+    nino:             Nino,
+    barcodeReference: RenewalReference
+  ): Unit =
     stubFor(
       get(urlPathEqualTo(s"/tcs/${nino.value}/${barcodeReference.value}/auth")).willReturn(aResponse().withStatus(404))
     )
 
   def authenticationRenewalSuccessful(
-                                       nino: Nino,
-                                       barcodeReference: RenewalReference,
-                                       token: String
-                                     ): Unit =
+    nino:             Nino,
+    barcodeReference: RenewalReference,
+    token:            String
+  ): Unit =
     stubFor(
       get(urlPathEqualTo(s"/tcs/${nino.value}/${barcodeReference.value}/auth")).willReturn(
         aResponse()
@@ -161,11 +161,11 @@ object NtcStub {
     )
 
   def claimantDetailsAreFoundFor(
-                                  currentUserNino: Nino,
-                                  mainApplicant1Nino: Nino,
-                                  applicant2Nino: Nino,
-                                  token: String
-                                ): Unit =
+    currentUserNino:    Nino,
+    mainApplicant1Nino: Nino,
+    applicant2Nino:     Nino,
+    token:              String
+  ): Unit =
     stubFor(
       get(urlEqualTo(s"/tcs/${currentUserNino.value}/claimant-details"))
         .withHeader("tcrAuthToken", equalTo(token))

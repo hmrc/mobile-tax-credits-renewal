@@ -29,15 +29,13 @@ import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.http.HttpClient
 
-import scala.jdk.CollectionConverters._
-
 class GuiceModule @Inject() (
   environment:   Environment,
   configuration: Configuration)
     extends AbstractModule {
 
   val servicesConfig: ServicesConfig = new ServicesConfig(configuration)
-  val logger: Logger = Logger(this.getClass)
+  val logger:         Logger         = Logger(this.getClass)
 
   override def configure(): Unit = {
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
@@ -46,9 +44,7 @@ class GuiceModule @Inject() (
     bind(classOf[HttpClient]).to(classOf[WSHttpImpl])
     bind(classOf[TaxCreditsControl]).to(classOf[TaxCreditsSubmissionControlConfig])
 
-    bind(classOf[ApiAccess]).toInstance(
-      ApiAccess("PRIVATE", configuration.underlying.getStringList("api.access.white-list.applicationIds").asScala)
-    )
+    bind(classOf[ApiAccess]).toInstance(ApiAccess("PRIVATE"))
 
     bindConfigInt("controllers.confidenceLevel")
     bindConfigString("appUrl", "appUrl")

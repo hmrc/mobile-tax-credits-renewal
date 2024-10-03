@@ -11,6 +11,24 @@ The following services are exposed.
 Please note it is mandatory to supply an Accept HTTP header to all below services with the
 value ```application/vnd.hmrc.1.0+json```.
 
+## Development Setup
+- Run locally: `sbt run` which runs on port `8245` by default
+- Run with test endpoints: `sbt 'run -Dplay.http.router=testOnlyDoNotUseInAppConf.Routes'`
+
+##  Service Manager Profiles
+The service can be run locally from Service Manager, using the following profiles:
+
+| Profile Details               | Command                                                                                                           |
+|-------------------------------|:------------------------------------------------------------------------------------------------------------------|
+| MOBILE_TAX_CREDITS_ALL            | sm2 --start MOBILE_TAX_CREDITS_ALL --appendArgs '{"MOBILE_TAX_CREDITS_SUMMARY": ["-Dmicroservice.reportActualProfitPeriod.endDate=2030-01-31T10:00:00.000", "-DdateOverride=2020-08-15", "-Dmicroservice.renewals.startDate=2021-04-26T07:00:00.000", "-Dmicroservice.renewals.packReceivedDate=2021-06-04T17:00:00.000", "-Dmicroservice.renewals.endDate=2030-07-31T17:00:00.000", "-Dmicroservice.renewals.gracePeriodEndDate=2030-08-07T22:59:59.000", "-Dmicroservice.renewals.endViewRenewalsDate=2030-11-30T23:59:59.000"]}'                                                                    |
+
+
+## Run Tests
+- Run Unit Tests:  `sbt test`
+- Run Integration Tests: `sbt it:test`
+- Run Unit and Integration Tests: `sbt test it:test`
+- Run Unit and Integration Tests with coverage report: `sbt clean compile coverage test it:test coverageReport dependencyUpdates`
+
 API
 ---
 

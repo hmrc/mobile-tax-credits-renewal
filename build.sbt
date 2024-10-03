@@ -1,5 +1,4 @@
 import play.sbt.PlayImport.PlayKeys.playDefaultPort
-import uk.gov.hmrc.DefaultBuildSettings.oneForkedJvmPerTest
 
 val appName: String = "mobile-tax-credits-renewal"
 
@@ -25,7 +24,6 @@ lazy val microservice = Project(appName, file("."))
     resolvers += Resolver.jcenterRepo,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     IntegrationTest / unmanagedSourceDirectories := (IntegrationTest / baseDirectory)(base => Seq(base / "it")).value,
-    IntegrationTest / testGrouping := oneForkedJvmPerTest((IntegrationTest / definedTests).value),
     coverageMinimumStmtTotal := 88,
     coverageFailOnMinimum := true,
     coverageHighlighting := true,

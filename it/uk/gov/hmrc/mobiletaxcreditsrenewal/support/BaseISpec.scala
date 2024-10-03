@@ -54,6 +54,7 @@ class BaseISpec
   def config: Map[String, Any] =
     Map(
       "auditing.enabled"                              -> false,
+      "metrics.enabled"                               -> false,
       "microservice.services.mobile-shuttering.port"  -> wireMockPort,
       "microservice.services.auth.port"               -> wireMockPort,
       "microservice.services.datastream.port"         -> wireMockPort,

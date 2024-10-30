@@ -26,7 +26,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.ws.WSClient
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mobiletaxcreditsrenewal.controllers.HeaderKeys.tcrAuthToken
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.RenewalReference
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.TcrAuthenticationToken.basicAuthString
 import uk.gov.hmrc.mobiletaxcreditsrenewal.stubs.ShutteringStub
@@ -48,7 +47,7 @@ class BaseISpec
   protected val acceptJsonHeader:        (String, String) = "Accept" -> "application/vnd.hmrc.1.0+json"
   protected val renewalReference:        RenewalReference = RenewalReference("renewalReference")
   protected val tcrAuthenticationToken:  String           = basicAuthString(nino1.value, renewalReference.value)
-  protected val tcrAuthTokenHeader:      (String, String) = tcrAuthToken -> tcrAuthenticationToken
+  protected val tcrAuthTokenHeader:      (String, String) = "tcrAuthToken" -> tcrAuthenticationToken
   protected val authorisationJsonHeader: (String, String) = "AUTHORIZATION" -> "Bearer 123"
 
   def config: Map[String, Any] =

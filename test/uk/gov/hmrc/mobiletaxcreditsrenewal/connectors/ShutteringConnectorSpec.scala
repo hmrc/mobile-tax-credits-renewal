@@ -17,49 +17,44 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 
 import eu.timepit.refined.auto._
-import org.scalamock.scalatest.MockFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalamock.handlers.CallHandler
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
+import uk.gov.hmrc.mobiletaxcreditsrenewal.utils.BaseSpec
 
+import java.net.URL
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class ShutteringConnectorSpec
-    extends MockFactory
-    with AnyWordSpecLike
-    with Matchers
-    with FutureAwaits
-    with DefaultAwaitTimeout {
-  val mockCoreGet: CoreGet             = mock[CoreGet]
-  val connector:   ShutteringConnector = new ShutteringConnector(mockCoreGet, "")
-  implicit val hc: HeaderCarrier       = HeaderCarrier()
+class ShutteringConnectorSpec extends BaseSpec with FutureAwaits with DefaultAwaitTimeout {
+  val connector: ShutteringConnector = new ShutteringConnector(mockHttpClient, serviceUrl)
 
-  def mockShutteringGet[T](f: Future[T]) =
-    (mockCoreGet
-      .GET(_: String, _: Seq[(String, String)], _: Seq[(String, String)])(_: HttpReads[T], _: HeaderCarrier, _: ExecutionContext))
+  def mockShutteringGet[T]: CallHandler[Future[T]] = {
+    (mockHttpClient
+      .get(_: URL)(_: HeaderCarrier))
       .expects(
-        "/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f",
-        *,
-        *,
-        *,
-        *,
+        url"${s"$serviceUrl/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=87144372-6bda-4cc9-87db-1d52fd96498f"}",
         *
       )
-      .returning(f)
+      .returns(mockRequestBuilder)
+
+    (mockRequestBuilder
+      .execute[T](_: HttpReads[T], _: ExecutionContext))
+      .expects(*, *)
+
+  }
 
   "getShutteredStatus" should {
     "Assume unshuttered for InternalServerException response" in {
-      mockShutteringGet(Future.successful(new InternalServerException("")))
+      mockShutteringGet.returns(Future failed new InternalServerException(""))
 
       val result: Shuttering = await(connector.getShutteringStatus("87144372-6bda-4cc9-87db-1d52fd96498f"))
       result shouldBe Shuttering.shutteringDisabled
     }
 
     "Assume unshuttered for BadGatewayException response" in {
-      mockShutteringGet(Future.successful(new BadGatewayException("")))
+      mockShutteringGet.returns(Future failed new BadGatewayException(""))
 
       val result: Shuttering = await(connector.getShutteringStatus("87144372-6bda-4cc9-87db-1d52fd96498f"))
       result shouldBe Shuttering.shutteringDisabled

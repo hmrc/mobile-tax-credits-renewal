@@ -19,17 +19,17 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.connectors
 import com.google.inject.name.Named
 import com.google.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.JsValue
-import uk.gov.hmrc.http.{CoreGet, HeaderCarrier}
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.Shuttering
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.types.ModelTypes.JourneyId
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ShutteringConnector @Inject() (
-  http:                                   CoreGet,
+  http:                                   HttpClientV2,
   @Named("mobile-shuttering") serviceUrl: String) {
 
   val logger: Logger = Logger(this.getClass)
@@ -40,14 +40,13 @@ class ShutteringConnector @Inject() (
     ex:                     ExecutionContext
   ): Future[Shuttering] =
     http
-      .GET[JsValue](
-        s"$serviceUrl/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=$journeyId"
+      .get(
+        url"${s"$serviceUrl/mobile-shuttering/service/mobile-tax-credits-renewal/shuttered-status?journeyId=$journeyId"}"
       )
-      .map { json =>
-        (json).as[Shuttering]
-      } recover {
-      case e =>
-        logger.warn(s"Call to mobile-shuttering failed:\n $e \nAssuming unshuttered.")
-        Shuttering.shutteringDisabled
-    }
+      .execute[Shuttering]
+      .recover {
+        case e =>
+          logger.warn(s"Call to mobile-shuttering failed:\n $e \nAssuming unshuttered.")
+          Shuttering.shutteringDisabled
+      }
 }

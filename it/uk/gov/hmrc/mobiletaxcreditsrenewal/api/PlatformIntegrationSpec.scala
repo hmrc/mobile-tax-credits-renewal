@@ -1,7 +1,6 @@
 package uk.gov.hmrc.mobiletaxcreditsrenewal.api
 
 import org.scalatest.concurrent.Eventually
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsArray, JsValue}
 import play.api.libs.ws.WSResponse
 import play.api.test.PlayRunners

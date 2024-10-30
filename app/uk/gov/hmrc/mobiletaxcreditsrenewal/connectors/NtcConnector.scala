@@ -20,16 +20,17 @@ import com.google.inject.{Inject, Singleton}
 
 import javax.inject.Named
 import play.api.{Configuration, Environment, Logger}
-import uk.gov.hmrc.http.{BadRequestException, CoreGet, CorePost, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, StringContextOps}
 import uk.gov.hmrc.mobiletaxcreditsrenewal.config.ServicesCircuitBreaker
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{ClaimantDetails, Claims, RenewalReference, TaxCreditsNino, TcrAuthenticationToken}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class NtcConnector @Inject() (
-  http:                     CoreGet with CorePost,
+  http:                     HttpClientV2,
   @Named("ntc") serviceUrl: String,
   val runModeConfiguration: Configuration,
   environment:              Environment)
@@ -54,17 +55,18 @@ class NtcConnector @Inject() (
 
     withCircuitBreaker(
       http
-        .GET[Option[TcrAuthenticationToken]](s"$serviceUrl/tcs/${nino.value}/${renewalReference.value}/auth")
-        .recover {
-          case _: NotFoundException =>
-            logResult(404, "Not found")
-            None
+        .get(url"${s"$serviceUrl/tcs/${nino.value}/${renewalReference.value}/auth"}")
+        .execute[Option[TcrAuthenticationToken]]
+    ).recover {
+      case _: NotFoundException =>
+        logResult(404, "Not found")
+        None
 
-          case _: BadRequestException =>
-            logResult(400, "BadRequest")
-            None
-        }
-    )
+      case _: BadRequestException =>
+        logResult(400, "BadRequest")
+        None
+    }
+
   }
 
   def claimantDetails(
@@ -72,13 +74,13 @@ class NtcConnector @Inject() (
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[ClaimantDetails] =
-    withCircuitBreaker(http.GET[ClaimantDetails](s"$serviceUrl/tcs/${nino.value}/claimant-details"))
+    withCircuitBreaker(http.get(url"${s"$serviceUrl/tcs/${nino.value}/claimant-details"}").execute[ClaimantDetails])
 
   def claimantClaims(
     nino:                   TaxCreditsNino
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[Claims] =
-    withCircuitBreaker(http.GET[Claims](s"$serviceUrl/tcs/${nino.value}/claimant-claims"))
+    withCircuitBreaker(http.get(url"${s"$serviceUrl/tcs/${nino.value}/claimant-claims"}").execute[Claims])
 
 }

@@ -20,15 +20,16 @@ import com.google.inject.{Inject, Singleton}
 
 import javax.inject.Named
 import play.api.Logger
-import uk.gov.hmrc.http.{CoreGet, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, StringContextOps}
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.mobiletaxcreditsrenewal.domain.{EmployedEarningsRti, TaxCreditsNino}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class TaxCreditsBrokerConnector @Inject() (
-  http:                                    CoreGet,
+  http:                                    HttpClientV2,
   @Named("tax-credits-broker") serviceUrl: String) {
 
   val logger: Logger = Logger(this.getClass)
@@ -39,13 +40,16 @@ class TaxCreditsBrokerConnector @Inject() (
   )(implicit headerCarrier: HeaderCarrier,
     ex:                     ExecutionContext
   ): Future[Option[EmployedEarningsRti]] =
-    http.GET[Option[EmployedEarningsRti]](s"$serviceUrl/tcs/${nino.value}/employed-earnings-rti") recover {
-      case e: NotFoundException =>
-        logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
-        None
-      case e: Exception =>
-        logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
-        None
-    }
+    http
+      .get(url"${s"$serviceUrl/tcs/${nino.value}/employed-earnings-rti"}")
+      .execute[Option[EmployedEarningsRti]]
+      .recover {
+        case e: NotFoundException =>
+          logger.warn(s"No employed earnings RTI found for user: ${e.getMessage}")
+          None
+        case e: Exception =>
+          logger.error(s"Failed to get employed earnings RTI: ${e.getMessage}")
+          None
+      }
 
 }

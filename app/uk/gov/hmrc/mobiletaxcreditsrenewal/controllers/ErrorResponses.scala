@@ -19,11 +19,6 @@ package uk.gov.hmrc.mobiletaxcreditsrenewal.controllers
 import uk.gov.hmrc.api.controllers.ErrorResponse
 import uk.gov.hmrc.http.HttpException
 
-case object ErrorNoAuthToken
-    extends ErrorResponse(500, "NTC_RENEWAL_AUTH_ERROR", "No auth header supplied in http request")
-
-case object ErrorAuthTokenSupplied
-    extends ErrorResponse(500, "NTC_RENEWAL_AUTH_ERROR", "Auth header is not required in the request")
 case object ClientRetryRequest extends ErrorResponse(429, "NTC_RETRY", "Client must retry the request.")
 
 class GrantAccessException(message: String) extends HttpException(message, 401)
@@ -34,6 +29,7 @@ class NinoNotFoundOnAccount extends GrantAccessException("Unauthorised! NINO not
 
 class AccountWithLowCL extends GrantAccessException("Unauthorised! Account with low CL!")
 
-class AccountWithWeakCredStrength(message: String) extends HttpException(message, 401)
-
-case object ErrorTooManyRequests extends ErrorResponse(429,"TOO_MANY_REQUESTS","Too many requests made to mobile-tax-credits please try again later")
+case object ErrorTooManyRequests
+    extends ErrorResponse(429,
+                          "TOO_MANY_REQUESTS",
+                          "Too many requests made to mobile-tax-credits please try again later")

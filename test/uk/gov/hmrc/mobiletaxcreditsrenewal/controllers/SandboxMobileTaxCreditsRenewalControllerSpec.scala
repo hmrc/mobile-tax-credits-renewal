@@ -76,7 +76,7 @@ class SandboxMobileTaxCreditsRenewalControllerSpec
     renewalsRef: RenewalReference,
     nino:        Nino
   ): FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest().withHeaders(acceptHeader, HeaderKeys.tcrAuthToken -> basicAuthString(encodedAuth(nino, renewalsRef)))
+    FakeRequest().withHeaders(acceptHeader, "tcrAuthToken" -> basicAuthString(encodedAuth(nino, renewalsRef)))
 
   "fullClaimantDetails" should {
 

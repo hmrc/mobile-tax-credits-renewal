@@ -3,12 +3,11 @@ import play.sbt.PlayImport._
 
 private object AppDependencies {
 
-
-  private val bootstrap30Version    = "9.5.0"
+  private val bootstrap30Version    = "9.11.0"
   private val domainVersion         = "10.0.0"
   private val playHmrcApiVersion    = "8.0.0"
   private val circuitBreakerVersion = "5.0.0"
-  private val refinedVersion        = "0.11.2"
+  private val refinedVersion        = "0.11.3"
   private val scalaMockVersion      = "5.2.0"
 
   val compile = Seq(
@@ -47,7 +46,7 @@ private object AppDependencies {
         override lazy val scope: String = "it"
 
         override lazy val test = testCommon(scope) ++ Seq(
-          )
+            )
       }.test
   }
 
